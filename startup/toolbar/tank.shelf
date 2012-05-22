@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <shelfSet name="tank_set" label="Tank Set">
+    <memberToolshelf name="tank"/>
+  </shelfSet>
+
+  <toolshelf name="tank" label="Tank">
+    <memberTool name="sg_set_frame_range"/>
+    <memberTool name="snapshot"/>
+    <memberTool name="snapshot_as"/>
+    <memberTool name="publish_hipfile"/>
+  </toolshelf>
+
+  <tool name="sg_set_frame_range" label="Sync Frame Range with Shotgun" icon="">
+    <toolMenuContext name="viewer">
+      <contextNetType>OBJ</contextNetType>
+      <contextNetType>SOP</contextNetType>
+      <contextNetType>POP</contextNetType>
+      <contextNetType>DOP</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="pop_viewer">
+      <contextNetType>POP</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="cop_viewer">
+      <contextNetType>COP2</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="network">
+      <contextNetType>OBJ</contextNetType>
+      <contextNetType>SOP</contextNetType>
+      <contextNetType>POP</contextNetType>
+      <contextNetType>CHOP</contextNetType>
+      <contextNetType>ROP</contextNetType>
+      <contextNetType>SHOP</contextNetType>
+      <contextNetType>COP2</contextNetType>
+      <contextNetType>VOP</contextNetType>
+      <contextNetType>VOPNET</contextNetType>
+      <contextNetType>DOP</contextNetType>
+    </toolMenuContext>
+    <toolSubmenu>Tank</toolSubmenu>
+    <script scriptType="python"><![CDATA[import tank
+engine = tank.engine()
+engine.apps['sg_set_frame_range'].set_frame_range()
+]]></script>
+  </tool>
+
+    <tool name="snapshot" label="Snapshot " icon="">
+    <toolMenuContext name="viewer">
+      <contextNetType>OBJ</contextNetType>
+      <contextNetType>SOP</contextNetType>
+      <contextNetType>POP</contextNetType>
+      <contextNetType>DOP</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="pop_viewer">
+      <contextNetType>POP</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="cop_viewer">
+      <contextNetType>COP2</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="network">
+      <contextNetType>OBJ</contextNetType>
+      <contextNetType>SOP</contextNetType>
+      <contextNetType>POP</contextNetType>
+      <contextNetType>CHOP</contextNetType>
+      <contextNetType>ROP</contextNetType>
+      <contextNetType>SHOP</contextNetType>
+      <contextNetType>COP2</contextNetType>
+      <contextNetType>VOP</contextNetType>
+      <contextNetType>VOPNET</contextNetType>
+      <contextNetType>DOP</contextNetType>
+    </toolMenuContext>
+    <toolSubmenu>Tank</toolSubmenu>
+    <script scriptType="python"><![CDATA[import tank
+import sg_houdinipub
+engine = tank.engine()
+app = engine.apps['sg_houdinipub']
+snapshot_handler = sg_houdinipub.HoudiniSnapshot(app)
+snapshot_handler.snapshot()]]></script>
+  </tool>
+
+  <tool name="snapshot_as" label="Snapshot As" icon="">
+    <toolMenuContext name="viewer">
+      <contextNetType>OBJ</contextNetType>
+      <contextNetType>SOP</contextNetType>
+      <contextNetType>POP</contextNetType>
+      <contextNetType>DOP</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="pop_viewer">
+      <contextNetType>POP</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="cop_viewer">
+      <contextNetType>COP2</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="network">
+      <contextNetType>OBJ</contextNetType>
+      <contextNetType>SOP</contextNetType>
+      <contextNetType>POP</contextNetType>
+      <contextNetType>CHOP</contextNetType>
+      <contextNetType>ROP</contextNetType>
+      <contextNetType>SHOP</contextNetType>
+      <contextNetType>COP2</contextNetType>
+      <contextNetType>VOP</contextNetType>
+      <contextNetType>VOPNET</contextNetType>
+      <contextNetType>DOP</contextNetType>
+    </toolMenuContext>
+    <toolSubmenu>Tank</toolSubmenu>
+    <script scriptType="python"><![CDATA[import tank
+import sg_houdinipub
+engine = tank.engine()
+app = engine.apps['sg_houdinipub']
+snapshot_handler = sg_houdinipub.HoudiniSnapshot(app)
+snapshot_handler.snapshot_as()]]></script>
+  </tool>
+
+
+  <tool name="publish_hipfile" label="Publish Hip file" icon="">
+    <toolMenuContext name="viewer">
+      <contextNetType>OBJ</contextNetType>
+      <contextNetType>SOP</contextNetType>
+      <contextNetType>POP</contextNetType>
+      <contextNetType>DOP</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="pop_viewer">
+      <contextNetType>POP</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="cop_viewer">
+      <contextNetType>COP2</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="network">
+      <contextNetType>OBJ</contextNetType>
+      <contextNetType>SOP</contextNetType>
+      <contextNetType>POP</contextNetType>
+      <contextNetType>CHOP</contextNetType>
+      <contextNetType>ROP</contextNetType>
+      <contextNetType>SHOP</contextNetType>
+      <contextNetType>COP2</contextNetType>
+      <contextNetType>VOP</contextNetType>
+      <contextNetType>VOPNET</contextNetType>
+      <contextNetType>DOP</contextNetType>
+    </toolMenuContext>
+    <toolSubmenu>Tank</toolSubmenu>
+    <script scriptType="python"><![CDATA[import tank
+engine = tank.engine()
+app = engine.apps['sg_houdinipub'].hipfile_publish_handler.publish_ui() ]]></script>
+  </tool>
+
+</shelfDocument>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mainMenu>
+  <menuBar>
+    <subMenu id="sg.tank">
+      <label>Tank</label>
+
+      <scriptItem id="sg.snapshot">
+        <label>Snapshot...</label>
+        <scriptPath>snapshot.py</scriptPath>
+      </scriptItem>
+
+      <scriptItem id="sg.snapshot_as">
+        <label>Snapshot As...</label>
+        <scriptPath>snapshot_as.py</scriptPath>
+      </scriptItem>
+
+      <scriptItem id="sg.set_frame_range">
+        <label>Publish Hip file</label>
+        <scriptPath>publish_hipfile.py</scriptPath>
+      </scriptItem>
+
+      <scriptItem id="sg.publish_hipfile">
+        <label>Sync Frame Range with Shotgun</label>
+        <scriptPath>sg_set_frame_range.py</scriptPath>
+      </scriptItem>
+
+    </subMenu>
+  </menuBar>
+</mainMenu>
