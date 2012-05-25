@@ -22,7 +22,7 @@ import hou
 
 CONSOLE_OUTPUT_WIDTH = 120
 
-class HoudiniEngine(tank.system.Engine):
+class HoudiniEngine(tank.platform.Engine):
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
         
@@ -30,7 +30,7 @@ class HoudiniEngine(tank.system.Engine):
         # for the houdini engine (because it for example sets the houdini project)
         if len(self.context.entity_locations) == 0:
             # Try to create path for the context.
-            tank.system.schema.create_filesystem_structure(self.shotgun,
+            tank.platform.schema.create_filesystem_structure(self.shotgun,
                                                            self.context.project_root,
                                                            self.context.entity["type"],
                                                            self.context.entity["id"])

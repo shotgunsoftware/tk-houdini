@@ -42,15 +42,15 @@ def bootstrap_tank():
 
     try:
         if file_to_open:
-            ctx = tank.system.Context.from_path(file_to_open)
+            ctx = tank.platform.Context.from_path(file_to_open)
         elif project_root and file_loading_name == 'untitled.hip':
-            ctx = tank.system.Context.from_entity(project_root, entity_type, entity_id)
+            ctx = tank.platform.Context.from_entity(project_root, entity_type, entity_id)
         elif file_loading_name != 'untitled.hip':
             engine = tank.engine()
             if engine:
                 engine.destroy()
             # end if 
-            ctx = tank.system.Context.from_path(file_loading_path)
+            ctx = tank.platform.Context.from_path(file_loading_path)
         else:
             engine = tank.engine()
             if engine:
@@ -69,7 +69,7 @@ def bootstrap_tank():
     # end try
 
     try:
-        engine = tank.system.start_engine(engine_name, ctx)
+        engine = tank.platform.start_engine(engine_name, ctx)
     except tank.TankEngineInitError, e:
         msg = "The Tank Engine could not start! Tank will be disabled. Details: %s" % exp
         if hou.isUIAvailable():
