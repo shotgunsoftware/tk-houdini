@@ -9,7 +9,7 @@ import hou
 import tank
 
 def main():  
-    engine = tank.engine()
+    engine = tank.platform.current_engine()
     engine.apps['sg_houdinipub'].snapshot_handler.snapshot()
 # end def main
 

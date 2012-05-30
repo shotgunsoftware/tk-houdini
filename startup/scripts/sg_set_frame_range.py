@@ -9,7 +9,7 @@ import hou
 import tank
 
 def main():
-    engine = tank.engine()
+    engine = tank.platform.current_engine()
     engine.apps['sg_set_frame_range'].set_frame_range()
 # end def main
 

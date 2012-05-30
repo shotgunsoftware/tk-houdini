@@ -8,7 +8,7 @@ import hou
 import tank
 
 def main():  
-    engine = tank.engine()
+    engine = tank.platform.current_engine()
     engine.apps['sg_houdinipub'].hipfile_publish_handler.publish_ui()
 # end def main
 

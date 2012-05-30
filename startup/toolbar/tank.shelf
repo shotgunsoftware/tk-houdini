@@ -43,7 +43,7 @@
     </toolMenuContext>
     <toolSubmenu>Tank</toolSubmenu>
     <script scriptType="python"><![CDATA[import tank
-engine = tank.engine()
+engine = tank.platform.current_engine()
 engine.apps['sg_set_frame_range'].set_frame_range()
 ]]></script>
   </tool>
@@ -76,7 +76,7 @@ engine.apps['sg_set_frame_range'].set_frame_range()
     <toolSubmenu>Tank</toolSubmenu>
     <script scriptType="python"><![CDATA[import tank
 import sg_houdinipub
-engine = tank.engine()
+engine = tank.platform.current_engine()
 app = engine.apps['sg_houdinipub']
 snapshot_handler = sg_houdinipub.HoudiniSnapshot(app)
 snapshot_handler.snapshot()]]></script>
@@ -110,7 +110,7 @@ snapshot_handler.snapshot()]]></script>
     <toolSubmenu>Tank</toolSubmenu>
     <script scriptType="python"><![CDATA[import tank
 import sg_houdinipub
-engine = tank.engine()
+engine = tank.platform.current_engine()
 app = engine.apps['sg_houdinipub']
 snapshot_handler = sg_houdinipub.HoudiniSnapshot(app)
 snapshot_handler.snapshot_as()]]></script>
@@ -144,7 +144,7 @@ snapshot_handler.snapshot_as()]]></script>
     </toolMenuContext>
     <toolSubmenu>Tank</toolSubmenu>
     <script scriptType="python"><![CDATA[import tank
-engine = tank.engine()
+engine = tank.platform.current_engine()
 app = engine.apps['sg_houdinipub'].hipfile_publish_handler.publish_ui() ]]></script>
   </tool>
 

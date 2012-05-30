@@ -46,13 +46,13 @@ def bootstrap_tank():
         elif project_root and file_loading_name == 'untitled.hip':
             ctx = tank.platform.Context.from_entity(project_root, entity_type, entity_id)
         elif file_loading_name != 'untitled.hip':
-            engine = tank.engine()
+            engine = tank.platform.current_engine()
             if engine:
                 engine.destroy()
             # end if 
             ctx = tank.platform.Context.from_path(file_loading_path)
         else:
-            engine = tank.engine()
+            engine = tank.platform.current_engine()
             if engine:
                 engine.destroy()
             # end if
