@@ -10,7 +10,7 @@ import tank
 
 def main():  
     engine = tank.platform.current_engine()
-    engine.apps['sg_houdinipub'].snapshot_handler.snapshot_as()
+    engine.apps['tk_houdini_publish'].snapshot_handler.snapshot_as()
 # end def main
 
 if __name__ in ('__main__', '__builtin__') :

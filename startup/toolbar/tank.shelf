@@ -75,10 +75,10 @@ engine.apps['sg_set_frame_range'].set_frame_range()
     </toolMenuContext>
     <toolSubmenu>Tank</toolSubmenu>
     <script scriptType="python"><![CDATA[import tank
-import sg_houdinipub
+import tk_houdini_publish
 engine = tank.platform.current_engine()
-app = engine.apps['sg_houdinipub']
-snapshot_handler = sg_houdinipub.HoudiniSnapshot(app)
+app = engine.apps['tk_houdini_publish']
+snapshot_handler = tk_houdini_publish.HoudiniSnapshot(app)
 snapshot_handler.snapshot()]]></script>
   </tool>
 
@@ -109,10 +109,10 @@ snapshot_handler.snapshot()]]></script>
     </toolMenuContext>
     <toolSubmenu>Tank</toolSubmenu>
     <script scriptType="python"><![CDATA[import tank
-import sg_houdinipub
+import tk_houdini_publish
 engine = tank.platform.current_engine()
-app = engine.apps['sg_houdinipub']
-snapshot_handler = sg_houdinipub.HoudiniSnapshot(app)
+app = engine.apps['tk_houdini_publish']
+snapshot_handler = tk_houdini_publish.HoudiniSnapshot(app)
 snapshot_handler.snapshot_as()]]></script>
   </tool>
 
@@ -145,7 +145,7 @@ snapshot_handler.snapshot_as()]]></script>
     <toolSubmenu>Tank</toolSubmenu>
     <script scriptType="python"><![CDATA[import tank
 engine = tank.platform.current_engine()
-app = engine.apps['sg_houdinipub'].hipfile_publish_handler.publish_ui() ]]></script>
+app = engine.apps['tk_houdini_publish'].hipfile_publish_handler.publish_ui() ]]></script>
   </tool>
 
 </shelfDocument>
