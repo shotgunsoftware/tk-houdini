@@ -7,12 +7,7 @@ A Houdini engine for Tank.
 """
 
 # std libs
-import os
 import sys
-import pickle
-import logging
-import platform
-import textwrap
 
 # tank libs
 import tank
