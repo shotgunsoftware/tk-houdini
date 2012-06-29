@@ -6,14 +6,10 @@
 
 # expected fields in the configuration file for this engine
 configuration:
-    
+
     debug_logging:
             type: bool
             description: Controls whether debug messages should be emitted to the logger
-
-    template_context:
-        type: template
-        description: Template to use to determine where to set the houdini project location
 
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
