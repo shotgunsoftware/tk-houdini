@@ -1,7 +1,9 @@
-"""
-Copyright (c) 2012 Shotgun Software, Inc
-----------------------------------------------------
+#
+# Copyright (c) 2012 Shotgun Software, Inc
+# ----------------------------------------------------
+#
 
+"""
 This file is loaded automatically by Houdini at startup.
 It sets up the tank context and prepares the Tank Houdini engine.
 
@@ -29,12 +31,12 @@ def bootstrap_tank():
         return
 
     engine_name = os.environ.get("TANK_HOUDINI_ENGINE")
-    file_to_open = os.environ.get("TANK_HOUDINI_FILE_TO_OPEN") 
+    file_to_open = os.environ.get("TANK_HOUDINI_FILE_TO_OPEN")
     project_root = os.environ.get("TANK_HOUDINI_PROJECT_ROOT")
     entity_id = int(os.environ.get("TANK_HOUDINI_ENTITY_ID", 0))
     entity_type = os.environ.get("TANK_HOUDINI_ENTITY_TYPE")
-    
-    # get the file path from houdini to see if 
+
+    # get the file path from houdini to see if
     file_loading_path = hou.hipFile.path()
     file_loading_name = os.path.basename(file_loading_path)
 
@@ -76,13 +78,12 @@ def bootstrap_tank():
 
     try:
         engine = tank.platform.start_engine(engine_name, tk, ctx)
-    except Exception, exp: #tank.TankEngineInitError
+    except Exception, exp:
         msg = "The Tank Engine could not start! Tank will be disabled. Details: %s" % exp
         if hou.isUIAvailable():
             hou.ui.displayMessage(msg)
         else:
             sys.stdout.write(msg)
-
 
     # remove from env so that they wont affect the nuke that is initalized on a
     # file->new. or file->open
@@ -90,7 +91,6 @@ def bootstrap_tank():
         for var in args:
             if var in os.environ:
                 del os.environ[var]
-
 
     delEnvVar(
         "TANK_HOUDINI_FILE_TO_OPEN",

@@ -8,8 +8,9 @@
 configuration:
 
     debug_logging:
-            type: bool
-            description: Controls whether debug messages should be emitted to the logger
+        type: bool
+        description: Controls whether debug messages should be emitted to the logger
+        default_value: false
 
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:

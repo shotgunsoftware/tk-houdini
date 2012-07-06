@@ -1,7 +1,9 @@
-"""
-Copyright (c) 2012 Shotgun Software, Inc
-----------------------------------------------------
+#
+# Copyright (c) 2012 Shotgun Software, Inc
+# ----------------------------------------------------
+#
 
+"""
 A Houdini engine for Tank.
 
 """
