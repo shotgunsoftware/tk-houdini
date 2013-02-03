@@ -18,11 +18,6 @@ class HoudiniEngine(tank.platform.Engine):
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
 
-        if len(self.context.entity_locations) == 0:
-            raise tank.TankError("No folders on disk are associated with the current context. The Houdini "
-                            "engine requires a context which exists on disk in order to run "
-                            "correctly.")
-
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
 
