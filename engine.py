@@ -18,6 +18,16 @@ class HoudiniEngine(tank.platform.Engine):
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
 
+        # add platform specific paths to sys.path
+        path_setting = {
+            'darwin': 'mac_additional_syspath',
+            'linux': 'linux_additional_syspath',
+            'win32': 'windows_additional_syspath',
+        }[sys.platform]
+        paths_to_add = self.get_setting(path_setting)
+        if paths_to_add:
+            sys.path.extend(paths_to_add.split(':'))
+
     def post_app_init(self):
         tk_houdini = self.import_module("tk_houdini")
         bootstrap = tk_houdini.bootstrap
@@ -60,10 +70,11 @@ class HoudiniEngine(tank.platform.Engine):
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
 
+        tk_houdini = self.import_module("tk_houdini")
+        bootstrap = tk_houdini.bootstrap
         if bootstrap.g_temp_env in os.environ:
             # clean up and keep on going
             shutil.rmtree(os.environ[bootstrap.g_temp_env])
-            del os.environ[bootstrap.g_temp_env]
 
     def _display_message(self, msg):
         if hou.isUIAvailable():

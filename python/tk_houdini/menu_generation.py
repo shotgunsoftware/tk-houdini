@@ -105,6 +105,9 @@ class MenuGenerator(object):
                     self._itemNode(submenu, cmds[0].name, cmds[0].get_id())
 
         # and write out the final xml
+        xmldir = os.path.dirname(fname)
+        if not os.path.exists(xmldir):
+            os.makedirs(xmldir)
         doc = ET.ElementTree(root)
         doc.write(fname, encoding="UTF-8")
         print fname

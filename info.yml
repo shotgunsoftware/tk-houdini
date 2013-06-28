@@ -26,6 +26,21 @@ configuration:
                 name: { type: str }
                 app_instance: { type: str }
 
+    mac_additional_syspath:
+        type: str
+        description: Colon separated list of extra paths to add to sys.path on startup on osx.
+        default_value: ''
+
+    linux_additional_syspath:
+        type: str
+        description: Colon separated list of extra paths to add to sys.path on startup on linux.
+        default_value: ''
+
+    windows_additional_syspath:
+        type: str
+        description: Colon separated list of extra paths to add to sys.path on startup on windows.
+        default_value: ''
+
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
 
