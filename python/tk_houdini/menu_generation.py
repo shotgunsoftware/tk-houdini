@@ -73,6 +73,7 @@ class MenuGenerator(object):
             menu_items.append(AppCommand(cmd_name, cmd_details))
 
         # favorites
+        ET.SubElement(submenu, "separatorItem")
         for fav in self._engine.get_setting("menu_favourites"):
             app_instance_name = fav["app_instance"]
             menu_name = fav["name"]
@@ -80,7 +81,7 @@ class MenuGenerator(object):
             for cmd in menu_items:
                 if cmd.get_app_instance_name() == app_instance_name and cmd.name == menu_name:
                     cmd.favourite = True
-                    self._itemNode(ctx_menu, cmd.name, cmd.get_id())
+                    self._itemNode(submenu, cmd.name, cmd.get_id())
 
         # everything else
         ET.SubElement(submenu, "separatorItem")
@@ -188,7 +189,11 @@ class AppCommand(object):
         return None
 
     def get_id(self):
-        return "tk.app.%s" % self.get_app_instance_name()
+        title_trans = ''.join(chr(c) if chr(c).isupper() or chr(c).islower() else '_' for c in range(256))
+        return "tk.app.%s.%s" % (
+            self.get_app_instance_name(),
+            self.name.translate(title_trans).lower(),
+        )
 
     def get_documentation_url_str(self):
         if "app" in self.properties:

@@ -22,6 +22,7 @@ class HoudiniEngine(tank.platform.Engine):
         path_setting = {
             'darwin': 'mac_additional_syspath',
             'linux': 'linux_additional_syspath',
+            'linux2': 'linux_additional_syspath',
             'win32': 'windows_additional_syspath',
         }[sys.platform]
         paths_to_add = self.get_setting(path_setting)
