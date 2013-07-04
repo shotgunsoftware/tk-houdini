@@ -46,7 +46,7 @@ requires_shotgun_fields:
 
 # More verbose description of this item
 display_name: "Houdini Engine"
-description: "Tank Integration in Houdini"
+description: "Shotgun Pipeline Toolkit integration in Houdini"
 
 # Required minimum versions for this item to run
 requires_shotgun_version:
