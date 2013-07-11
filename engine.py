@@ -7,6 +7,7 @@ A Houdini engine for Tank.
 """
 import os
 import sys
+import ctypes
 import shutil
 
 import tank
@@ -28,6 +29,8 @@ class HoudiniEngine(tank.platform.Engine):
         paths_to_add = self.get_setting(path_setting)
         if paths_to_add:
             sys.path.extend(paths_to_add.split(':'))
+
+        self.__created_qt_dialogs = []
 
     def post_app_init(self):
         tk_houdini = self.import_module("tk_houdini")
@@ -76,6 +79,35 @@ class HoudiniEngine(tank.platform.Engine):
         if bootstrap.g_temp_env in os.environ:
             # clean up and keep on going
             shutil.rmtree(os.environ[bootstrap.g_temp_env])
+
+    def _create_dialog(self, title, bundle, obj):
+        from tank.platform.qt import tankqdialog
+
+        dialog = tankqdialog.TankQDialog(title, bundle, obj, None)
+        dialog.raise_()
+        dialog.activateWindow()
+
+        # get windows to raise the dialog
+        if sys.platform == "win32":
+            ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
+            ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
+            hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
+            ctypes.windll.user32.SetActiveWindow(hwnd)
+
+        return dialog
+
+    def show_modal(self, title, bundle, widget_class, *args, **kwargs):
+        obj = widget_class(*args, **kwargs)
+        dialog = self._create_dialog(title, bundle, obj)
+        status = dialog.exec_()
+        return status, obj
+
+    def show_dialog(self, title, bundle, widget_class, *args, **kwargs):
+        obj = widget_class(*args, **kwargs)
+        dialog = self._create_dialog(title, bundle, obj)
+        self.__created_qt_dialogs.append(dialog)
+        dialog.show()
+        return obj
 
     def _display_message(self, msg):
         if hou.isUIAvailable():

@@ -111,7 +111,6 @@ class MenuGenerator(object):
             os.makedirs(xmldir)
         doc = ET.ElementTree(root)
         doc.write(fname, encoding="UTF-8")
-        print fname
 
     def _menuNode(self, parent, label, id):
         menu = ET.SubElement(parent, "subMenu")
