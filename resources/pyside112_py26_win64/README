@@ -1,0 +1,5 @@
+This was downloaded from http://www.lfd.uci.edu/~gohlke/pythonlibs/#pyside,
+installed on a windows machine and then simply moved into this location.
+
+Since Houdini uses python2.6 and 64 bit python, you need to use a binary distribution
+which is compatible with that. 
