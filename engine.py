@@ -19,20 +19,12 @@ class HoudiniEngine(tank.platform.Engine):
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
 
-        # add platform specific paths to sys.path
-        path_setting = {
-            'darwin': 'mac_additional_syspath',
-            'linux': 'linux_additional_syspath',
-            'linux2': 'linux_additional_syspath',
-            'win32': 'windows_additional_syspath',
-        }[sys.platform]
-        paths_to_add = self.get_setting(path_setting)
-        if paths_to_add:
-            sys.path.extend(paths_to_add.split(':'))
+        if hou.applicationVersion()[0] < 12:
+            raise tank.TankError("Your version of Houdini is not supported. Currently, Toolkit only supports version 12+")
 
-        # add our built-in pyside to the python path when on windows            
+        # add our built-in pyside to the python path when on windows
         if sys.platform == "win32":
-            pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_win64")
+            pyside_path = os.path.join(self.disk_location, "resources", "pyside112_py26_win64")
             sys.path.append(pyside_path)
 
         self.__created_qt_dialogs = []
@@ -144,5 +136,3 @@ class HoudiniEngine(tank.platform.Engine):
 
     def log_warning(self, msg):
         print str(msg)
-
-
