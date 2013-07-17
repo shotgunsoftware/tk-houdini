@@ -57,7 +57,7 @@ class HoudiniEngine(tank.platform.Engine):
         self._callback_map = menu.callback_map()
 
         # startup PySide
-        from PySide import QtGui
+        from PySide import QtGui, QtCore
         app = QtGui.QApplication.instance()
         if app is None:
             # create the QApplication
@@ -66,6 +66,10 @@ class HoudiniEngine(tank.platform.Engine):
             QtGui.QApplication.setStyle("cleanlooks")
             app.setQuitOnLastWindowClosed(False)
             app.setApplicationName(sys.argv[0])
+
+            # tell QT to interpret C strings as utf-8
+            utf8 = QtCore.QTextCodec.codecForName("utf-8")
+            QtCore.QTextCodec.setCodecForCStrings(utf8)
 
             # set the stylesheet
             resources = os.path.join(os.path.dirname(__file__), "resources")
