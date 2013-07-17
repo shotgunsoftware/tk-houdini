@@ -30,6 +30,11 @@ class HoudiniEngine(tank.platform.Engine):
         if paths_to_add:
             sys.path.extend(paths_to_add.split(':'))
 
+        # add our built-in pyside to the python path when on windows            
+        if sys.platform == "win32":
+            pyside_path = os.path.join(self.disk_location, "resources","pyside112_py26_win64")
+            sys.path.append(pyside_path)
+
         self.__created_qt_dialogs = []
 
     def post_app_init(self):
@@ -123,14 +128,15 @@ class HoudiniEngine(tank.platform.Engine):
         callback()
 
     def log_debug(self, msg):
-        print str(msg)
+        if self.get_setting("debug_logging", False):
+            print "Shotgun Debug: %s" % msg
 
     def log_info(self, msg):
-        print str(msg)
+        print "Shotgun: %s" % msg
 
     def log_error(self, msg):
         self._display_message(msg)
-        print str(msg)
+        print "Shotgun Error: %s" % msg
 
     def log_warning(self, msg):
         print str(msg)
