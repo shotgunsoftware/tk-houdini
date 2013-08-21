@@ -26,6 +26,9 @@ class HoudiniEngine(tank.platform.Engine):
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
 
+        # App registered OTLs are stored here for copying into our OTL path later
+        self._otl_paths = []
+
         if hou.applicationVersion()[0] < 12:
             raise tank.TankError("Your version of Houdini is not supported. Currently, Toolkit only supports version 12+")
 
@@ -47,6 +50,9 @@ class HoudiniEngine(tank.platform.Engine):
             if hou.applicationVersion() > (12, 5, 0):
                 menu_file = menu_file + ".xml"
 
+            # Figure out the tmp OP Library path for this session
+            oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")
+
         menu = tk_houdini.MenuGenerator(self)
         if not os.path.exists(menu_file):
             # just create the xml for the menus
@@ -54,6 +60,11 @@ class HoudiniEngine(tank.platform.Engine):
 
         # get map of id to callback
         self._callback_map = menu.callback_map()
+
+        # Setup the OTLs that need to be loaded for the Toolkit apps
+        for path in self._otl_paths:
+            path = path.replace("\\", "/")
+            hou.hda.installFile(path, oplibrary_path, True)
 
         # startup PySide
         from PySide import QtGui, QtCore
@@ -87,6 +98,10 @@ class HoudiniEngine(tank.platform.Engine):
         if bootstrap.g_temp_env in os.environ:
             # clean up and keep on going
             shutil.rmtree(os.environ[bootstrap.g_temp_env])
+
+    def register_otl(self, otl_path):
+        if otl_path not in self._otl_paths:
+            self._otl_paths.append(otl_path)
 
     def _create_dialog(self, title, bundle, obj):
         from tank.platform.qt import tankqdialog
