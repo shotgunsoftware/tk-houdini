@@ -26,9 +26,6 @@ class HoudiniEngine(tank.platform.Engine):
     def init_engine(self):
         self.log_debug("%s: Initializing..." % self)
 
-        # App registered OTLs are stored here for copying into our OTL path later
-        self._otl_paths = []
-
         if hou.applicationVersion()[0] < 12:
             raise tank.TankError("Your version of Houdini is not supported. Currently, Toolkit only supports version 12+")
 
@@ -62,9 +59,7 @@ class HoudiniEngine(tank.platform.Engine):
         self._callback_map = menu.callback_map()
 
         # Setup the OTLs that need to be loaded for the Toolkit apps
-        for path in self._otl_paths:
-            path = path.replace("\\", "/")
-            hou.hda.installFile(path, oplibrary_path, True)
+        self._load_otls(oplibrary_path)
 
         # startup PySide
         from PySide import QtGui, QtCore
@@ -99,9 +94,22 @@ class HoudiniEngine(tank.platform.Engine):
             # clean up and keep on going
             shutil.rmtree(os.environ[bootstrap.g_temp_env])
 
-    def register_otl(self, otl_path):
-        if otl_path not in self._otl_paths:
-            self._otl_paths.append(otl_path)
+    def _load_otls(self, oplibrary_path):
+        """
+        Load any OTLs provided by applications.
+
+        Look in any application folder for a otls subdirectory and load any .otl
+        file from there.
+        """
+        for app in self.apps.values():
+            otl_path = os.path.join(app.disk_location, 'otls')
+            if not os.path.exists(otl_path):
+                continue
+
+            for filename in os.listdir(otl_path):
+                if os.path.splitext(filename)[-1] == '.otl':
+                    path = os.path.join(otl_path, filename).replace("\\", "/")
+                    hou.hda.installFile(path, oplibrary_path, True)
 
     def _create_dialog(self, title, bundle, obj):
         from tank.platform.qt import tankqdialog
