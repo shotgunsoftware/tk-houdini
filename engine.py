@@ -111,34 +111,29 @@ class HoudiniEngine(tank.platform.Engine):
                     path = os.path.join(otl_path, filename).replace("\\", "/")
                     hou.hda.installFile(path, oplibrary_path, True)
 
-    def _create_dialog(self, title, bundle, obj):
-        from tank.platform.qt import tankqdialog
+    def _create_dialog(self, title, bundle, widget, parent):
+        """
+        Override the base implementation to create an sgtk TankQDialog.
+        
+        This is used by the base implementations of show_modal & show_dialog§
+        """
+        
+        # call base class to create the dialog
+        dialog = tank.platform.Engine._create_dialog(self, title, bundle, widget, parent)
 
-        dialog = tankqdialog.TankQDialog(title, bundle, obj, None)
+        # raise and activate the dialog
         dialog.raise_()
         dialog.activateWindow()
 
-        # get windows to raise the dialog
         if sys.platform == "win32":
+            # get windows to raise the dialog
+            # (AD) - is this needed in addition to the cross-platform version?
             ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
             ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
             hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
             ctypes.windll.user32.SetActiveWindow(hwnd)
 
         return dialog
-
-    def show_modal(self, title, bundle, widget_class, *args, **kwargs):
-        obj = widget_class(*args, **kwargs)
-        dialog = self._create_dialog(title, bundle, obj)
-        status = dialog.exec_()
-        return status, obj
-
-    def show_dialog(self, title, bundle, widget_class, *args, **kwargs):
-        obj = widget_class(*args, **kwargs)
-        dialog = self._create_dialog(title, bundle, obj)
-        self.__created_qt_dialogs.append(dialog)
-        dialog.show()
-        return obj
 
     def _display_message(self, msg):
         if hou.isUIAvailable():
