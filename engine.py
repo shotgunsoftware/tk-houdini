@@ -77,12 +77,8 @@ class HoudiniEngine(tank.platform.Engine):
             QtCore.QTextCodec.setCodecForCStrings(utf8)
 
             # set the stylesheet
-            resources = os.path.join(os.path.dirname(__file__), "resources")
-            css_file = os.path.join(resources, "dark.css")
-            f = open(css_file)
-            css = f.read()
-            f.close()
-            app.setStyleSheet(css)
+            app.setStyleSheet( self._get_standard_qt_stylesheet() )
+            
         tk_houdini.pyside_houdini.exec_(app)
 
     def destroy_engine(self):
