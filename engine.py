@@ -154,6 +154,7 @@ class HoudiniEngine(tank.platform.Engine):
 
                 # hot patch the library to make it work with pyside code
                 QtCore.Signal = QtCore.pyqtSignal
+                QtCore.Slot = QtCore.pyqtSlot
                 QtCore.Property = QtCore.pyqtProperty
                 base["qt_core"] = QtCore
                 base["qt_gui"] = QtGui
