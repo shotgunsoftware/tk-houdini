@@ -29,59 +29,65 @@ class HoudiniEngine(tank.platform.Engine):
         if hou.applicationVersion()[0] < 12:
             raise tank.TankError("Your version of Houdini is not supported. Currently, Toolkit only supports version 12+")
 
+        # keep track of if a UI exists
+        self._ui_enabled = hasattr(hou, 'ui')
+
         # add our built-in pyside to the python path when on windows
-        if sys.platform == "win32":
+        if sys.platform == "win32" and self.has_ui:
             pyside_path = os.path.join(self.disk_location, "resources", "pyside112_py26_win64")
             sys.path.append(pyside_path)
 
-        self.__created_qt_dialogs = []
+            self.__created_qt_dialogs = []
 
     def post_app_init(self):
         tk_houdini = self.import_module("tk_houdini")
         bootstrap = tk_houdini.bootstrap
 
         if bootstrap.g_temp_env in os.environ:
-            menu_file = os.path.join(os.environ[bootstrap.g_temp_env], 'MainMenuCommon')
+            if self.has_ui:
+                # setup houdini menus
+                menu_file = os.path.join(os.environ[bootstrap.g_temp_env], 'MainMenuCommon')
 
-            # as of houdini 12.5 add .xml
-            if hou.applicationVersion() > (12, 5, 0):
-                menu_file = menu_file + ".xml"
+                # as of houdini 12.5 add .xml
+                if hou.applicationVersion() > (12, 5, 0):
+                    menu_file = menu_file + ".xml"
+
+                menu = tk_houdini.MenuGenerator(self)
+                if not os.path.exists(menu_file):
+                    # just create the xml for the menus
+                    menu.create_menu(menu_file)
+
+                # get map of id to callback
+                self._callback_map = menu.callback_map()
 
             # Figure out the tmp OP Library path for this session
             oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")
 
-        menu = tk_houdini.MenuGenerator(self)
-        if not os.path.exists(menu_file):
-            # just create the xml for the menus
-            menu.create_menu(menu_file)
+            # Setup the OTLs that need to be loaded for the Toolkit apps
+            self._load_otls(oplibrary_path)
 
-        # get map of id to callback
-        self._callback_map = menu.callback_map()
+        if self.has_ui:
+            # startup Qt
+            from tank.platform.qt import QtGui
+            from tank.platform.qt import QtCore
 
-        # Setup the OTLs that need to be loaded for the Toolkit apps
-        self._load_otls(oplibrary_path)
+            app = QtGui.QApplication.instance()
+            if app is None:
+                # create the QApplication
+                sys.argv[0] = 'Shotgun'
+                app = QtGui.QApplication(sys.argv)
+                QtGui.QApplication.setStyle("cleanlooks")
+                app.setQuitOnLastWindowClosed(False)
+                app.setApplicationName(sys.argv[0])
 
-        # startup Qt
-        from tank.platform.qt import QtGui
-        from tank.platform.qt import QtCore
+                # tell QT to interpret C strings as utf-8
+                utf8 = QtCore.QTextCodec.codecForName("utf-8")
+                QtCore.QTextCodec.setCodecForCStrings(utf8)
 
-        app = QtGui.QApplication.instance()
-        if app is None:
-            # create the QApplication
-            sys.argv[0] = 'Shotgun'
-            app = QtGui.QApplication(sys.argv)
-            QtGui.QApplication.setStyle("cleanlooks")
-            app.setQuitOnLastWindowClosed(False)
-            app.setApplicationName(sys.argv[0])
+                # set the stylesheet
+                app.setStyleSheet(self._get_standard_qt_stylesheet())
 
-            # tell QT to interpret C strings as utf-8
-            utf8 = QtCore.QTextCodec.codecForName("utf-8")
-            QtCore.QTextCodec.setCodecForCStrings(utf8)
-
-            # set the stylesheet
-            app.setStyleSheet(self._get_standard_qt_stylesheet())
-
-        tk_houdini.python_qt_houdini.exec_(app)
+            tk_houdini.python_qt_houdini.exec_(app)
 
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
@@ -108,6 +114,13 @@ class HoudiniEngine(tank.platform.Engine):
                 if os.path.splitext(filename)[-1] == '.otl':
                     path = os.path.join(otl_path, filename).replace("\\", "/")
                     hou.hda.installFile(path, oplibrary_path, True)
+
+    @property
+    def has_ui(self):
+        """
+        Detect and return if houdini is running in batch mode
+        """
+        return self._ui_enabled
 
     # qt support
     ############################################################################
