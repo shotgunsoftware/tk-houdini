@@ -33,10 +33,11 @@ class HoudiniEngine(tank.platform.Engine):
         self._ui_enabled = hasattr(hou, 'ui')
 
         # add our built-in pyside to the python path when on windows
-        if sys.platform == "win32" and self.has_ui:
+        if sys.platform == "win32":
             pyside_path = os.path.join(self.disk_location, "resources", "pyside112_py26_win64")
             sys.path.append(pyside_path)
 
+        if self.has_ui:
             self.__created_qt_dialogs = []
 
     def post_app_init(self):
