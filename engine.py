@@ -34,8 +34,15 @@ class HoudiniEngine(tank.platform.Engine):
 
         # add our built-in pyside to the python path when on windows
         if sys.platform == "win32":
-            pyside_path = os.path.join(self.disk_location, "resources", "pyside112_py26_win64")
-            sys.path.append(pyside_path)
+            py_ver = sys.version_info[0:2]
+            if py_ver == (2, 6):
+                pyside_path = os.path.join(self.disk_location, "resources", "pyside112_py26_win64")
+                sys.path.append(pyside_path)
+            elif py_ver == (2, 7):
+                pyside_path = os.path.join(self.disk_location, "resources", "pyside121_py27_win64")
+                sys.path.append(pyside_path)
+            else:
+                self.log_warning("PySide not bundled for python %d.%d" % (py_ver[0], py_ver[1]))
 
         if self.has_ui:
             self.__created_qt_dialogs = []
