@@ -154,18 +154,24 @@ class HoudiniEngine(tank.platform.Engine):
                 from PySide import QtCore, QtGui
                 import PySide
 
+                # Some old versions of PySide don't include version information
+                # so add something here so that we can use PySide.__version__ 
+                # later without having to check!
+                if not hassattr(PySide, "__version__"):
+                    PySide.__version__ = "<unknown>"
+
                 base["qt_core"] = QtCore
                 base["qt_gui"] = QtGui
                 base["dialog_base"] = QtGui.QDialog
-                self.log_debug("Successfully initialized PySide %s located "
-                    "in %s." % (PySide.__version__, PySide.__file__))
+                self.log_debug("Successfully initialized PySide '%s' located in %s."
+                               % (PySide.__version__, PySide.__file__))
                 self._ui_type = "PySide"
             except ImportError:
                 pass
             except Exception, e:
                 import traceback
                 self.log_warning("Error setting up pyside. Pyside based UI "
-                    "support will not be available: %s" % e)
+                                 "support will not be available: %s" % e)
                 self.log_debug(traceback.format_exc())
 
         if not self._ui_type:
@@ -180,15 +186,15 @@ class HoudiniEngine(tank.platform.Engine):
                 base["qt_core"] = QtCore
                 base["qt_gui"] = QtGui
                 base["dialog_base"] = QtGui.QDialog
-                self.log_debug("Successfully initialized PyQt %s located "
-                    "in %s." % (QtCore.PYQT_VERSION_STR, PyQt4.__file__))
+                self.log_debug("Successfully initialized PyQt '%s' located in %s."
+                               % (QtCore.PYQT_VERSION_STR, PyQt4.__file__))
                 self._ui_type = "PyQt"
             except ImportError:
                 pass
             except Exception, e:
                 import traceback
                 self.log_warning("Error setting up PyQt. PyQt based UI support "
-                    "will not be available: %s" % e)
+                                 "will not be available: %s" % e)
                 self.log_debug(traceback.format_exc())
 
         return base
