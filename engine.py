@@ -200,6 +200,7 @@ class HoudiniEngine(tank.platform.Engine):
 
     def _create_dialog(self, title, bundle, obj):
         from tank.platform.qt import tankqdialog
+        from tank.platform.qt import QtCore
 
         dialog = tankqdialog.TankQDialog(title, bundle, obj, None)
  
