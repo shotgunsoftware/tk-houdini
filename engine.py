@@ -84,7 +84,6 @@ class HoudiniEngine(tank.platform.Engine):
                 # create the QApplication
                 sys.argv[0] = 'Shotgun'
                 app = QtGui.QApplication(sys.argv)
-                QtGui.QApplication.setStyle("cleanlooks")
                 app.setQuitOnLastWindowClosed(False)
                 app.setApplicationName(sys.argv[0])
 
@@ -93,7 +92,7 @@ class HoudiniEngine(tank.platform.Engine):
                 QtCore.QTextCodec.setCodecForCStrings(utf8)
 
                 # set the stylesheet
-                app.setStyleSheet(self._get_standard_qt_stylesheet())
+                self._initialize_dark_look_and_feel()
 
             tk_houdini.python_qt_houdini.exec_(app)
 
