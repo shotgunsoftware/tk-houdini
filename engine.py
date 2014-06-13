@@ -200,14 +200,9 @@ class HoudiniEngine(tank.platform.Engine):
 
     def _create_dialog(self, title, bundle, obj):
         from tank.platform.qt import tankqdialog
-        from tank.platform.qt import QtCore
 
         dialog = tankqdialog.TankQDialog(title, bundle, obj, None)
  
-        # some linux window managers are supressing the close button on dialogs for usability
-        # purposes. Try hinting to them that we actually want a close button for our dialogs...
-        dialog.setWindowFlags( dialog.windowFlags() | QtCore.Qt.WindowCloseButtonHint ) 
-        
         dialog.raise_()
         dialog.activateWindow()
 
