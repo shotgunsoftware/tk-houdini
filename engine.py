@@ -84,7 +84,6 @@ class HoudiniEngine(tank.platform.Engine):
                 # create the QApplication
                 sys.argv[0] = 'Shotgun'
                 app = QtGui.QApplication(sys.argv)
-                QtGui.QApplication.setStyle("cleanlooks")
                 app.setQuitOnLastWindowClosed(False)
                 app.setApplicationName(sys.argv[0])
 
@@ -93,7 +92,7 @@ class HoudiniEngine(tank.platform.Engine):
                 QtCore.QTextCodec.setCodecForCStrings(utf8)
 
                 # set the stylesheet
-                app.setStyleSheet(self._get_standard_qt_stylesheet())
+                self._initialize_dark_look_and_feel()
 
             tk_houdini.python_qt_houdini.exec_(app)
 
@@ -200,9 +199,14 @@ class HoudiniEngine(tank.platform.Engine):
         return base
 
     def _create_dialog(self, title, bundle, obj):
+        """
+        Create dialog helper method.
+        """
         from tank.platform.qt import tankqdialog
+        from tank.platform.qt import QtCore, QtGui
 
         dialog = tankqdialog.TankQDialog(title, bundle, obj, None)
+ 
         dialog.raise_()
         dialog.activateWindow()
 
@@ -221,11 +225,22 @@ class HoudiniEngine(tank.platform.Engine):
         return dialog
 
     def show_modal(self, title, bundle, widget_class, *args, **kwargs):
+        
+        from tank.platform.qt import QtCore, QtGui
+        
         if not self._ui_type:
             self.log_error("Cannot show dialog %s! No QT support appears to exist in this engine. "
                            "In order for the houdini engine to run UI based apps, either pyside "
                            "or PyQt needs to be installed in your system." % title)
             return
+        
+        # In houdini, the script editor runs in a custom thread. Any commands executed here
+        # which are calling UI functionality may cause problems with QT. Check that we are
+        # running in the main thread
+        if QtCore.QThread.currentThread() != QtGui.QApplication.instance().thread():
+            self.execute_in_main_thread(self.log_error, "Error creating dialog: You can only launch UIs "
+                                        "in the main thread. Try using the execute_in_main_thread() method.")
+            return        
 
         obj = widget_class(*args, **kwargs)
         dialog = self._create_dialog(title, bundle, obj)
@@ -233,10 +248,21 @@ class HoudiniEngine(tank.platform.Engine):
         return status, obj
 
     def show_dialog(self, title, bundle, widget_class, *args, **kwargs):
+        
+        from tank.platform.qt import QtCore, QtGui
+        
         if not self._ui_type:
             self.log_error("Cannot show dialog %s! No QT support appears to exist in this engine. "
                            "In order for the houdini engine to run UI based apps, either pyside "
                            "or PyQt needs to be installed in your system." % title)
+            return
+        
+        # In houdini, the script editor runs in a custom thread. Any commands executed here
+        # which are calling UI functionality may cause problems with QT. Check that we are
+        # running in the main thread
+        if QtCore.QThread.currentThread() != QtGui.QApplication.instance().thread():
+            self.execute_in_main_thread(self.log_error, "Error creating dialog: You can only launch UIs "
+                                        "in the main thread. Try using the execute_in_main_thread() method.")
             return
 
         obj = widget_class(*args, **kwargs)
