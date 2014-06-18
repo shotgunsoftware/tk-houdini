@@ -1,11 +1,11 @@
 # Copyright (c) 2013 Shotgun Software Inc.
-# 
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 """
@@ -29,61 +29,72 @@ class HoudiniEngine(tank.platform.Engine):
         if hou.applicationVersion()[0] < 12:
             raise tank.TankError("Your version of Houdini is not supported. Currently, Toolkit only supports version 12+")
 
+        # keep track of if a UI exists
+        self._ui_enabled = hasattr(hou, 'ui')
+
         # add our built-in pyside to the python path when on windows
         if sys.platform == "win32":
-            pyside_path = os.path.join(self.disk_location, "resources", "pyside112_py26_win64")
-            sys.path.append(pyside_path)
+            py_ver = sys.version_info[0:2]
+            if py_ver == (2, 6):
+                pyside_path = os.path.join(self.disk_location, "resources", "pyside112_py26_win64")
+                sys.path.append(pyside_path)
+            elif py_ver == (2, 7):
+                pyside_path = os.path.join(self.disk_location, "resources", "pyside121_py27_win64")
+                sys.path.append(pyside_path)
+            else:
+                self.log_warning("PySide not bundled for python %d.%d" % (py_ver[0], py_ver[1]))
 
-        self.__created_qt_dialogs = []
+        if self.has_ui:
+            self.__created_qt_dialogs = []
 
     def post_app_init(self):
         tk_houdini = self.import_module("tk_houdini")
         bootstrap = tk_houdini.bootstrap
 
         if bootstrap.g_temp_env in os.environ:
-            menu_file = os.path.join(os.environ[bootstrap.g_temp_env], 'MainMenuCommon')
+            if self.has_ui:
+                # setup houdini menus
+                menu_file = os.path.join(os.environ[bootstrap.g_temp_env], 'MainMenuCommon')
 
-            # as of houdini 12.5 add .xml
-            if hou.applicationVersion() > (12, 5, 0):
-                menu_file = menu_file + ".xml"
+                # as of houdini 12.5 add .xml
+                if hou.applicationVersion() > (12, 5, 0):
+                    menu_file = menu_file + ".xml"
+
+                menu = tk_houdini.MenuGenerator(self)
+                if not os.path.exists(menu_file):
+                    # just create the xml for the menus
+                    menu.create_menu(menu_file)
+
+                # get map of id to callback
+                self._callback_map = menu.callback_map()
 
             # Figure out the tmp OP Library path for this session
             oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")
 
-        menu = tk_houdini.MenuGenerator(self)
-        if not os.path.exists(menu_file):
-            # just create the xml for the menus
-            menu.create_menu(menu_file)
+            # Setup the OTLs that need to be loaded for the Toolkit apps
+            self._load_otls(oplibrary_path)
 
-        # get map of id to callback
-        self._callback_map = menu.callback_map()
+        if self.has_ui:
+            # startup Qt
+            from tank.platform.qt import QtGui
+            from tank.platform.qt import QtCore
 
-        # Setup the OTLs that need to be loaded for the Toolkit apps
-        self._load_otls(oplibrary_path)
+            app = QtGui.QApplication.instance()
+            if app is None:
+                # create the QApplication
+                sys.argv[0] = 'Shotgun'
+                app = QtGui.QApplication(sys.argv)
+                app.setQuitOnLastWindowClosed(False)
+                app.setApplicationName(sys.argv[0])
 
-        # startup PySide
-        from PySide import QtGui, QtCore
-        app = QtGui.QApplication.instance()
-        if app is None:
-            # create the QApplication
-            sys.argv[0] = 'Shotgun'
-            app = QtGui.QApplication(sys.argv)
-            QtGui.QApplication.setStyle("cleanlooks")
-            app.setQuitOnLastWindowClosed(False)
-            app.setApplicationName(sys.argv[0])
+                # tell QT to interpret C strings as utf-8
+                utf8 = QtCore.QTextCodec.codecForName("utf-8")
+                QtCore.QTextCodec.setCodecForCStrings(utf8)
 
-            # tell QT to interpret C strings as utf-8
-            utf8 = QtCore.QTextCodec.codecForName("utf-8")
-            QtCore.QTextCodec.setCodecForCStrings(utf8)
+                # set the stylesheet
+                self._initialize_dark_look_and_feel()
 
-            # set the stylesheet
-            resources = os.path.join(os.path.dirname(__file__), "resources")
-            css_file = os.path.join(resources, "dark.css")
-            f = open(css_file)
-            css = f.read()
-            f.close()
-            app.setStyleSheet(css)
-        tk_houdini.pyside_houdini.exec_(app)
+            tk_houdini.python_qt_houdini.exec_(app)
 
     def destroy_engine(self):
         self.log_debug("%s: Destroying..." % self)
@@ -115,7 +126,7 @@ class HoudiniEngine(tank.platform.Engine):
         """
         Override the base implementation to create an sgtk TankQDialog.
         
-        This is used by the base implementations of show_modal & show_dialog§
+        This is used by the base implementations of show_modal & show_dialogÂ§
         """
         
         # call base class to create the dialog
@@ -135,6 +146,154 @@ class HoudiniEngine(tank.platform.Engine):
 
         return dialog
 
+
+
+    @property
+    def has_ui(self):
+        """
+        Detect and return if houdini is running in batch mode
+        """
+        return self._ui_enabled
+
+    # qt support
+    ############################################################################
+    def _define_qt_base(self):
+        """
+        check for pyside then pyqt
+        """
+        # proxy class used when QT does not exist on the system.
+        # this will raise an exception when any QT code tries to use it
+        class QTProxy(object):
+            def __getattr__(self, name):
+                raise tank.TankError("Looks like you are trying to run an App that uses a QT "
+                                     "based UI, however the Houdini engine could not find a PyQt "
+                                     "or PySide installation in your python system path. We "
+                                     "recommend that you install PySide if you want to "
+                                     "run UI applications from Houdini.")
+
+        base = {"qt_core": QTProxy(), "qt_gui": QTProxy(), "dialog_base": None}
+        self._ui_type = None
+
+        if not self._ui_type:
+            try:
+                from PySide import QtCore, QtGui
+                import PySide
+
+                # Some old versions of PySide don't include version information
+                # so add something here so that we can use PySide.__version__ 
+                # later without having to check!
+                if not hasattr(PySide, "__version__"):
+                    PySide.__version__ = "<unknown>"
+
+                base["qt_core"] = QtCore
+                base["qt_gui"] = QtGui
+                base["dialog_base"] = QtGui.QDialog
+                self.log_debug("Successfully initialized PySide '%s' located in %s."
+                               % (PySide.__version__, PySide.__file__))
+                self._ui_type = "PySide"
+            except ImportError:
+                pass
+            except Exception, e:
+                import traceback
+                self.log_warning("Error setting up pyside. Pyside based UI "
+                                 "support will not be available: %s" % e)
+                self.log_debug(traceback.format_exc())
+
+        if not self._ui_type:
+            try:
+                from PyQt4 import QtCore, QtGui
+                import PyQt4
+
+                # hot patch the library to make it work with pyside code
+                QtCore.Signal = QtCore.pyqtSignal
+                QtCore.Slot = QtCore.pyqtSlot
+                QtCore.Property = QtCore.pyqtProperty
+                base["qt_core"] = QtCore
+                base["qt_gui"] = QtGui
+                base["dialog_base"] = QtGui.QDialog
+                self.log_debug("Successfully initialized PyQt '%s' located in %s."
+                               % (QtCore.PYQT_VERSION_STR, PyQt4.__file__))
+                self._ui_type = "PyQt"
+            except ImportError:
+                pass
+            except Exception, e:
+                import traceback
+                self.log_warning("Error setting up PyQt. PyQt based UI support "
+                                 "will not be available: %s" % e)
+                self.log_debug(traceback.format_exc())
+
+        return base
+
+    def _create_dialog(self, title, bundle, obj):
+        """
+        Create dialog helper method.
+        """
+        from tank.platform.qt import QtCore, QtGui
+
+        # call base class to create the dialog
+        dialog = tank.platform.Engine._create_dialog(self, title, bundle, widget, parent)
+
+        # raise and activate the dialog
+        dialog.raise_()
+        dialog.activateWindow()
+
+        if sys.platform == "win32":
+            # get windows to raise the dialog
+            # (AD) - is this needed in addition to the cross-platform version?
+            ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
+            ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
+            if self._ui_type == "PySide":
+                hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
+            elif self._ui_type == "PyQt":
+                hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId().ascobject())
+            else:
+                raise NotImplementedError("Unsupported ui type: %s" % self._ui_type)
+            ctypes.windll.user32.SetActiveWindow(hwnd)
+
+        return dialog
+
+    def show_modal(self, title, bundle, widget_class, *args, **kwargs):
+        
+        from tank.platform.qt import QtCore, QtGui
+        
+        if not self._ui_type:
+            self.log_error("Cannot show dialog %s! No QT support appears to exist in this engine. "
+                           "In order for the houdini engine to run UI based apps, either pyside "
+                           "or PyQt needs to be installed in your system." % title)
+            return
+        
+        # In houdini, the script editor runs in a custom thread. Any commands executed here
+        # which are calling UI functionality may cause problems with QT. Check that we are
+        # running in the main thread
+        if QtCore.QThread.currentThread() != QtGui.QApplication.instance().thread():
+            self.execute_in_main_thread(self.log_error, "Error creating dialog: You can only launch UIs "
+                                        "in the main thread. Try using the execute_in_main_thread() method.")
+            return        
+
+        # call base class
+        return tank.platform.Engine.show_modal(self, title, bundle, widget_class, *args, **kwargs)        
+
+    def show_dialog(self, title, bundle, widget_class, *args, **kwargs):
+        
+        from tank.platform.qt import QtCore, QtGui
+        
+        if not self._ui_type:
+            self.log_error("Cannot show dialog %s! No QT support appears to exist in this engine. "
+                           "In order for the houdini engine to run UI based apps, either pyside "
+                           "or PyQt needs to be installed in your system." % title)
+            return
+        
+        # In houdini, the script editor runs in a custom thread. Any commands executed here
+        # which are calling UI functionality may cause problems with QT. Check that we are
+        # running in the main thread
+        if QtCore.QThread.currentThread() != QtGui.QApplication.instance().thread():
+            self.execute_in_main_thread(self.log_error, "Error creating dialog: You can only launch UIs "
+                                        "in the main thread. Try using the execute_in_main_thread() method.")
+            return
+
+        # call base class
+        return tank.platform.Engine.show_dialog(self, title, bundle, widget_class, *args, **kwargs)        
+        
     def _display_message(self, msg):
         if hou.isUIAvailable():
             hou.ui.displayMessage(str(msg))

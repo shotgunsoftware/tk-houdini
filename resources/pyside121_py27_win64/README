@@ -1,0 +1,5 @@
+This was downloaded from http://qt-project.org/wiki/PySide_Binaries_Windows
+installed on a windows machine and then simply moved into this location.
+
+Since Houdini 13 uses python2.7 and 64 bit python, you need to use a binary distribution
+which is compatible with that.
