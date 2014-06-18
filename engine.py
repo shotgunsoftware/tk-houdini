@@ -23,7 +23,18 @@ import hou
 
 
 class HoudiniEngine(tank.platform.Engine):
+    """
+    Houdini Engine implementation
+    """
+    
+    ############################################################################
+    # init and basic properties
+    ############################################################################
+    
     def init_engine(self):
+        """
+        Main initialization entry point.
+        """
         self.log_debug("%s: Initializing..." % self)
 
         if hou.applicationVersion()[0] < 12:
@@ -48,6 +59,10 @@ class HoudiniEngine(tank.platform.Engine):
             self.__created_qt_dialogs = []
 
     def post_app_init(self):
+        """
+        Init that runs after all apps have been loaded.
+        """
+        
         tk_houdini = self.import_module("tk_houdini")
         bootstrap = tk_houdini.bootstrap
 
@@ -97,6 +112,9 @@ class HoudiniEngine(tank.platform.Engine):
             tk_houdini.python_qt_houdini.exec_(app)
 
     def destroy_engine(self):
+        """
+        Engine shutdown.
+        """
         self.log_debug("%s: Destroying..." % self)
 
         tk_houdini = self.import_module("tk_houdini")
@@ -104,6 +122,53 @@ class HoudiniEngine(tank.platform.Engine):
         if bootstrap.g_temp_env in os.environ:
             # clean up and keep on going
             shutil.rmtree(os.environ[bootstrap.g_temp_env])
+
+    @property
+    def has_ui(self):
+        """
+        Detect and return if houdini is running in ui mode or batch mode
+        """
+        return self._ui_enabled
+
+    def log_debug(self, msg):
+        """
+        Debug logging
+        """
+        if self.get_setting("debug_logging", False):
+            print "Shotgun Debug: %s" % msg
+
+    def log_info(self, msg):
+        """
+        Info logging
+        """
+        print "Shotgun: %s" % msg
+
+    def log_error(self, msg):
+        """
+        Error logging
+        """
+        print "Shotgun Error: %s" % msg
+
+    def log_warning(self, msg):
+        """
+        Warning logging
+        """
+        print "Shotgun Warning: %s" % msg
+
+    ############################################################################
+    # internal methods
+    ############################################################################
+
+    def launch_command(self, cmd_id):
+        """
+        Internal helper used by the engine to execute a command from the menu.
+        This method is for internal use only and not meant to be called from external applications!
+        """
+        callback = self._callback_map.get(cmd_id)
+        if callback is None:
+            self.log_error("No callback found for id: %s" % cmd_id)
+            return
+        callback()
 
     def _load_otls(self, oplibrary_path):
         """
@@ -122,18 +187,39 @@ class HoudiniEngine(tank.platform.Engine):
                     path = os.path.join(otl_path, filename).replace("\\", "/")
                     hou.hda.installFile(path, oplibrary_path, True)
 
-    @property
-    def has_ui(self):
+    def _create_dialog(self, title, bundle, widget, parent):
         """
-        Detect and return if houdini is running in batch mode
+        Override the base implementation to create an sgtk TankQDialog.
+        
+        This is used by the base implementations of show_modal & show_dialog§
         """
-        return self._ui_enabled
+        from tank.platform.qt import QtCore, QtGui
+        
+        # call base class to create the dialog
+        dialog = tank.platform.Engine._create_dialog(self, title, bundle, widget, parent)
 
-    # qt support
-    ############################################################################
+        # raise and activate the dialog
+        dialog.raise_()
+        dialog.activateWindow()
+
+        if sys.platform == "win32":
+            # get windows to raise the dialog
+            # (AD) - is this needed in addition to the cross-platform version?
+            ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
+            ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
+            if self._ui_type == "PySide":
+                hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
+            elif self._ui_type == "PyQt":
+                hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId().ascobject())
+            else:
+                raise NotImplementedError("Unsupported ui type: %s" % self._ui_type)
+            ctypes.windll.user32.SetActiveWindow(hwnd)
+
+        return dialog
+
     def _define_qt_base(self):
         """
-        check for pyside then pyqt
+        Defines QT implementation for the engine. Checks for pyside then pyqt.
         """
         # proxy class used when QT does not exist on the system.
         # this will raise an exception when any QT code tries to use it
@@ -198,34 +284,14 @@ class HoudiniEngine(tank.platform.Engine):
 
         return base
 
-    def _create_dialog(self, title, bundle, obj):
-        """
-        Create dialog helper method.
-        """
-        from tank.platform.qt import tankqdialog
-        from tank.platform.qt import QtCore, QtGui
-
-        dialog = tankqdialog.TankQDialog(title, bundle, obj, None)
- 
-        dialog.raise_()
-        dialog.activateWindow()
-
-        # get windows to raise the dialog
-        if sys.platform == "win32":
-            ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
-            ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
-            if self._ui_type == "PySide":
-                hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
-            elif self._ui_type == "PyQt":
-                hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId().ascobject())
-            else:
-                raise NotImplementedError("Unsupported ui type: %s" % self._ui_type)
-            ctypes.windll.user32.SetActiveWindow(hwnd)
-
-        return dialog
+    ############################################################################
+    # UI Handling
+    ############################################################################
 
     def show_modal(self, title, bundle, widget_class, *args, **kwargs):
-        
+        """
+        Launches a modal dialog. Overridden from base class.
+        """
         from tank.platform.qt import QtCore, QtGui
         
         if not self._ui_type:
@@ -242,13 +308,13 @@ class HoudiniEngine(tank.platform.Engine):
                                         "in the main thread. Try using the execute_in_main_thread() method.")
             return        
 
-        obj = widget_class(*args, **kwargs)
-        dialog = self._create_dialog(title, bundle, obj)
-        status = dialog.exec_()
-        return status, obj
+        # call base class
+        return tank.platform.Engine.show_modal(self, title, bundle, widget_class, *args, **kwargs)        
 
     def show_dialog(self, title, bundle, widget_class, *args, **kwargs):
-        
+        """
+        Shows a modeless dialog. Overridden from base class.
+        """
         from tank.platform.qt import QtCore, QtGui
         
         if not self._ui_type:
@@ -265,35 +331,6 @@ class HoudiniEngine(tank.platform.Engine):
                                         "in the main thread. Try using the execute_in_main_thread() method.")
             return
 
-        obj = widget_class(*args, **kwargs)
-        dialog = self._create_dialog(title, bundle, obj)
-        self.__created_qt_dialogs.append(dialog)
-        dialog.show()
-        return obj
-
-    def _display_message(self, msg):
-        if hou.isUIAvailable():
-            hou.ui.displayMessage(str(msg))
-        else:
-            print str(msg)
-
-    def launch_command(self, cmd_id):
-        callback = self._callback_map.get(cmd_id)
-        if callback is None:
-            self.log_error("No callback found for id: %s" % cmd_id)
-            return
-        callback()
-
-    def log_debug(self, msg):
-        if self.get_setting("debug_logging", False):
-            print "Shotgun Debug: %s" % msg
-
-    def log_info(self, msg):
-        print "Shotgun: %s" % msg
-
-    def log_error(self, msg):
-        self._display_message(msg)
-        print "Shotgun Error: %s" % msg
-
-    def log_warning(self, msg):
-        print str(msg)
+        # call base class
+        return tank.platform.Engine.show_dialog(self, title, bundle, widget_class, *args, **kwargs)        
+        
