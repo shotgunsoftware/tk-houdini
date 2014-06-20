@@ -191,7 +191,7 @@ class HoudiniEngine(tank.platform.Engine):
         """
         Override the base implementation to create an sgtk TankQDialog.
         
-        This is used by the base implementations of show_modal & show_dialog§
+        This is used by the base implementations of show_modal & show_dialog
         """
         from tank.platform.qt import QtCore, QtGui
         
