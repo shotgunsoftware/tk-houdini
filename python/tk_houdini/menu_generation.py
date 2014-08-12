@@ -13,6 +13,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 g_menu_item_script = os.path.join(os.path.dirname(__file__), "menu_action.py")
+g_menu_item_script = g_menu_item_script.replace('\\', '/')
 
 
 class MenuGenerator(object):
