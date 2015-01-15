@@ -55,9 +55,6 @@ class HoudiniEngine(tank.platform.Engine):
             else:
                 self.log_warning("PySide not bundled for python %d.%d" % (py_ver[0], py_ver[1]))
 
-        if self.has_ui:
-            self.__created_qt_dialogs = []
-
     def post_app_init(self):
         """
         Init that runs after all apps have been loaded.
@@ -261,19 +258,25 @@ class HoudiniEngine(tank.platform.Engine):
 
         return base
 
-    def _create_dialog(self, title, bundle, obj):
-        """
-        Create dialog helper method.
-        """
-        from tank.platform.qt import tankqdialog
-        from tank.platform.qt import QtCore, QtGui
 
-        dialog = tankqdialog.TankQDialog(title, bundle, obj, None)
- 
+    def _create_dialog(self, title, bundle, widget, parent):
+        """
+        Overriden from the base Engine class - create a TankQDialog with the specified widget 
+        embedded.
+        
+        :param title: The title of the window
+        :param bundle: The app, engine or framework object that is associated with this window
+        :param widget: A QWidget instance to be embedded in the newly created dialog.
+        :param parent: The parent QWidget for the dialog
+        """
+        # call the base implementation to create the dialog:
+        dialog = tank.platform.Engine._create_dialog(self, title, bundle, widget, parent)
+
+        # raise and activate the dialog:
         dialog.raise_()
         dialog.activateWindow()
 
-        # get windows to raise the dialog
+        # special case to get windows to raise the dialog
         if sys.platform == "win32":
             ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
             ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
@@ -307,10 +310,14 @@ class HoudiniEngine(tank.platform.Engine):
                                         "in the main thread. Try using the execute_in_main_thread() method.")
             return        
 
-        obj = widget_class(*args, **kwargs)
-        dialog = self._create_dialog(title, bundle, obj)
+        # create the dialog:
+        dialog, widget = self._create_dialog_with_widget(title, bundle, widget_class, *args, **kwargs)
+
+        # finally launch it, modal state
         status = dialog.exec_()
-        return status, obj
+        
+        # lastly, return the instantiated widget
+        return (status, widget)
 
     def show_dialog(self, title, bundle, widget_class, *args, **kwargs):
         """
@@ -332,11 +339,14 @@ class HoudiniEngine(tank.platform.Engine):
                                         "in the main thread. Try using the execute_in_main_thread() method.")
             return
 
-        obj = widget_class(*args, **kwargs)
-        dialog = self._create_dialog(title, bundle, obj)
-        self.__created_qt_dialogs.append(dialog)
+        # create the dialog:
+        dialog, widget = self._create_dialog_with_widget(title, bundle, widget_class, *args, **kwargs)
+
+        # show the dialog:
         dialog.show()
-        return obj
+        
+        # lastly, return the instantiated widget
+        return widget
 
 
 
