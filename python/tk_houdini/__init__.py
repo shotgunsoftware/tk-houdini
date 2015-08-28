@@ -8,7 +8,7 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 from . import bootstrap
-from .menu_generation import MenuGenerator
+from .ui_generation import AppCommandsMenu, AppCommandsShelf, get_registered_commands
 
 try:
     # hou might not be available during bootstrap
