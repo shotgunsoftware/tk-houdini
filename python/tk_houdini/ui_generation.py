@@ -31,7 +31,7 @@ class AppCommandsUI(object):
 
     def _get_context_name(self):
         """Returns a display name for the current context"""
-        
+
         # context menu
         ctx = self._engine.context
 
@@ -139,7 +139,7 @@ class AppCommandsShelf(AppCommandsUI):
 
     def __init__(self, engine, commands=None, name='Shotgun', label='Shotgun'):
         """Initialize the shotgun commands shelf.
-            
+
             engine:
                 The engine driving the integration (required)
 
@@ -148,7 +148,7 @@ class AppCommandsShelf(AppCommandsUI):
                       supplied, pulled from the engine's registered commands
 
             name:
-                The houdini internal name for the shelf 
+                The houdini internal name for the shelf
 
             label:
                 The display name for the shelf in the shelf tab
@@ -168,37 +168,42 @@ class AppCommandsShelf(AppCommandsUI):
 
         import hou
 
-        # create tools for the registered commands
-        shelf_tools = []
-        for cmd in self._commands:
-
-            self._engine.log_debug("Creating tool: %s" % cmd.name)
-            shelf_tool = hou.shelves.newTool(
-                file_path=shelf_file,
-                name=cmd.name.replace(" ", "_"),
-                label=cmd.name,
-                script=_g_launch_script % cmd.get_id(),
-                help=cmd.get_description(),
-                help_url=cmd.get_documentation_url_str(),
-                icon=cmd.get_icon()
-            )
-            # NOTE: there seems to be a bug in houdini where the 'help' does
-            # not display in the tool's tooltip even though the tool's help
-            # string is clearly populated in the tool when you edit it in the
-            # ui.
-
-            shelf_tools.append(shelf_tool)
-
         # see if there's already a shelf leftover from previous session
         shelf = hou.shelves.shelves().get(self._name, None)
-
         if not shelf:
-            self._engine.log_debug("Creating shelf: %s" % self._name) 
+            self._engine.log_debug("Creating shelf: %s" % self._name)
+
+            # On windows it is necessary to create a blank the xml file before
+            # creating the shelf.
+            root = ET.Element("shelfDocument")
+            doc = ET.ElementTree(root)
+            doc.write(shelf_file, encoding="UTF-8")
+
             shelf = hou.shelves.newShelf(
                 file_path=shelf_file,
                 name=self._name,
                 label=self._label
             )
+
+        shelf_tools = []
+        cmds_by_app = {}
+
+        # add the context menu tools first, then organize them by app name.
+        for cmd in self._commands:
+            if cmd.get_type() == "context_menu":
+                tool = self.create_tool(shelf_file, cmd)
+                shelf_tools.append(tool)
+            else:
+                app_name = cmd.get_app_name()
+                if app_name is None:
+                    app_name = "Other Items"
+                cmds_by_app.setdefault(app_name, []).append(cmd)
+
+        # create tools for the remaining commands
+        for app_name in sorted(cmds_by_app.keys()):
+            for cmd in cmds_by_app[app_name]:
+                tool = self.create_tool(shelf_file, cmd)
+                shelf_tools.append(tool)
 
         shelf.setTools(shelf_tools)
 
@@ -207,21 +212,34 @@ class AppCommandsShelf(AppCommandsUI):
         # sesi to see what they recommend. If there is a way, this is probably
         # where the shelf would need to be added.
 
-    def destroy_tools(self):
-        """Destroy the tools on the shelf, leaving a blank shelf."""
+    def create_tool(self, shelf_file, cmd):
+        """Create a new shelf tool.
+
+            cmd:
+                The AppCommand to create a shelf tool for.
+
+            shelf_file:
+                The shelf file to write the tool definition to.
+        """
 
         import hou
 
-        shelf = hou.shelves.shelves().get(self._name, None)
+        self._engine.log_debug("Creating tool: %s" % cmd.name)
+        tool = hou.shelves.newTool(
+            file_path=shelf_file,
+            name=cmd.name.replace(" ", "_"),
+            label=cmd.name,
+            script=_g_launch_script % cmd.get_id(),
+            help=cmd.get_description(),
+            help_url=cmd.get_documentation_url_str(),
+            icon=cmd.get_icon()
+        )
+        # NOTE: there seems to be a bug in houdini where the 'help' does
+        # not display in the tool's tooltip even though the tool's help
+        # string is clearly populated in the tool when you edit it in the
+        # ui.
 
-        # shelf wasn't found for some reason
-        if not shelf:
-            return 
-
-        # destroy all the tools on the shelf to be safe
-        for tool in shelf.tools():
-            self._engine.log_debug("Destroying tool: %s" % tool.name())
-            tool.destroy()
+        return tool
 
     def destroy_shelf(self):
         """Destroy the shelf and all of its tools."""
@@ -232,13 +250,29 @@ class AppCommandsShelf(AppCommandsUI):
 
         # shelf wasn't found for some reason
         if not shelf:
-            return 
+            return
 
         # get rid of all the tools on the shelf
         self.destroy_tools()
 
         self._engine.log_debug("Destroying shelf: %s" % shelf.name())
         shelf.destroy()
+
+    def destroy_tools(self):
+        """Destroy the tools on the shelf, leaving a blank shelf."""
+
+        import hou
+
+        shelf = hou.shelves.shelves().get(self._name, None)
+
+        # shelf wasn't found for some reason
+        if not shelf:
+            return
+
+        # destroy all the tools on the shelf to be safe
+        for tool in shelf.tools():
+            self._engine.log_debug("Destroying tool: %s" % tool.name())
+            tool.destroy()
 
 class AppCommand(object):
     """ Wraps around a single command that you get from engine.commands """
@@ -299,11 +333,11 @@ def get_registered_commands(engine):
     """Returns a list of AppCommands for the engine's registered commands.
 
         engine: The engine to return registered commands for
-        
-        NOTE: This method currently returns additional commands that are 
+
+        NOTE: This method currently returns additional commands that are
         not registered, but always present in the shotgun menu and shelves.
         Those commands are:
-            
+
             "Jump to Shotgun"
             "Jump to File System"
     """
@@ -332,7 +366,7 @@ def get_registered_commands(engine):
          'callback': lambda: _jump_to_fs(engine),
         },
     )
-    
+
     commands = [jump_to_sg_cmd, jump_to_fs_cmd]
 
     for (cmd_name, cmd_details) in engine.commands.items():
