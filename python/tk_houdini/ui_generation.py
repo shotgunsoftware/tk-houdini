@@ -170,6 +170,10 @@ class AppCommandsShelf(AppCommandsUI):
 
         # On windows it is necessary to create a blank the xml file before
         # creating the shelf.
+        shelf_dir = os.path.dirname(shelf_file)
+        if not os.path.exists(shelf_dir):
+            os.makedirs(shelf_dir)
+        
         root = ET.Element("shelfDocument")
         doc = ET.ElementTree(root)
         doc.write(shelf_file, encoding="UTF-8")
