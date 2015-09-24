@@ -168,17 +168,21 @@ class AppCommandsShelf(AppCommandsUI):
 
         import hou
 
-        # see if there's already a shelf leftover from previous session
+        # On windows it is necessary to create a blank the xml file before
+        # creating the shelf.
+        root = ET.Element("shelfDocument")
+        doc = ET.ElementTree(root)
+        doc.write(shelf_file, encoding="UTF-8")
+
+        # see if there's already a shelf.
         shelf = hou.shelves.shelves().get(self._name, None)
-        if not shelf:
-            self._engine.log_debug("Creating shelf: %s" % self._name)
-
-            # On windows it is necessary to create a blank the xml file before
-            # creating the shelf.
-            root = ET.Element("shelfDocument")
-            doc = ET.ElementTree(root)
-            doc.write(shelf_file, encoding="UTF-8")
-
+        if shelf:
+            # existing shelf. point it to the new shelf file for this session
+            self._engine.log_debug("Using existing shelf.")
+            self._engine.log_debug("  Setting shelf file: %s" % shelf_file)
+            shelf.setFilePath(shelf_file)
+        else:
+            self._engine.log_debug("Creating new shelf: %s" % self._name)
             shelf = hou.shelves.newShelf(
                 file_path=shelf_file,
                 name=self._name,
