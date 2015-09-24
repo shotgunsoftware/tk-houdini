@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 g_menu_item_script = os.path.join(os.path.dirname(__file__), "menu_action.py")
 
 # #3716 Fixes UNC problems with menus. Prefix '\' are otherwise concatenated to a single character, therefore using '/' instead.
-g_menu_item_script = g_menu_item_script.replace('\\', '/')
+g_menu_item_script = g_menu_item_script.replace("\\", "/")
 
 
 class AppCommandsUI(object):

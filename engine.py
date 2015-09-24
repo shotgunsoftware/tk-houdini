@@ -93,7 +93,7 @@ class HoudiniEngine(tank.platform.Engine):
             if commands and enable_sg_menu:
 
                 # setup houdini menus
-                menu_file = os.path.join(xml_tmp_dir, 'MainMenuCommon')
+                menu_file = os.path.join(xml_tmp_dir, "MainMenuCommon")
 
                 # as of houdini 12.5 add .xml
                 if hou.applicationVersion() > (12, 5, 0):
@@ -115,7 +115,7 @@ class HoudiniEngine(tank.platform.Engine):
                 # add/remove tools.
                 self._shelf.destroy_tools() 
 
-                shelf_file = os.path.join(xml_tmp_dir, 'sg_shelf.xml')
+                shelf_file = os.path.join(xml_tmp_dir, "sg_shelf.xml")
                 self._shelf.create_shelf(shelf_file)
 
             # Figure out the tmp OP Library path for this session
@@ -131,7 +131,7 @@ class HoudiniEngine(tank.platform.Engine):
         app = QtGui.QApplication.instance()
         if app is None:
             # create the QApplication
-            sys.argv[0] = 'Shotgun'
+            sys.argv[0] = "Shotgun"
             app = QtGui.QApplication(sys.argv)
             app.setQuitOnLastWindowClosed(False)
             app.setApplicationName(sys.argv[0])
@@ -152,7 +152,7 @@ class HoudiniEngine(tank.platform.Engine):
         
         self.log_debug("%s: Destroying..." % self)
 
-        if hasattr(self, '_shelf') and self._shelf:
+        if hasattr(self, "_shelf") and self._shelf:
             # there doesn't appear to be a way to programmatically add a shelf
             # to an existing shelf set. in order to enable context switching,
             # just delete the tools. that'll allow the engine restart to add
