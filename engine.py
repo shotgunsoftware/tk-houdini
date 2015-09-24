@@ -35,6 +35,7 @@ class HoudiniEngine(tank.platform.Engine):
         """
         Main initialization entry point.
         """        
+
         self.log_debug("%s: Initializing..." % self)
 
         if hou.applicationVersion()[0] < 12:
@@ -59,26 +60,63 @@ class HoudiniEngine(tank.platform.Engine):
         """
         Init that runs after all apps have been loaded.
         """
+
+        if not self.has_ui:
+            # no UI. everything after this requires the UI!
+            return
         
         tk_houdini = self.import_module("tk_houdini")
         bootstrap = tk_houdini.bootstrap
 
         if bootstrap.g_temp_env in os.environ:
-            if self.has_ui:
+
+            commands = None
+            enable_sg_menu = self.get_setting("enable_sg_menu", True)
+            enable_sg_shelf = self.get_setting("enable_sg_shelf", True)
+
+            # menu and/or shelf definitions will be written here
+            xml_tmp_dir = os.environ[bootstrap.g_temp_env]
+
+            if enable_sg_menu or enable_sg_shelf:
+
+                # get the list of registered commands to supply to the menu
+                # and/or shelf. The commands returned are AppCommand objects
+                # defined in tk_houdini.ui_generation
+                commands = tk_houdini.get_registered_commands(self)
+
+                # populate a callback map. this is a map of command ids to a
+                # corresponding callback. these are used by the menu and shelf
+                # for executing installed app commands. 
+                self._callback_map = \
+                    dict((cmd.get_id(), cmd.callback) for cmd in commands)
+
+            if commands and enable_sg_menu:
+
                 # setup houdini menus
-                menu_file = os.path.join(os.environ[bootstrap.g_temp_env], 'MainMenuCommon')
+                menu_file = os.path.join(xml_tmp_dir, "MainMenuCommon")
 
                 # as of houdini 12.5 add .xml
                 if hou.applicationVersion() > (12, 5, 0):
                     menu_file = menu_file + ".xml"
 
-                menu = tk_houdini.MenuGenerator(self)
+                menu = tk_houdini.AppCommandsMenu(self, commands)
                 if not os.path.exists(menu_file):
                     # just create the xml for the menus
                     menu.create_menu(menu_file)
 
-                # get map of id to callback
-                self._callback_map = menu.callback_map()
+            if commands and enable_sg_shelf:
+
+                # setup houdini shelf
+                self._shelf = tk_houdini.AppCommandsShelf(self, commands)
+
+                # cleans up any old tools on an existing shelf -- just in case.
+                # we currently can't programmatically add a shelf to an
+                # existing shelf set, so for now we just leave the shelf and
+                # add/remove tools.
+                self._shelf.destroy_tools() 
+
+                shelf_file = os.path.join(xml_tmp_dir, "sg_shelf.xml")
+                self._shelf.create_shelf(shelf_file)
 
             # Figure out the tmp OP Library path for this session
             oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")
@@ -86,27 +124,26 @@ class HoudiniEngine(tank.platform.Engine):
             # Setup the OTLs that need to be loaded for the Toolkit apps
             self._load_otls(oplibrary_path)
 
-        if self.has_ui:
-            # startup Qt
-            from tank.platform.qt import QtGui
-            from tank.platform.qt import QtCore
+        # startup Qt
+        from tank.platform.qt import QtGui
+        from tank.platform.qt import QtCore
 
-            app = QtGui.QApplication.instance()
-            if app is None:
-                # create the QApplication
-                sys.argv[0] = 'Shotgun'
-                app = QtGui.QApplication(sys.argv)
-                app.setQuitOnLastWindowClosed(False)
-                app.setApplicationName(sys.argv[0])
+        app = QtGui.QApplication.instance()
+        if app is None:
+            # create the QApplication
+            sys.argv[0] = "Shotgun"
+            app = QtGui.QApplication(sys.argv)
+            app.setQuitOnLastWindowClosed(False)
+            app.setApplicationName(sys.argv[0])
 
-                # tell QT to interpret C strings as utf-8
-                utf8 = QtCore.QTextCodec.codecForName("utf-8")
-                QtCore.QTextCodec.setCodecForCStrings(utf8)
+            # tell QT to interpret C strings as utf-8
+            utf8 = QtCore.QTextCodec.codecForName("utf-8")
+            QtCore.QTextCodec.setCodecForCStrings(utf8)
 
-                # set the stylesheet
-                self._initialize_dark_look_and_feel()
+            # set the stylesheet
+            self._initialize_dark_look_and_feel()
 
-            tk_houdini.python_qt_houdini.exec_(app)
+        tk_houdini.python_qt_houdini.exec_(app)
 
     def destroy_engine(self):
         """
@@ -115,12 +152,18 @@ class HoudiniEngine(tank.platform.Engine):
         
         self.log_debug("%s: Destroying..." % self)
 
+        if hasattr(self, "_shelf") and self._shelf:
+            # there doesn't appear to be a way to programmatically add a shelf
+            # to an existing shelf set. in order to enable context switching,
+            # just delete the tools. that'll allow the engine restart to add
+            # tools to the existing shelf
+            self._shelf.destroy_tools()
+
         tk_houdini = self.import_module("tk_houdini")
         bootstrap = tk_houdini.bootstrap
         if bootstrap.g_temp_env in os.environ:
             # clean up and keep on going
             shutil.rmtree(os.environ[bootstrap.g_temp_env])
-            
             
     @property
     def has_ui(self):

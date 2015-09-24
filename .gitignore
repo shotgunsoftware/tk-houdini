@@ -25,3 +25,9 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+# Ignore vim temporary and swap files
+*~
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+

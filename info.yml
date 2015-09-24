@@ -14,6 +14,23 @@
 # expected fields in the configuration file for this engine
 configuration:
 
+    enable_sg_menu:
+        type: bool
+        description: "Controls whether a menu will be built with commands
+                     registered by the installed apps. It is not currently
+                     possible to rebuild the menu on a Shotgun context switch,
+                     so this option allows for the menu to be disabled in
+                     favor of the Shotgun shelf which can be rebuilt
+                     dynamically."
+        default_value: true
+
+    enable_sg_shelf:
+        type: bool
+        description: "Controls whether a shelf will be built with commands
+                     registered by the installed apps. The shelf will be 
+                     rebuilt dynamically as the Shotgun context changes."
+        default_value: true
+
     debug_logging:
         type: bool
         description: Controls whether debug messages should be emitted to the logger
