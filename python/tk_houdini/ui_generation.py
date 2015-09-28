@@ -330,7 +330,7 @@ class AppCommand(object):
         if "app" in self.properties:
             app = self.properties["app"]
             doc_url = app.documentation_url
-            return doc_url
+            return str(doc_url)
 
         return None
 
