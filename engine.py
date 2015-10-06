@@ -115,8 +115,19 @@ class HoudiniEngine(tank.platform.Engine):
                 # add/remove tools.
                 self._shelf.destroy_tools() 
 
-                shelf_file = os.path.join(xml_tmp_dir, "sg_shelf.xml")
+                shelf_file = os.path.join(xml_tmp_dir, 'sg_shelf.xml')
                 self._shelf.create_shelf(shelf_file)
+
+            # Get the list of registered commands to build panels for. The
+            # commands returned are AppCommand objects defined in
+            # tk_houdini.ui_generation
+            panel_commands = tk_houdini.get_registered_panels(self)
+ 
+            if commands and panel_commands:
+                self._panels_file = os.path.join(xml_tmp_dir, 'sg_panels.pypanel')
+                panels = tk_houdini.AppCommandsPanels(self, commands, 
+                    panel_commands)
+                panels.create_panels(self._panels_file)
 
             # Figure out the tmp OP Library path for this session
             oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")
@@ -196,6 +207,106 @@ class HoudiniEngine(tank.platform.Engine):
         Warning logging
         """        
         print "Shotgun Warning: %s" % msg
+
+    ############################################################################
+    # panel interfaces
+    ############################################################################
+
+    def get_panel_info(self, requested_panel_id):
+        """Get an instance of the panel widget for the requested panel id."""
+
+        for (panel_id, panel_dict) in self.panels.items():
+            if not panel_id == requested_panel_id:
+                continue
+
+            # for now, we set a state flag to tell show_panel that we really
+            # just need an instance of the widget. this is what the panel
+            # interfaces will call to display their contents.
+            self._panel_info_request = True
+            self.log_debug("Retrieving panel widget for %s" % panel_id)
+            panel_info = panel_dict['callback']()
+            del self._panel_info_request
+            return panel_info
+
+        return None
+
+    def show_panel(self, panel_id, title, bundle, widget_class, *args,
+        **kwargs):
+        """Show the panel matching the supplied args. 
+
+        Will first try to locate an existing instance of the panel. If it 
+        exists, it will make it current. If it can't find an existing panel,
+        it will create a new one.
+
+        If the panel can't be created for some reason, the widget will be 
+        displayed as a dialog.
+        
+        :param panel_id: Unique id to associate with the panel - normally this
+            is a string obtained via the register_panel() call.
+        :param title: The title of the window
+        :param bundle: The app, engine or framework object that is associated
+            with this window 
+        :param widget_class: The class of the UI to be
+        constructed. This must derive from QWidget.
+        
+        Additional parameters specified will be passed through to the
+        widget_class constructor.
+        """
+
+        # check to see if we just need to return the widget itself.
+        if hasattr(self, '_panel_info_request') and self._panel_info_request:
+            return {
+                'id': panel_id,
+                'title': title,
+                'bundle': bundle,
+                'widget_class': widget_class,
+                'args': args,
+                'kwargs': kwargs,
+            }
+
+        # try to locate the pane in the desktop and make it the current tab. 
+        for pane_tab in hou.ui.curDesktop().paneTabs():
+            if pane_tab.name() == panel_id:
+                pane_tab.setIsCurrentTab()
+                return
+
+        # true panels are only supported in 14+
+        if hou.applicationVersion() >= (14, 0, 0):
+
+            # if it can't be located, try to create a new tab and set the
+            # interface.
+            panel_interface = None
+            try:
+                for interface in hou.pypanel.interfacesInFile(self._panels_file):
+                    if interface.name() == panel_id:
+                        panel_interface = interface
+                        break
+            except hou.OperationFailed:
+                # likely due to panels file not being a valid file, missing, etc. 
+                # hopefully not the case, but try to continue gracefully.
+                hou.log_warning(
+                    "Unable to find interface for panel '%s' in file: %s" % 
+                    (panel_id, self._panels_file))
+
+            if panel_interface:
+                # the options to create a named panel on the far right of the UI 
+                # doesn't seem to be present in python. so hscript it!
+                hou.hscript("pane -S -m pythonpanel -o -n %s" % panel_id)
+                panel = hou.ui.curDesktop().findPaneTab(panel_id)
+
+                # different calls in 14 & 15+
+                if hou.applicationVersion() >= (15, 0, 0):
+                    panel.setActiveInterface(panel_interface)
+                    panel.showToolbar(False) # XXX remove me
+                else:
+                    panel.setInterface(panel_interface)
+                #panel.showToolbar(False) # XXX
+
+                return
+
+        # if we're here, then showing as a panel was unsuccesful. Just show
+        # it as a dialog.
+        self.show_dialog(title, bundle, widget_class, *args, **kwargs)
 
     ############################################################################
     # internal methods

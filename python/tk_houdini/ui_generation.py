@@ -134,6 +134,98 @@ class AppCommandsMenu(AppCommandsUI):
         node.text = id
         return item
 
+class AppCommandsPanels(AppCommandsUI):
+
+    def __init__(self, engine, commands=None, panel_commands=None):
+        self._panel_commands = panel_commands
+        super(AppCommandsPanels, self).__init__(engine, commands)
+
+        if self._panel_commands is None:
+            self._panel_commands = get_registered_panels(engine)
+
+    def create_panels(self, panels_file):
+        """Create the registered panels."""        
+
+        import hou
+
+        root = ET.Element("pythonPanelDocument")
+
+        # get the cmds that launch panels so we can get additional info
+        # about the panels when we need it.
+        cmds_by_panel_callback = {}
+        for cmd in self._commands:
+            if not cmd.get_type() == "panel":
+                continue
+            cmds_by_panel_callback[cmd.callback] = cmd
+
+        for panel_cmd in self._panel_commands:
+
+            launch_cmd = cmds_by_panel_callback[panel_cmd.callback]
+
+            icon = panel_cmd.get_icon() or launch_cmd.get_icon()
+
+            interface = ET.SubElement(root, "interface")
+            interface.set('name', panel_cmd.name)
+            interface.set('label', launch_cmd.name)
+            if icon:
+                interface.set('icon', launch_cmd.get_icon())
+
+            doc_url = panel_cmd.get_documentation_url_str() or \
+                launch_cmd.get_documentation_url_str()
+            if not doc_url:
+                doc_url = ""
+            interface.set('help_url', doc_url)
+
+            script = ET.SubElement(interface, "script")
+            script.text = "CDATA_START" + \
+                _g_panel_script % (icon, launch_cmd.name, panel_cmd.name) + \
+                "CDATA_END"
+
+            desc = panel_cmd.get_description() or launch_cmd.get_description()
+            if not desc:
+                desc = ""
+
+            panel_help = ET.SubElement(interface, "help")
+            panel_help.text = "CDATA_START" + desc + "CDATA_END"
+            panel_help.text = desc
+
+            # add the panel to the panetab and toolbar menus
+
+            toolbar_menu = ET.SubElement(root, "interfacesMenu")
+            toolbar_menu.set('type', 'toolbar')
+
+            toolbar_menu_item = ET.SubElement(toolbar_menu,
+                'interfaceItem')
+            toolbar_menu_item.set('name', panel_cmd.name)
+
+            panetab_menu = ET.SubElement(root, "interfacesMenu")
+            panetab_menu.set('type', 'panetab')
+
+            panetab_menu_item = ET.SubElement(panetab_menu,
+                'interfaceItem')
+            panetab_menu_item.set('name', panel_cmd.name)
+
+        full_xml = ET.tostring(root, encoding="UTF-8")
+        full_xml = full_xml.replace("CDATA_START", "<![CDATA[")
+        full_xml = full_xml.replace("CDATA_END", "]]>")
+
+        panels_dir = os.path.dirname(panels_file)
+        if not os.path.exists(panels_dir):
+            os.makedirs(panels_dir)
+
+        with open(panels_file, "w") as panels_file_handle:
+            panels_file_handle.write(full_xml)
+
+        # install the panels
+        hou.pypanel.installFile(panels_file)
+
+        # NOTE: at this point, the panel interfaces are installed. In Houdini
+        # 15, the 'panetab' menu setting in the xml file will cause the panels
+        # to appear like all the other panels in the pane menu. In versions
+        # prior to 15, the panel interfaces are only available in the Python
+        # Panel. Because of this, in Houdini 15, a user will have access to the
+        # registered panels immediately and everyone else will need to click 
+        # the menu item or shelf button to show a panel.
 
 class AppCommandsShelf(AppCommandsUI):
 
@@ -330,7 +422,7 @@ class AppCommand(object):
         if "app" in self.properties:
             app = self.properties["app"]
             doc_url = app.documentation_url
-            return str(doc_url)
+            return doc_url
 
         return None
 
@@ -380,6 +472,17 @@ def get_registered_commands(engine):
     for (cmd_name, cmd_details) in engine.commands.items():
         commands.append(AppCommand(cmd_name, cmd_details))
     return commands
+
+def get_registered_panels(engine):
+    """Returns a list of AppCommands for the engine's registered panels.
+
+        engine: The engine to return registered panels for
+    """
+
+    panels = []
+    for (panel_name, panel_details) in engine.panels.items():
+        panels.append(AppCommand(panel_name, panel_details))
+    return panels
 
 # -----------------------------------------------------------------------------
 # internal:
@@ -434,5 +537,76 @@ if engine is None or not hasattr(engine, 'launch_command'):
         print msg
 else:
     engine.launch_command('%s')
+"""
+
+# The code that is stored in the python panel interfaces. 
+_g_panel_script = \
+"""
+from PySide import QtGui
+
+class NoPanelWidget(QtGui.QWidget):
+    
+    def __init__(self, msg, error=None):
+    
+        super(NoPanelWidget, self).__init__()
+
+        sg_icon_path = '%s'
+        
+        sg_icon = QtGui.QLabel()
+        sg_icon.setPixmap(QtGui.QPixmap(sg_icon_path))
+        msg_lbl = QtGui.QLabel(msg) 
+        msg_lbl.setWordWrap(True)
+
+        if error:
+            error_txt = QtGui.QTextEdit(error)
+            error_txt.setReadOnly(True)
+
+        h_layout = QtGui.QHBoxLayout()
+        h_layout.setSpacing(5)
+        h_layout.addWidget(sg_icon)
+        h_layout.addWidget(msg_lbl)
+    
+        v_layout = QtGui.QVBoxLayout(self)
+        v_layout.setContentsMargins(10, 10, 10, 10)
+        v_layout.setSpacing(15)
+        v_layout.addStretch()
+        v_layout.addLayout(h_layout)
+        if error:
+            v_layout.addWidget(error_txt)
+        v_layout.addStretch()
+
+def createInterface():
+
+    try:
+        import tank.platform.engine
+    except ImportError:    
+        return NoPanelidget(
+            "It looks like you're running Houdini outside of a Shotgun "
+            "context. Next time you launch Houdini from within a Shotgun "
+           "context, you will see the %s here."
+        )
+    except Exception:
+        import traceback
+        return NoPanelWidget(
+            "There was a problem loading this panel! The error message "
+            "is provided below.",
+            error=traceback.format_exc()
+        )
+    
+    engine = tank.platform.engine.current_engine()
+    panel_info = engine.get_panel_info('%s')
+    panel_widget = panel_info['widget_class']()
+
+    if not panel_widget:
+        panel_widget = NoPanelWidget(
+            "The definition of this panel could not be found." 
+        )
+
+    pane_tab = kwargs["paneTab"]
+    if pane_tab:
+        #pane_tab.setLabel(panel_info['title'])
+        pane_tab.setName(panel_info['id'])
+    
+    return panel_widget
 """
 
