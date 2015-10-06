@@ -316,7 +316,11 @@ class AppCommand(object):
 
     def get_icon(self):
         if "icon" in self.properties:
-            return self.properties["icon"]
+
+            # houdini required "//" for UNC paths instead of "\\". 
+            icon_path = self.properties["icon"].replace("\\", "//")
+
+            return icon_path
         return None
 
     def get_id(self):
@@ -350,24 +354,31 @@ def get_registered_commands(engine):
             "Jump to File System"
     """
 
-    # build a couple of "always present" commands
+    # ---- build a couple of "always present" commands
+
+    sg_icon = os.path.join(engine.disk_location, "resources",
+        "shotgun_logo.png")
+
     jump_to_sg_cmd = AppCommand(
         name="Jump to Shotgun",
         command_dict={
          'properties': {
           'description': "Open the current Shotgun context in your web browser.",
-          'icon': os.path.join(engine.disk_location, "resources", "shotgun_logo.png"),
+          'icon': sg_icon.replace("\\", "//"), # account for UNC path
           'type': "context_menu",
          },
          'callback':lambda: _jump_to_sg(engine),
         },
     )
 
+    fs_icon = os.path.join(engine.disk_location, "resources",
+        "shotgun_folder.png")
+
     jump_to_fs_cmd = AppCommand(
         name="Jump to File System",
         command_dict={
          'properties': {
-          'icon': os.path.join(engine.disk_location, "resources", "shotgun_folder.png"),
+          'icon': fs_icon.replace("\\", "//"), # account for UNC path
           'description': "Open the current Shotgun context in your file browser.",
           'type': "context_menu",
          },
