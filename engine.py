@@ -48,6 +48,7 @@ class HoudiniEngine(tank.platform.Engine):
         if hou.applicationVersion()[0] >= 14:
             self._integrated_pyside = True
             self._ui_type = "PySide"
+            self.log_debug("Using integrated PySide.")
         else:
             self._integrated_pyside = False
             self._ui_type = None
@@ -58,11 +59,11 @@ class HoudiniEngine(tank.platform.Engine):
             if py_ver == (2, 6):
                 pyside_path = os.path.join(self.disk_location, "resources", "pyside112_py26_win64")
                 sys.path.append(pyside_path)
-                self.log_debug("Using bundled python: %s" % (pyside_path,))
+                self.log_debug("Using bundled PySide: %s" % (pyside_path,))
             elif py_ver == (2, 7):
                 pyside_path = os.path.join(self.disk_location, "resources", "pyside121_py27_win64")
                 sys.path.append(pyside_path)
-                self.log_debug("Using bundled python: %s" % (pyside_path,))
+                self.log_debug("Using bundled PySide: %s" % (pyside_path,))
             else:
                 self.log_warning("PySide not bundled for python %d.%d" % (py_ver[0], py_ver[1]))
 
@@ -150,7 +151,7 @@ class HoudiniEngine(tank.platform.Engine):
                 app.setQuitOnLastWindowClosed(False)
                 app.setApplicationName(sys.argv[0])
 
-            self.log_debug("Starting integrated event loop.")
+            self.log_debug("No integrated PySide. Starting integrated event loop.")
             tk_houdini.python_qt_houdini.exec_(app)
 
         # tell QT to interpret C strings as utf-8
@@ -260,7 +261,7 @@ class HoudiniEngine(tank.platform.Engine):
         # should include the integrated PySide's QtGui and QtCore.
         if self._integrated_pyside:
             return super(HoudiniEngine, self)._define_qt_base()
-        self.log_debug("No integrated PySide. Locating built-in/bundled Qt.")
+        self.log_debug("No integrated PySide. Locating system/bundled Qt.")
 
         # proxy class used when QT does not exist on the system.
         # this will raise an exception when any QT code tries to use it
