@@ -213,7 +213,7 @@ class HoudiniEngine(tank.platform.Engine):
     ############################################################################
 
     def get_panel_info(self, requested_panel_id):
-        """Get an instance of the panel widget for the requested panel id."""
+        """Get info dict for the panel with the supplied id."""
 
         for (panel_id, panel_dict) in self.panels.items():
             if not panel_id == requested_panel_id:
@@ -253,7 +253,9 @@ class HoudiniEngine(tank.platform.Engine):
         widget_class constructor.
         """
 
-        # check to see if we just need to return the widget itself.
+        # check to see if we just need to return the widget itself. Since we
+        # don't really have information about the panel outside of this call,
+        # we use a special flag to know when the info is needed and return it.
         if hasattr(self, '_panel_info_request') and self._panel_info_request:
             return {
                 'id': panel_id,
@@ -270,8 +272,8 @@ class HoudiniEngine(tank.platform.Engine):
                 pane_tab.setIsCurrentTab()
                 return
 
-        # true panels are only supported in 14+
-        if hou.applicationVersion() >= (14, 0, 0):
+        # panel support differs between 14/15. 
+        if self._panels_supported():
 
             # if it can't be located, try to create a new tab and set the
             # interface.
@@ -289,23 +291,28 @@ class HoudiniEngine(tank.platform.Engine):
                     (panel_id, self._panels_file))
 
             if panel_interface:
-                # the options to create a named panel on the far right of the UI 
-                # doesn't seem to be present in python. so hscript it!
+                # the options to create a named panel on the far right of the
+                # UI doesn't seem to be present in python. so hscript it is!
                 hou.hscript("pane -S -m pythonpanel -o -n %s" % panel_id)
                 panel = hou.ui.curDesktop().findPaneTab(panel_id)
 
-                # different calls in 14 & 15+
-                if hou.applicationVersion() >= (15, 0, 0):
+                # different calls to set the python panel interface in Houdini
+                # 14/15
+                if hou.applicationVersion()[0] >= 15:
                     panel.setActiveInterface(panel_interface)
-                    panel.showToolbar(False) # XXX remove me
                 else:
+                    # if SESI puts in a fix for setInterface, then panels
+                    # will work for houini 14. will just need to update
+                    # _panels_supported() to add the proper version. and 
+                    # remove this comment. 
                     panel.setInterface(panel_interface)
-                #panel.showToolbar(False) # XXX
+
+                panel.showToolbar(False)
 
                 return
 
-        # if we're here, then showing as a panel was unsuccesful. Just show
-        # it as a dialog.
+        # if we're here, then showing as a panel was unsuccesful or not
+        # supported. Just show it as a dialog.
         self.show_dialog(title, bundle, widget_class, *args, **kwargs)
 
     ############################################################################
@@ -340,6 +347,22 @@ class HoudiniEngine(tank.platform.Engine):
                     path = os.path.join(otl_path, filename).replace("\\", "/")
                     hou.hda.installFile(path, oplibrary_path, True)
 
+    def _panels_supported(self):
+        """
+        Returns True if panels are supported for current Houdini version.
+        """
+        
+        ver = hou.applicationVersion()
+    
+        # first version where saving python panel in desktop was fixed
+        if ver > (15, 0, 252):
+            return True
+
+        return False
+
+        # NOTE: there is an outstanding bug at SESI to backport a fix to make
+        # setInterface work properly in houdini 14. If that goes through, we'll
+        # be able to make embedded panels work in houdini 14 too.
 
     ############################################################################
     # UI Handling
