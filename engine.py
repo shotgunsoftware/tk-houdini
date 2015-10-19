@@ -44,15 +44,25 @@ class HoudiniEngine(tank.platform.Engine):
         # keep track of if a UI exists
         self._ui_enabled = hasattr(hou, 'ui')
 
+        # pyside is integrated as of houdini 14.
+        if hou.applicationVersion()[0] >= 14:
+            self._integrated_pyside = True
+            self._ui_type = "PySide"
+        else:
+            self._integrated_pyside = False
+            self._ui_type = None
+
         # add our built-in pyside to the python path when on windows
-        if sys.platform == "win32":
+        if not self._integrated_pyside and sys.platform == "win32":
             py_ver = sys.version_info[0:2]
             if py_ver == (2, 6):
                 pyside_path = os.path.join(self.disk_location, "resources", "pyside112_py26_win64")
                 sys.path.append(pyside_path)
+                self.log_debug("Using bundled python: %s" % (pyside_path,))
             elif py_ver == (2, 7):
                 pyside_path = os.path.join(self.disk_location, "resources", "pyside121_py27_win64")
                 sys.path.append(pyside_path)
+                self.log_debug("Using bundled python: %s" % (pyside_path,))
             else:
                 self.log_warning("PySide not bundled for python %d.%d" % (py_ver[0], py_ver[1]))
 
@@ -124,26 +134,34 @@ class HoudiniEngine(tank.platform.Engine):
             # Setup the OTLs that need to be loaded for the Toolkit apps
             self._load_otls(oplibrary_path)
 
-        # startup Qt
-        from tank.platform.qt import QtGui
+        # no integrated pyside support. need to run custom event loop. see
+        # python/tk_houdini/python_qt_houdini.py
+        if not self._integrated_pyside:
+
+            # startup Qt
+            from tank.platform.qt import QtGui
+
+            app = QtGui.QApplication.instance()
+            if app is None:
+
+                # create the QApplication
+                sys.argv[0] = "Shotgun"
+                app = QtGui.QApplication(sys.argv)
+                app.setQuitOnLastWindowClosed(False)
+                app.setApplicationName(sys.argv[0])
+
+                # set the stylesheet
+                self._initialize_dark_look_and_feel()
+
+            self.log_debug("Starting integrated event loop.")
+            tk_houdini.python_qt_houdini.exec_(app)
+
+        # tell QT to interpret C strings as utf-8
         from tank.platform.qt import QtCore
+        utf8 = QtCore.QTextCodec.codecForName("utf-8")
+        QtCore.QTextCodec.setCodecForCStrings(utf8)
+        self.log_debug("set utf-8 codec for widget text")
 
-        app = QtGui.QApplication.instance()
-        if app is None:
-            # create the QApplication
-            sys.argv[0] = "Shotgun"
-            app = QtGui.QApplication(sys.argv)
-            app.setQuitOnLastWindowClosed(False)
-            app.setApplicationName(sys.argv[0])
-
-            # tell QT to interpret C strings as utf-8
-            utf8 = QtCore.QTextCodec.codecForName("utf-8")
-            QtCore.QTextCodec.setCodecForCStrings(utf8)
-
-            # set the stylesheet
-            self._initialize_dark_look_and_feel()
-
-        tk_houdini.python_qt_houdini.exec_(app)
 
     def destroy_engine(self):
         """
@@ -238,6 +256,15 @@ class HoudiniEngine(tank.platform.Engine):
         """
         Defines QT implementation for the engine. Checks for pyside then pyqt.
         """
+
+        # If we're using a version of Houdini that comes integrated with
+        # PySide, then we don't need to worry about searching for PySide/PyQt
+        # on the system.  Simply return the base class implementation which
+        # should include the integrated PySide's QtGui and QtCore.
+        if self._integrated_pyside:
+            return super(HoudiniEngine, self)._define_qt_base()
+        self.log_debug("No integrated PySide. Locating built-in/bundled Qt.")
+
         # proxy class used when QT does not exist on the system.
         # this will raise an exception when any QT code tries to use it
         class QTProxy(object):
@@ -249,7 +276,6 @@ class HoudiniEngine(tank.platform.Engine):
                                      "run UI applications from Houdini.")
 
         base = {"qt_core": QTProxy(), "qt_gui": QTProxy(), "dialog_base": None}
-        self._ui_type = None
 
         if not self._ui_type:
             try:
@@ -312,6 +338,7 @@ class HoudiniEngine(tank.platform.Engine):
         :param widget: A QWidget instance to be embedded in the newly created dialog.
         :param parent: The parent QWidget for the dialog
         """
+
         # call the base implementation to create the dialog:
         dialog = tank.platform.Engine._create_dialog(self, title, bundle, widget, parent)
 
@@ -392,4 +419,4 @@ class HoudiniEngine(tank.platform.Engine):
         return widget
 
 
-
+    
