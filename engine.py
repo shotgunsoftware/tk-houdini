@@ -150,9 +150,6 @@ class HoudiniEngine(tank.platform.Engine):
                 app.setQuitOnLastWindowClosed(False)
                 app.setApplicationName(sys.argv[0])
 
-                # set the stylesheet
-                self._initialize_dark_look_and_feel()
-
             self.log_debug("Starting integrated event loop.")
             tk_houdini.python_qt_houdini.exec_(app)
 
