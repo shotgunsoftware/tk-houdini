@@ -115,7 +115,7 @@ class HoudiniEngine(tank.platform.Engine):
                 # add/remove tools.
                 self._shelf.destroy_tools() 
 
-                shelf_file = os.path.join(xml_tmp_dir, 'sg_shelf.xml')
+                shelf_file = os.path.join(xml_tmp_dir, "sg_shelf.xml")
                 self._shelf.create_shelf(shelf_file)
 
             # Get the list of registered commands to build panels for. The
@@ -124,7 +124,7 @@ class HoudiniEngine(tank.platform.Engine):
             panel_commands = tk_houdini.get_registered_panels(self)
  
             if commands and panel_commands:
-                self._panels_file = os.path.join(xml_tmp_dir, 'sg_panels.pypanel')
+                self._panels_file = os.path.join(xml_tmp_dir, "sg_panels.pypanel")
                 panels = tk_houdini.AppCommandsPanels(self, commands, 
                     panel_commands)
                 panels.create_panels(self._panels_file)
