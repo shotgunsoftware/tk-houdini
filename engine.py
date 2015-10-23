@@ -355,7 +355,7 @@ class HoudiniEngine(tank.platform.Engine):
         ver = hou.applicationVersion()
     
         # first version where saving python panel in desktop was fixed
-        if ver > (15, 0, 252):
+        if ver >= (15, 0, 272):
             return True
 
         return False
