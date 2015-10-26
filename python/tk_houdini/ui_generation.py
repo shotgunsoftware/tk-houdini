@@ -22,12 +22,9 @@ g_menu_item_script = g_menu_item_script.replace("\\", "/")
 class AppCommandsUI(object):
     """Base class for interface elements that trigger command actions."""
 
-    def __init__(self, engine, commands=None):
+    def __init__(self, engine, commands):
         self._engine = engine
         self._commands = commands
-
-        if self._commands is None:
-            self._commands = get_registered_commands(engine)
 
     def _get_context_name(self):
         """Returns a display name for the current context"""
@@ -134,19 +131,56 @@ class AppCommandsMenu(AppCommandsUI):
         node.text = id
         return item
 
-class AppCommandsPanels(AppCommandsUI):
+class AppCommandsPanelHandler(AppCommandsUI):
+    """Creates panels and installs them into the session."""
 
-    def __init__(self, engine, commands=None, panel_commands=None):
+    def __init__(self, engine, commands, panel_commands):
+        """Initialize the panel handler.
+
+        :param engine: The currently running engine.
+        :param commands: A list of commands as `AppCommand` objects.
+        :param panel_commands: A list of panels as `AppCommand` objects.
+
+        Note: We currently expect a menu command to be registered for each
+        panel. We use the menu command to glean the necessary information 
+        to display the panel in the UI. So for each `AppCommand` in the
+        `panel_commands` list, there should be a corresponding menu
+        `AppCommand` for the panel in the `commands` param.
+
+        """
+
         self._panel_commands = panel_commands
-        super(AppCommandsPanels, self).__init__(engine, commands)
-
-        if self._panel_commands is None:
-            self._panel_commands = get_registered_panels(engine)
+        super(AppCommandsPanelHandler, self).__init__(engine, commands)
 
     def create_panels(self, panels_file):
         """Create the registered panels."""        
 
         import hou
+
+        # this code builds an xml file that defines panel interfaces to be
+        # read by houdini. The xml should look something like this:
+        #
+        # <?xml version='1.0' encoding='UTF-8'?>
+        # <pythonPanelDocument>
+        #   <interface help_url="http://..." icon="/path/to/icon.png" 
+        #     label="My Panel" name="my_panel">
+        #     <script>
+        #       <![CDATA[PYTHON CODE HERE]]>
+        #     </script>
+        #     <help>"help string"</help>
+        #   </interface>
+        #   <interfacesMenu type="toolbar">
+        #     <interfaceItem name="my_panel" />
+        #   </interfacesMenu>
+        #   <interfacesMenu type="panetab">
+        #     <interfaceItem name="my_panel" />
+        #   </interfacesMenu>
+        # </pythonPanelDocument>
+        #
+        # There will be an <interface> tag for each panel being created.
+        # the <interfaceItem> tags tell the toolbar and panetab menus to 
+        # display the panel. Each panel will have an <interfaceItem> tag
+        # for the "toolbar" and "panetab" menus.
 
         root = ET.Element("pythonPanelDocument")
 
@@ -159,6 +193,13 @@ class AppCommandsPanels(AppCommandsUI):
             cmds_by_panel_callback[cmd.callback] = cmd
 
         for panel_cmd in self._panel_commands:
+
+            if not panel_cmd.callback in cmds_by_panel_callback:
+                # currently we rely on a menu command to be registered 
+                # for each panel in order to get the information we need
+                # to display the panel in the UI. If there is no corresponding
+                # command, don't show the panel.
+                continue
 
             launch_cmd = cmds_by_panel_callback[panel_cmd.callback]
 
@@ -436,9 +477,9 @@ class AppCommand(object):
 def get_registered_commands(engine):
     """Returns a list of AppCommands for the engine's registered commands.
 
-        engine: The engine to return registered commands for
+        :param engine: The engine to return registered commands for
 
-        NOTE: This method currently returns additional commands that are
+        NOTE: This method currently returns additional panel commands that are
         not registered, but always present in the shotgun menu and shelves.
         Those commands are:
 
@@ -487,7 +528,7 @@ def get_registered_commands(engine):
 def get_registered_panels(engine):
     """Returns a list of AppCommands for the engine's registered panels.
 
-        engine: The engine to return registered panels for
+        :param engine: The engine to return registered panel commands for
     """
 
     panels = []
@@ -591,10 +632,10 @@ def createInterface():
     try:
         import tank.platform.engine
     except ImportError:    
-        return NoPanelidget(
+        return NoPanelWidget(
             "It looks like you're running Houdini outside of a Shotgun "
             "context. Next time you launch Houdini from within a Shotgun "
-           "context, you will see the %s here."
+            "context, you will see the %s here."
         )
     except Exception:
         import traceback
@@ -610,12 +651,12 @@ def createInterface():
 
     if not panel_widget:
         panel_widget = NoPanelWidget(
-            "The definition of this panel could not be found." 
+            "This panel is not available in this context." 
         )
 
     pane_tab = kwargs["paneTab"]
     if pane_tab:
-        #pane_tab.setLabel(panel_info['title'])
+        pane_tab.setLabel(panel_info['title'])
         pane_tab.setName(panel_info['id'])
     
     return panel_widget

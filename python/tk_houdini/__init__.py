@@ -11,7 +11,7 @@ from . import bootstrap
 from .ui_generation import (
     AppCommandsMenu,
     AppCommandsShelf,
-    AppCommandsPanels,
+    AppCommandsPanelHandler,
     get_registered_commands,
     get_registered_panels,
 )
