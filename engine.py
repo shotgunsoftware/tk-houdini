@@ -41,6 +41,12 @@ class HoudiniEngine(tank.platform.Engine):
         if hou.applicationVersion()[0] < 12:
             raise tank.TankError("Your version of Houdini is not supported. Currently, Toolkit only supports version 12+")
 
+        # Support OS X on 14+ only
+        if sys.platform == "darwin" and hou.applicationVersion()[0] < 14:
+            raise tank.TankError(
+                "Your version of Houdini is not supported on OS X. Currently, "
+                "Toolkit only supports version 14+ on OS X.")
+
         # keep track of if a UI exists
         self._ui_enabled = hasattr(hou, 'ui')
 
