@@ -135,6 +135,17 @@ class HoudiniEngine(tank.platform.Engine):
                 shelf_file = os.path.join(xml_tmp_dir, "sg_shelf.xml")
                 self._shelf.create_shelf(shelf_file)
 
+            # Get the list of registered commands to build panels for. The
+            # commands returned are AppCommand objects defined in
+            # tk_houdini.ui_generation
+            panel_commands = tk_houdini.get_registered_panels(self)
+ 
+            if commands and panel_commands:
+                self._panels_file = os.path.join(xml_tmp_dir, "sg_panels.pypanel")
+                panels = tk_houdini.AppCommandsPanelHandler(self, commands,
+                    panel_commands)
+                panels.create_panels(self._panels_file)
+
             # Figure out the tmp OP Library path for this session
             oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")
 
@@ -223,6 +234,132 @@ class HoudiniEngine(tank.platform.Engine):
         print "Shotgun Warning: %s" % msg
 
     ############################################################################
+    # panel interfaces
+    ############################################################################
+
+    def get_panel_info(self, requested_panel_id):
+        """Get info dict for the panel with the supplied id.
+        
+        :param int requested_panel_id: The id of the panel to get info for
+        :return: A dictionary of information about the panel
+        :rtype: dict
+        
+        The dictionary returned will include keys: 'id', 'title', 'bundle',
+        widget_class', 'args', and 'kwargs'. The values of those keys
+        will be the values supplied to the `show_panel` method by the panel's
+        callback method.
+
+        """
+
+        for (panel_id, panel_dict) in self.panels.items():
+            if not panel_id == requested_panel_id:
+                continue
+
+            # Typically the panel callback would be used to actually show the
+            # panel, and it would be triggered from a menu/shelf. In houdini
+            # however, we need to pre-build a python script to embed into a
+            # python panel definition. In order for that script to get the
+            # information it needs to construct the proper panel widget, it
+            # needs information that is only available when `show_panel` is
+            # called via the callback. So, we set a flag that `show_panel` can
+            # use to short-circuit and return the info needed.
+            self._panel_info_request = True
+            self.log_debug("Retrieving panel widget for %s" % panel_id)
+            panel_info = panel_dict['callback']()
+            del self._panel_info_request
+            return panel_info
+
+        return None
+
+    def show_panel(self, panel_id, title, bundle, widget_class, *args,
+        **kwargs):
+        """Show the panel matching the supplied args. 
+
+        Will first try to locate an existing instance of the panel. If it 
+        exists, it will make it current. If it can't find an existing panel,
+        it will create a new one.
+
+        If the panel can't be created for some reason, the widget will be 
+        displayed as a dialog.
+        
+        :param panel_id: Unique id to associate with the panel - normally this
+            is a string obtained via the register_panel() call.
+        :param title: The title of the window
+        :param bundle: The app, engine or framework object that is associated
+            with this window 
+        :param widget_class: The class of the UI to be
+        constructed. This must derive from QWidget.
+        
+        Additional parameters specified will be passed through to the
+        widget_class constructor.
+        """
+
+        # check to see if we just need to return the widget itself. Since we
+        # don't really have information about the panel outside of this call,
+        # we use a special flag to know when the info is needed and return it.
+        if hasattr(self, '_panel_info_request') and self._panel_info_request:
+            return {
+                'id': panel_id,
+                'title': title,
+                'bundle': bundle,
+                'widget_class': widget_class,
+                'args': args,
+                'kwargs': kwargs,
+            }
+
+        # try to locate the pane in the desktop and make it the current tab. 
+        for pane_tab in hou.ui.curDesktop().paneTabs():
+            if pane_tab.name() == panel_id:
+                pane_tab.setIsCurrentTab()
+                return
+
+        # panel support differs between 14/15. 
+        if self._panels_supported():
+
+            # if it can't be located, try to create a new tab and set the
+            # interface.
+            panel_interface = None
+            try:
+                for interface in hou.pypanel.interfacesInFile(self._panels_file):
+                    if interface.name() == panel_id:
+                        panel_interface = interface
+                        break
+            except hou.OperationFailed:
+                # likely due to panels file not being a valid file, missing, etc. 
+                # hopefully not the case, but try to continue gracefully.
+                self.log_warning(
+                    "Unable to find interface for panel '%s' in file: %s" % 
+                    (panel_id, self._panels_file))
+
+            if panel_interface:
+                # the options to create a named panel on the far right of the
+                # UI doesn't seem to be present in python. so hscript it is!
+                # Here's the docs for the hscript command:
+                #     https://www.sidefx.com/docs/houdini14.0/commands/pane
+                hou.hscript("pane -S -m pythonpanel -o -n %s" % panel_id)
+                panel = hou.ui.curDesktop().findPaneTab(panel_id)
+
+                # different calls to set the python panel interface in Houdini
+                # 14/15
+                if hou.applicationVersion()[0] >= 15:
+                    panel.setActiveInterface(panel_interface)
+                else:
+                    # if SESI puts in a fix for setInterface, then panels
+                    # will work for houini 14. will just need to update
+                    # _panels_supported() to add the proper version. and 
+                    # remove this comment. 
+                    panel.setInterface(panel_interface)
+
+                # turn off the python panel toolbar to make the tk panels look
+                # more integrated. should be all good so just return
+                panel.showToolbar(False)
+                return
+
+        # if we're here, then showing as a panel was unsuccesful or not
+        # supported. Just show it as a dialog.
+        self.show_dialog(title, bundle, widget_class, *args, **kwargs)
+
+    ############################################################################
     # internal methods
     ############################################################################
 
@@ -254,6 +391,22 @@ class HoudiniEngine(tank.platform.Engine):
                     path = os.path.join(otl_path, filename).replace("\\", "/")
                     hou.hda.installFile(path, oplibrary_path, True)
 
+    def _panels_supported(self):
+        """
+        Returns True if panels are supported for current Houdini version.
+        """
+        
+        ver = hou.applicationVersion()
+    
+        # first version where saving python panel in desktop was fixed
+        if ver >= (15, 0, 272):
+            return True
+
+        return False
+
+        # NOTE: there is an outstanding bug at SESI to backport a fix to make
+        # setInterface work properly in houdini 14. If that goes through, we'll
+        # be able to make embedded panels work in houdini 14 too.
 
     ############################################################################
     # UI Handling
