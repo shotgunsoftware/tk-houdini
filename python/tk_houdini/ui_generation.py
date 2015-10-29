@@ -129,7 +129,7 @@ class AppCommandsMenu(AppCommandsUI):
         node = ET.SubElement(item, "label")
         node.text = label
         node = ET.SubElement(item, "scriptPath")
-        node.text = g_menu_item_script
+        node.text = '"%s"' % (g_menu_item_script,)
         node = ET.SubElement(item, "scriptArgs")
         node.text = id
         return item
