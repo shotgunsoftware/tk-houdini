@@ -168,9 +168,6 @@ class HoudiniEngine(tank.platform.Engine):
                 app.setQuitOnLastWindowClosed(False)
                 app.setApplicationName(sys.argv[0])
 
-                # set the stylesheet
-                self._initialize_dark_look_and_feel()
-
             self.log_debug("No integrated PySide. Starting integrated event loop.")
             tk_houdini.python_qt_houdini.exec_(app)
 
@@ -180,6 +177,8 @@ class HoudiniEngine(tank.platform.Engine):
         QtCore.QTextCodec.setCodecForCStrings(utf8)
         self.log_debug("set utf-8 codec for widget text")
 
+        # set the stylesheet
+        self._initialize_dark_look_and_feel()
 
     def destroy_engine(self):
         """
@@ -578,5 +577,21 @@ class HoudiniEngine(tank.platform.Engine):
         # lastly, return the instantiated widget
         return widget
 
+    def _get_dialog_parent(self):
+        """
+        Get the QWidget parent for all dialogs created through show_dialog &
+        show_modal.
+        """
 
-    
+        # The hou api does not expose a main window for parenting. The default
+        # implementation of this method in core is to return the application's
+        # activeWindow(), but that can be unreliable as it can return None or
+        # another dialog that is being shown. In addition, houdini seems to do
+        # something odd regarding stylesheets/palettes once a custom widget is
+        # parented to one of its top level widgets. It appears to reset the
+        # widget's style and apply its own style which doesn't even match the
+        # rest of the houdini interface. It seems like the easiest way to avoid
+        # this for now is to not parent toolkit dialogs and use core's dark
+        # look and feel.
+        return None
+                

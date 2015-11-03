@@ -647,10 +647,43 @@ def createInterface():
     
     engine = tank.platform.engine.current_engine()
     panel_info = engine.get_panel_info('%s')
-    panel_widget = panel_info['widget_class']()
+
+    from tank.platform.qt import QtCore
+
+    # here we subclass the panel widget in order to hijack the first paint
+    # event. There, we force clear the parent's stylesheet and reset the widget
+    # with the bundled sytlesheet if there is one. This prevents houdini's
+    # parenting from cramping the panel's style. We also override the
+    # changeEvent method to detect when something else attempts to change the
+    # style so we can force it back to the bundled style. The first paint event
+    # isn't sufficient for panels saved in desktops, but detecting style change
+    # seems to do the trick.
+    class PanelWidget(panel_info['widget_class']):
+    
+        def __init__(self, *args, **kwargs):
+            super(PanelWidget, self).__init__(*args, **kwargs)
+            self._stylesheet_applied = False
+            self._changing_stylesheet = False
+
+        def changeEvent(self, event):
+            if event.type() == QtCore.QEvent.StyleChange:
+                if not self._changing_stylesheet:
+                    self._stylesheet_applied = False
+            super(PanelWidget, self).changeEvent(event)
+    
+        def paintEvent(self, event):
+            if self.parent() and not self._stylesheet_applied:
+                self._changing_stylesheet = True
+                self.parent().setStyleSheet("")
+                engine._apply_external_styleshet(panel_info['bundle'], self)
+                self._changing_stylesheet = False
+                self._stylesheet_applied = True
+            super(PanelWidget, self).paintEvent(event)
+
+    panel_widget = PanelWidget()
 
     if not panel_widget:
-        panel_widget = NoPanelWidget(
+        return NoPanelWidget(
             "This panel is not available in this context." 
         )
 
@@ -658,7 +691,7 @@ def createInterface():
     if pane_tab:
         pane_tab.setLabel(panel_info['title'])
         pane_tab.setName(panel_info['id'])
-    
+
     return panel_widget
 """
 
