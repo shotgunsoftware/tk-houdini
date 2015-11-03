@@ -498,8 +498,23 @@ class HoudiniEngine(tank.platform.Engine):
         :param parent: The parent QWidget for the dialog
         """
 
+        from tank.platform.qt import QtCore
+
         # call the base implementation to create the dialog:
         dialog = tank.platform.Engine._create_dialog(self, title, bundle, widget, parent)
+
+        if dialog.parent():
+            # parenting crushes the dialog's style. This seems to work to reset
+            # the style to the dark look and feel in preparation for the
+            # re-application below.
+            dialog.parent().setStyleSheet("")
+        else:
+            # no parent, so style should be ok. set window flag to be on top
+            dialog.setWindowFlags(
+                dialog.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+
+        # manually re-apply any bundled stylesheet to the dialog
+        self._apply_external_styleshet(bundle, dialog)
 
         # raise and activate the dialog:
         dialog.raise_()
@@ -539,7 +554,6 @@ class HoudiniEngine(tank.platform.Engine):
                                         "in the main thread. Try using the execute_in_main_thread() method.")
             return        
 
-        # create the dialog:
         dialog, widget = self._create_dialog_with_widget(title, bundle, widget_class, *args, **kwargs)
 
         # finally launch it, modal state
@@ -583,15 +597,24 @@ class HoudiniEngine(tank.platform.Engine):
         show_modal.
         """
 
-        # The hou api does not expose a main window for parenting. The default
-        # implementation of this method in core is to return the application's
-        # activeWindow(), but that can be unreliable as it can return None or
-        # another dialog that is being shown. In addition, houdini seems to do
-        # something odd regarding stylesheets/palettes once a custom widget is
-        # parented to one of its top level widgets. It appears to reset the
-        # widget's style and apply its own style which doesn't even match the
-        # rest of the houdini interface. It seems like the easiest way to avoid
-        # this for now is to not parent toolkit dialogs and use core's dark
-        # look and feel.
-        return None
+        from tank.platform.qt import QtGui
+
+        parent = None
+
+        # attempt to find the houdini main window for parenting. The default
+        # implementation in tk-core uses the activeWindow which can be None 
+        # and can also be an already open toolkit dialog. 
+        app = QtGui.QApplication.instance()
+        for widget in app.topLevelWidgets():
+
+            # try to get a hold of the main window. it seems to be the only
+            # one with windowIconText set. There should be a better way to do
+            # this.
+            if (widget.isWindow() and 
+                not isinstance(widget, QtGui.QDialog) and
+                widget.windowIconText()):
+                parent = widget
+
+        self.log_debug("Parenting dialog to: %s" % (parent,))
+        return parent
                 
