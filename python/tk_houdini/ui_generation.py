@@ -536,6 +536,66 @@ def get_registered_panels(engine):
         panels.append(AppCommand(panel_name, panel_details))
     return panels
 
+def get_wrapped_panel_widget(engine, widget_class, bundle, title):
+    """Returns a wrapped widget for use in a houdini python panel.
+
+    :param engine: The engine instance.
+    :param widget_class: The widget class to wrap.
+    :param bundle: The bundle associated with the panel being wrapped.
+    :param title: The title to display for this panel.
+
+    Here we subclass the panel widget in order to hijack the first paint event.
+    There, we force clear the parent's stylesheet and reset the widget with the
+    bundled stylesheet if there is one. This prevents houdini's parenting from
+    cramping the panel's style. We also filter for change events to detect when
+    something else attempts to change the style so we can force it back to the
+    bundled style. The first paint event isn't sufficient for panels saved in
+    desktops, but detecting style change seems to do the trick.
+
+    """
+
+    from tank.platform.qt import QtCore
+
+    # the wrapper
+    class PanelWrapper(widget_class):
+    
+        def __init__(self, *args, **kwargs):
+            super(PanelWrapper, self).__init__(*args, **kwargs)
+            self._stylesheet_applied = False
+            self._changing_stylesheet = False
+            self.installEventFilter(self)
+    
+        def eventFilter(self, obj, event):
+
+            # style change, we need to re-apply our own style
+            if event.type() == QtCore.QEvent.StyleChange:
+                if not self._changing_stylesheet:
+                    self._stylesheet_applied = False
+
+            # if we're about to paint, see if we need to re-apply the style
+            elif event.type() == QtCore.QEvent.Paint:
+                if not self._stylesheet_applied:
+                    self._apply_stylesheet()
+
+            return False
+
+        def _apply_stylesheet(self):
+
+            self._changing_stylesheet = True
+            try:
+                if self.parent():
+                    self.parent().setStyleSheet("")
+                engine._apply_external_styleshet(bundle, self)
+            except Exception:
+                engine.log_warning(
+                    "Unable to re-apply stylesheet for panel: %s" % (title,)
+                )
+            finally:
+                self._changing_stylesheet = False
+            self._stylesheet_applied = True
+
+    return PanelWrapper()
+
 # -----------------------------------------------------------------------------
 # internal:
 
@@ -596,6 +656,8 @@ _g_panel_script = \
 """
 from PySide import QtGui
 
+from tank.platform.qt import QtCore
+
 class NoPanelWidget(QtGui.QWidget):
     
     def __init__(self, msg, error=None):
@@ -603,9 +665,14 @@ class NoPanelWidget(QtGui.QWidget):
         super(NoPanelWidget, self).__init__()
 
         sg_icon_path = '%s'
-        
         sg_icon = QtGui.QLabel()
-        sg_icon.setPixmap(QtGui.QPixmap(sg_icon_path))
+
+        try:
+            sg_pixmap = QtGui.QPixmap(sg_icon_path).scaledToWidth(64, QtCore.Qt.SmoothTransformation)
+            sg_icon.setPixmap(sg_pixmap)
+        except:
+            pass
+
         msg_lbl = QtGui.QLabel(msg) 
         msg_lbl.setWordWrap(True)
 
@@ -617,6 +684,7 @@ class NoPanelWidget(QtGui.QWidget):
         h_layout.setSpacing(5)
         h_layout.addWidget(sg_icon)
         h_layout.addWidget(msg_lbl)
+        h_layout.setStretchFactor(msg_lbl, 10)
     
         v_layout = QtGui.QVBoxLayout(self)
         v_layout.setContentsMargins(10, 10, 10, 10)
@@ -635,7 +703,17 @@ def createInterface():
         return NoPanelWidget(
             "It looks like you're running Houdini outside of a Shotgun "
             "context. Next time you launch Houdini from within a Shotgun "
-            "context, you will see the %s here."
+            "context, you will see the '%s' here."
+        )
+
+    try:
+        engine = tank.platform.engine.current_engine()
+        panel_info = engine.get_panel_info('%s')
+        panel_widget = engine.get_wrapped_panel_widget(
+            engine,
+            panel_info['widget_class'],
+            panel_info['bundle'],
+            panel_info['title'],
         )
     except Exception:
         import traceback
@@ -644,21 +722,13 @@ def createInterface():
             "is provided below.",
             error=traceback.format_exc()
         )
-    
-    engine = tank.platform.engine.current_engine()
-    panel_info = engine.get_panel_info('%s')
-    panel_widget = panel_info['widget_class']()
-
-    if not panel_widget:
-        panel_widget = NoPanelWidget(
-            "This panel is not available in this context." 
-        )
 
     pane_tab = kwargs["paneTab"]
     if pane_tab:
         pane_tab.setLabel(panel_info['title'])
         pane_tab.setName(panel_info['id'])
-    
+
     return panel_widget
+
 """
 

@@ -139,6 +139,10 @@ class HoudiniEngine(tank.platform.Engine):
             # commands returned are AppCommand objects defined in
             # tk_houdini.ui_generation
             panel_commands = tk_houdini.get_registered_panels(self)
+
+            # expose the wrapped panel method on the engine so that the 
+            # panels can call it directly
+            self.get_wrapped_panel_widget = tk_houdini.get_wrapped_panel_widget
  
             if commands and panel_commands:
                 self._panels_file = os.path.join(xml_tmp_dir, "sg_panels.pypanel")
@@ -168,9 +172,6 @@ class HoudiniEngine(tank.platform.Engine):
                 app.setQuitOnLastWindowClosed(False)
                 app.setApplicationName(sys.argv[0])
 
-                # set the stylesheet
-                self._initialize_dark_look_and_feel()
-
             self.log_debug("No integrated PySide. Starting integrated event loop.")
             tk_houdini.python_qt_houdini.exec_(app)
 
@@ -180,6 +181,17 @@ class HoudiniEngine(tank.platform.Engine):
         QtCore.QTextCodec.setCodecForCStrings(utf8)
         self.log_debug("set utf-8 codec for widget text")
 
+        # Typically we only call this method for engines which don't have a
+        # well defined styling. Houdini appears to use stylesheets to handle
+        # its styling which it conflicts with the toolkit strategy of using a
+        # dark QStyle underneath with additional stylesheets on top, allowing
+        # the qss to be minimized. Calling this method applies a global style,
+        # palette, and default stylesheet which, in addition to some
+        # workarounds when parenting toolkit widgets, allows for the
+        # consistent, intended look and feel of the toolkit widgets.
+        # Surprisingly, calling this does not seem to have any affect on
+        # houdini itself, despite the global nature of the method. 
+        self._initialize_dark_look_and_feel()
 
     def destroy_engine(self):
         """
@@ -499,8 +511,29 @@ class HoudiniEngine(tank.platform.Engine):
         :param parent: The parent QWidget for the dialog
         """
 
+        from tank.platform.qt import QtCore
+
         # call the base implementation to create the dialog:
         dialog = tank.platform.Engine._create_dialog(self, title, bundle, widget, parent)
+
+        if dialog.parent():
+            # parenting crushes the dialog's style. This seems to work to reset
+            # the style to the dark look and feel in preparation for the
+            # re-application below. See the comment about initializing the dark
+            # look and feel above.
+            dialog.parent().setStyleSheet("")
+        else:
+            # no parent found, so style should be ok. this is probably,
+            # hopefully, a rare case, but since our logic for identifying the
+            # top-level widget to parent to makes some potentially flawed
+            # assumptions, we should account for this case. set window flag to
+            # be on top so that it doesn't duck under the houdini window when
+            # shown (typicaly for windows)
+            dialog.setWindowFlags(
+                dialog.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+
+        # manually re-apply any bundled stylesheet to the dialog
+        self._apply_external_styleshet(bundle, dialog)
 
         # raise and activate the dialog:
         dialog.raise_()
@@ -540,7 +573,6 @@ class HoudiniEngine(tank.platform.Engine):
                                         "in the main thread. Try using the execute_in_main_thread() method.")
             return        
 
-        # create the dialog:
         dialog, widget = self._create_dialog_with_widget(title, bundle, widget_class, *args, **kwargs)
 
         # finally launch it, modal state
@@ -578,5 +610,31 @@ class HoudiniEngine(tank.platform.Engine):
         # lastly, return the instantiated widget
         return widget
 
+    def _get_dialog_parent(self):
+        """
+        Get the QWidget parent for all dialogs created through show_dialog &
+        show_modal.
+        """
 
-    
+        from tank.platform.qt import QtGui
+
+        parent = None
+
+        # attempt to find the houdini main window for parenting. The default
+        # implementation in tk-core uses the activeWindow which can be None 
+        # and can also be an already open toolkit dialog. 
+        app = QtGui.QApplication.instance()
+        for widget in app.topLevelWidgets():
+
+            # try to get a hold of the main window. it seems to be the only
+            # one with windowIconText set. There should be a better way to do
+            # this.
+            if (widget.isWindow() and 
+                not isinstance(widget, QtGui.QDialog) and
+                widget.windowIconText()):
+                parent = widget
+
+        self.log_debug(
+            "Found top level widget %s for dialog parenting" % (parent,))
+        return parent
+                

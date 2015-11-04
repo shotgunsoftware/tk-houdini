@@ -14,6 +14,7 @@ from .ui_generation import (
     AppCommandsPanelHandler,
     get_registered_commands,
     get_registered_panels,
+    get_wrapped_panel_widget,
 )
 
 try:
