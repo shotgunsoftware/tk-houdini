@@ -139,6 +139,10 @@ class HoudiniEngine(tank.platform.Engine):
             # commands returned are AppCommand objects defined in
             # tk_houdini.ui_generation
             panel_commands = tk_houdini.get_registered_panels(self)
+
+            # expose the wrapped panel method on the engine so that the 
+            # panels can call it directly
+            self.get_wrapped_panel_widget = tk_houdini.get_wrapped_panel_widget
  
             if commands and panel_commands:
                 self._panels_file = os.path.join(xml_tmp_dir, "sg_panels.pypanel")
@@ -177,7 +181,16 @@ class HoudiniEngine(tank.platform.Engine):
         QtCore.QTextCodec.setCodecForCStrings(utf8)
         self.log_debug("set utf-8 codec for widget text")
 
-        # set the stylesheet
+        # Typically we only call this method for engines which don't have a
+        # well defined styling. Houdini appears to use stylesheets to handle
+        # its styling which it conflicts with the toolkit strategy of using a
+        # dark QStyle underneath with additional stylesheets on top, allowing
+        # the qss to be minimized. Calling this method applies a global style,
+        # palette, and default stylesheet which, in addition to some
+        # workarounds when parenting toolkit widgets, allows for the
+        # consistent, intended look and feel of the toolkit widgets.
+        # Surprisingly, calling this does not seem to have any affect on
+        # houdini itself, despite the global nature of the method. 
         self._initialize_dark_look_and_feel()
 
     def destroy_engine(self):
@@ -506,10 +519,16 @@ class HoudiniEngine(tank.platform.Engine):
         if dialog.parent():
             # parenting crushes the dialog's style. This seems to work to reset
             # the style to the dark look and feel in preparation for the
-            # re-application below.
+            # re-application below. See the comment about initializing the dark
+            # look and feel above.
             dialog.parent().setStyleSheet("")
         else:
-            # no parent, so style should be ok. set window flag to be on top
+            # no parent found, so style should be ok. this is probably,
+            # hopefully, a rare case, but since our logic for identifying the
+            # top-level widget to parent to makes some potentially flawed
+            # assumptions, we should account for this case. set window flag to
+            # be on top so that it doesn't duck under the houdini window when
+            # shown (typicaly for windows)
             dialog.setWindowFlags(
                 dialog.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
 
@@ -615,6 +634,7 @@ class HoudiniEngine(tank.platform.Engine):
                 widget.windowIconText()):
                 parent = widget
 
-        self.log_debug("Parenting dialog to: %s" % (parent,))
+        self.log_debug(
+            "Found top level widget %s for dialog parenting" % (parent,))
         return parent
                 
