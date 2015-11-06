@@ -29,92 +29,336 @@ class AppCommandsUI(object):
     def _get_context_name(self):
         """Returns a display name for the current context"""
 
-        # context menu
-        ctx = self._engine.context
+        # these objects don't persist across context switches, so we should
+        # only need to construct the context name once. if the engine is
+        # changed to not do a full restart on context switch, then this will
+        # not be the case.
+        if not hasattr(self, '_context_name'):
 
-        if ctx.entity is None:
-            ctx_name = "%s" % ctx.project["name"]
-        elif ctx.step is None and ctx.task is None:
-            # entity only
-            # e.g. Shot ABC_123
-            ctx_name = "%s %s" % (ctx.entity["type"], ctx.entity["name"])
-        else:
-            # we have either step or task
-            task_step = None
-            if ctx.step:
-                task_step = ctx.step.get("name")
-            if ctx.task:
-                task_step = ctx.task.get("name")
+            # context menu
+            ctx = self._engine.context
 
-            # e.g. [Lighting, Shot ABC_123]
-            ctx_name = "%s, %s %s" % (
-                task_step, ctx.entity["type"], ctx.entity["name"])
+            if ctx.entity is None:
+                ctx_name = "%s" % ctx.project["name"]
+            elif ctx.step is None and ctx.task is None:
+                # entity only
+                # e.g. Shot ABC_123
+                ctx_name = "%s %s" % (ctx.entity["type"], ctx.entity["name"])
+            else:
+                # we have either step or task
+                task_step = None
+                if ctx.step:
+                    task_step = ctx.step.get("name")
+                if ctx.task:
+                    task_step = ctx.task.get("name")
 
-        return ctx_name
+                # e.g. [Lighting, Shot ABC_123]
+                ctx_name = "%s, %s %s" % (
+                    task_step, ctx.entity["type"], ctx.entity["name"])
 
+            self._engine.log_debug("Constructed context name: %s" % (ctx_name,))
+            self._context_name = ctx_name
+
+        return self._context_name
+
+    def _group_commands(self):
+        """ This method provides a consistent method for organizing commands.
+
+        Used by the menu and shelf classes to collect the registered commands
+        into groups. The method returns a tuple with the first item being
+        a list of context-specific commands, the second item is a dictionary
+        of commands organized by the app name, and the third item is a list
+        of favourite commands as defined in the settings.
+
+        """
+
+        # should only need to group them once. this object won't persist across
+        # context switches. if the engine changes to not do a full restart on
+        # context switch, then this will need to change.
+        if not hasattr(self, '_grouped_commands'):
+
+            favourite_cmds = []
+            context_cmds = []
+            cmds_by_app = {}
+
+            # favourites
+            for fav in self._engine.get_setting("menu_favourites"):
+                app_instance_name = fav["app_instance"]
+                menu_name = fav["name"]
+
+                for cmd in self._commands:
+                    if (cmd.get_app_instance_name() == app_instance_name and \
+                        cmd.name == menu_name):
+                        cmd.favourite = True
+                        favourite_cmds.append(cmd)
+
+            # this is how the original, static menu logic worked for grouping
+            # commands in the Shotgun menu in houdini. it was moved here so
+            # that it could be used by the dynamic menu in houdini 15+ as well
+            # as the Shotgun shelf.  Basically, make a list of context-based
+            # commands and a dictionary of app-specific commands organized by
+            # app name.
+            for cmd in self._commands:
+                if cmd.get_type() == "context_menu":
+                    context_cmds.append(cmd)
+                else:
+                    app_name = cmd.get_app_name()
+                    if app_name is None:
+                        app_name = "Other Items"
+                    cmds_by_app.setdefault(app_name, []).append(cmd)
+
+            self._engine.log_debug("Grouped registered commands.")
+            self._grouped_commands = (context_cmds, cmds_by_app, favourite_cmds)
+
+        return self._grouped_commands
 
 class AppCommandsMenu(AppCommandsUI):
 
-    def create_menu(self, fname):
+    def __init__(self, engine, commands):
+        super(AppCommandsMenu, self).__init__(engine, commands)
+
+        # this will hold an exception raised during menu creation for dynamic
+        # menus. having this allows for the ability to display a clickable 
+        # error message in the menu rather than relying on houdini to display
+        # a scarier looking error dialog.
+        self._menu_error = None
+
+        # used by the dynamic menu to map an additional, non-registered command
+        # back to a callback. See additional comments in the
+        # _get_context_commands method.
+        self._context_menu_item_id = None
+
+    def create_menu(self, xml_path):
         """ Create the Shotgun Menu """
+
+        import hou
+
+        # houdini 15+ allows for dynamic menu creation, so do that if possible.
+        # otherwise, fallback to the static menu
+        if hou.applicationVersion()[0] >= 15:
+            self._engine.log_debug("Constructing dynamic Shotgun menu.")
+            self._create_dynamic_menu(xml_path)
+        else:
+            self._engine.log_debug("Constructing static Shotgun menu.")
+            self._create_static_menu(xml_path)
+
+    def _get_context_commands(self):
+        """This method returns a modified list of context commands.
+        
+        This is called directly as a part of the dynamic menu generation code
+        as houdini builds submenus when the user clicks on the top-level
+        Shotgun menu. This should execute quickly.
+        
+        """
+
+        # only need to do this once since the menu object doesn't persist
+        # across context switches. using the cached values is important since
+        # the dynamic menu is rebuilt on each click.
+        if not hasattr(self, '_context_commands'):
+
+            # get the registered commands, grouped in the usual way.
+            (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
+
+            # ideally we'd mimic the static menu and have a context item 
+            # that contained a submenu with context-specific commands. this
+            # doesn't seem to be possible with the dynamic menus, so instead
+            # we create an extra command in the "Current Context" menu that 
+            # has the context name and, when clicked, opens the context in
+            # Shotgun in the browser. 
+            context_cmd = AppCommand(
+                name=self._get_context_name(),
+                command_dict={
+                 'properties': {
+                  'description': "Displays the current context, jumps to SG.",
+                  'type': "context_menu",
+                 },
+                 'callback': lambda: None,
+                },
+            )
+
+            # the context command won't be available in the callback map of
+            # the engine since it isn't registered. we don't want to register
+            # it because it is specific to the dynamic menu. 
+            self._context_menu_item_id = context_cmd.get_id()
+
+            # create the full list
+            cmds = [context_cmd]
+            cmds.extend(context_cmds)
+
+            self._engine.log_debug(
+                "Collected context commands for dynamic menu.")
+            self._context_commands = cmds
+
+        return self._context_commands
+
+    def _get_commands_by_app(self):
+        """This method returns a flattened list of registered app commands.
+        
+        This is called directly as a part of the dynamic menu generation code
+        as houdini builds submenus when the user clicks on the top-level
+        Shotgun menu. This should execute quickly.
+        
+        """
+
+        # only need to do this once since the menu object doesn't persist
+        # across context switches. using the cached values is important since
+        # the dynamic menu is rebuilt on each click.
+        if not hasattr(self, '_commands_by_app'):
+
+            (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
+
+            cmds = favourite_cmds
+
+            # get the grouped commands, then flatten it out into a list
+            for app_name in cmds_by_app.keys():
+                for cmd in cmds_by_app[app_name]:
+                    if not cmd.favourite:
+                        cmds.append(cmd)
+
+            self._engine.log_debug("Collected app commands for dynamic menu.")
+            self._commands_by_app = cmds
+
+        return self._commands_by_app
+
+    def _build_shotgun_menu_item(self):
+        """Constructs a top-level "Shotgun" menu.
+        
+        Same logic for both the static and dynamic menu.
+
+        :returns: tuple containing the root element and the shotgun menu item
+        
+        """
 
         root = ET.Element("mainMenu")
         menubar = ET.SubElement(root, "menuBar")
-        submenu = self._menuNode(menubar, "Shotgun", "tk.shotgun")
-        node = ET.SubElement(submenu, "insertBefore")
-        node.text = "help_menu"
+        shotgun_menu = self._menuNode(menubar, "Shotgun", "tk.shotgun")
+        insert_before = ET.SubElement(shotgun_menu, "insertBefore")
+        insert_before.text = "help_menu"
 
         # make sure the Help menu still comes last
-        modify = ET.SubElement(menubar, "modifyItem")
-        modify.set("id", "help_menu")
-        ET.SubElement(modify, "insertAfter")
+        modify_item = ET.SubElement(menubar, "modifyItem")
+        modify_item.set("id", "help_menu")
+        ET.SubElement(modify_item, "insertAfter")
 
+        return (root, shotgun_menu)
+
+    def _create_dynamic_menu(self, xml_path):
+        """Construct the dynamic Shotgun menu for toolkit in Houdini 15+.
+        
+        :param xml_path: The path to the xml file to store the menu definitions 
+        
+        """
+
+        # documentation on the dynamic menu xml tags can be found here:
+        # http://www.sidefx.com/docs/houdini15.0/basics/config_menus
+        
+        # build the Shotgun menu
+        (root, shotgun_menu) = self._build_shotgun_menu_item()
+        
+        # add the context menu
+        context_menu = self._menuNode(shotgun_menu, "Current Context",
+            "tk.context.menu")
+        ET.SubElement(shotgun_menu, "separatorItem")
+
+        context_dynamic_menu = ET.SubElement(context_menu,
+            "scriptMenuStripDynamic")
+        context_dynamic_menu.set("id", "tk.context_dynamic_menu")
+
+        # here we build an element that stores a python script for returning
+        # the ids and names of context menu items. the code is executed each
+        # time the menu is built.
+        context_dynamic_menu_contents = ET.SubElement(context_dynamic_menu,
+            "contentsScriptCode")
+        context_dynamic_menu_contents.text = \
+            "CDATA_START" + \
+                _g_dynamic_menu_names % ('_get_context_commands',) + \
+            "CDATA_END"
+
+        # this element defines a python script that has access to the id of the
+        # menu selected by the user (as defined in the previous element).  this
+        # script uses the id to determine the command and callback execute.
+        context_dynamic_menu_script = ET.SubElement(context_dynamic_menu,
+            "scriptCode")
+        context_dynamic_menu_script.text = \
+            "CDATA_START" + _g_dynamic_menu_script + "CDATA_END"
+
+        main_dynamic_menu = ET.SubElement(shotgun_menu,
+            "scriptMenuStripDynamic")
+        main_dynamic_menu.set("id", "tk.main_dynamic_menu")
+
+        # similar to the dynamic context menu. this time we format the python
+        # script to call the method to return the app specific commands.
+        main_dynamic_menu_contents = ET.SubElement(main_dynamic_menu,
+            "contentsScriptCode")
+        main_dynamic_menu_contents.text = \
+            "CDATA_START" + \
+                _g_dynamic_menu_names % ('_get_commands_by_app',) + \
+            "CDATA_END"
+
+        # same script as the context menu for mapping ids to callbacks for
+        # execution
+        main_dynamic_menu_script = ET.SubElement(main_dynamic_menu,
+            "scriptCode")
+        main_dynamic_menu_script.text = \
+            "CDATA_START" + _g_dynamic_menu_script + "CDATA_END"
+
+        # format the xml and write it to disk
+        xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
+        _write_xml(xml, xml_path)
+        self._engine.log_debug("Dynamic menu written to: %s" % (xml_path,))
+
+    def _create_static_menu(self, xml_path):
+        """Construct the static Shotgun menu for older versions of Houdini.
+        
+        :param xml_path: The path to the xml file to store the menu definitions 
+
+        """
+
+        # documentation on the static menu xml tags can be found here:
+        # http://www.sidefx.com/docs/houdini15.0/basics/config_menus
+
+        # build the Shotgun menu
+        (root, shotgun_menu) = self._build_shotgun_menu_item()
+        
         # create the menu object
         ctx_name = self._get_context_name()
-        ctx_menu = self._menuNode(submenu, ctx_name, "tk.context")
+        ctx_menu = self._menuNode(shotgun_menu, ctx_name, "tk.context")
         ET.SubElement(ctx_menu, "separatorItem")
 
-        # favorites
-        ET.SubElement(submenu, "separatorItem")
-        for fav in self._engine.get_setting("menu_favourites"):
-            app_instance_name = fav["app_instance"]
-            menu_name = fav["name"]
+        (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
 
-            for cmd in self._commands:
-                if cmd.get_app_instance_name() == app_instance_name and cmd.name == menu_name:
-                    cmd.favourite = True
-                    self._itemNode(submenu, cmd.name, cmd.get_id())
+        # favourites
+        ET.SubElement(shotgun_menu, "separatorItem")
+        for cmd in favourite_cmds:
+            self._itemNode(shotgun_menu, cmd.name, cmd.get_id())
 
         # everything else
-        ET.SubElement(submenu, "separatorItem")
-        commands_by_app = {}
-        for cmd in self._commands:
-            if cmd.get_type() == "context_menu":
-                self._itemNode(ctx_menu, cmd.name, cmd.get_id())
-            else:
-                app_name = cmd.get_app_name()
-                if app_name is None:
-                    app_name = "Other Items"
-                commands_by_app.setdefault(app_name, []).append(cmd)
+        ET.SubElement(shotgun_menu, "separatorItem")
 
-        for app_name in sorted(commands_by_app.keys()):
-            cmds = commands_by_app[app_name]
+        # add the context menu items
+        for cmd in context_cmds:
+            self._itemNode(ctx_menu, cmd.name, cmd.get_id())
+            
+        # build the main app-centric menu
+        for app_name in sorted(cmds_by_app.keys()):
+            cmds = cmds_by_app[app_name]
             if len(cmds) > 1:
-                menu = self._menuNode(submenu, app_name, "tk.%s" % app_name.lower())
+                menu = self._menuNode(shotgun_menu, app_name,
+                    "tk.%s" % app_name.lower())
                 for cmd in cmds:
                     self._itemNode(menu, cmd.name, cmd.get_id())
             else:
                 if not cmds[0].favourite:
-                    self._itemNode(submenu, cmds[0].name, cmds[0].get_id())
+                    self._itemNode(shotgun_menu, cmds[0].name, cmds[0].get_id())
 
-        # and write out the final xml
-        xmldir = os.path.dirname(fname)
-        if not os.path.exists(xmldir):
-            os.makedirs(xmldir)
-        doc = ET.ElementTree(root)
-        doc.write(fname, encoding="UTF-8")
+        # format the xml and write it to disk
+        xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
+        _write_xml(xml, xml_path)
+        self._engine.log_debug("Static menu written to: %s" % (xml_path,))
 
     def _menuNode(self, parent, label, id):
+        """Constructs a submenu for the supplied parent."""
+
         menu = ET.SubElement(parent, "subMenu")
         menu.set("id", id)
         node = ET.SubElement(menu, "label")
@@ -122,6 +366,12 @@ class AppCommandsMenu(AppCommandsUI):
         return menu
 
     def _itemNode(self, parent, label, id):
+        """Constructs a static menu item for the supplied parent.
+
+        Adds the script path and args which houdini uses as the callback.
+
+        """
+
         item = ET.SubElement(parent, "scriptItem")
         node = ET.SubElement(item, "label")
         node.text = label
@@ -246,16 +496,9 @@ class AppCommandsPanelHandler(AppCommandsUI):
                 'interfaceItem')
             panetab_menu_item.set('name', panel_cmd.name)
 
-        full_xml = ET.tostring(root, encoding="UTF-8")
-        full_xml = full_xml.replace("CDATA_START", "<![CDATA[")
-        full_xml = full_xml.replace("CDATA_END", "]]>")
-
-        panels_dir = os.path.dirname(panels_file)
-        if not os.path.exists(panels_dir):
-            os.makedirs(panels_dir)
-
-        with open(panels_file, "w") as panels_file_handle:
-            panels_file_handle.write(full_xml)
+        xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
+        _write_xml(xml, panels_file)
+        self._engine.log_debug("Panels written to: %s" % (panels_file,))
 
         # install the panels
         hou.pypanel.installFile(panels_file)
@@ -329,22 +572,24 @@ class AppCommandsShelf(AppCommandsUI):
         shelf_tools = []
         cmds_by_app = {}
 
-        # add the context menu tools first, then organize them by app name.
-        for cmd in self._commands:
-            if cmd.get_type() == "context_menu":
-                tool = self.create_tool(shelf_file, cmd)
-                shelf_tools.append(tool)
-            else:
-                app_name = cmd.get_app_name()
-                if app_name is None:
-                    app_name = "Other Items"
-                cmds_by_app.setdefault(app_name, []).append(cmd)
+        (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
+
+        # add the context menu tools first
+        for cmd in context_cmds:
+            tool = self.create_tool(shelf_file, cmd)
+            shelf_tools.append(tool)
+
+        # now add the favourites
+        for cmd in favourite_cmds:
+            tool = self.create_tool(shelf_file, cmd)
+            shelf_tools.append(tool)
 
         # create tools for the remaining commands
         for app_name in sorted(cmds_by_app.keys()):
             for cmd in cmds_by_app[app_name]:
-                tool = self.create_tool(shelf_file, cmd)
-                shelf_tools.append(tool)
+                if not cmd.favourite:
+                    tool = self.create_tool(shelf_file, cmd)
+                    shelf_tools.append(tool)
 
         shelf.setTools(shelf_tools)
 
@@ -631,6 +876,39 @@ def _jump_to_fs(engine):
         if exit_code != 0:
             engine.log_error("Failed to launch '%s'!" % cmd)
 
+def _format_xml(xml):
+    """Do any required formatting. Typically before writing to disk."""
+
+    # the xml etree API doesn't seem to have a good way to deal with 
+    # CDATA. As a workaround for the menus and shelves, we throw in a string
+    # we can replace before writing to disk. Do the replacement here.
+    formatted_xml = xml.replace("CDATA_START", "<![CDATA[")
+    formatted_xml = formatted_xml.replace("CDATA_END", "]]>")
+
+    return formatted_xml
+
+def _write_xml(xml, xml_path):
+    """Write the full element tree to the supplied xml file.
+
+    :param string xml: The xml to write to disk
+    :param string xml_path: The path to write the xml. 
+
+    Also ensures the directory exists before writing the file.
+    
+    """
+
+    # ensure the directory exists
+    xml_dir = os.path.dirname(xml_path)
+    if not os.path.exists(xml_dir):
+        os.makedirs(xml_dir)
+
+    # write the xml file
+    with open(xml_path, "w") as xml_file_handle:
+        xml_file_handle.write(xml)
+
+
+# -----------------------------------------------------------------------------
+# template strings used to populate menu, shelf, and panel scripts
 
 # The code that executes when a shelf button is clicked.  This is pulled from
 # menu_action.py. Maybe there's a good way to share this rather than
@@ -730,5 +1008,80 @@ def createInterface():
 
     return panel_widget
 
+"""
+
+# this template is used when building the dynamic menu. it has one placeholder
+# for a method to return a list of commands. when executed, this code uses that
+# list of commands to populate the Shotgun menu in houdini. houdini expects a
+# list of the form [menu_id1, menu_label1, menu_id2, menu_label2, ...]. some
+# effort is made to recover gracefully from errors encountered when building
+# the dynamic menu. For additional information, see the houdini docs for the
+# dynamic menus: http://www.sidefx.com/docs/houdini15.0/basics/config_menus
+_g_dynamic_menu_names = \
+"""
+engine = None
+menu_items = []
+try:
+    import tank.platform.engine
+    engine = tank.platform.engine.current_engine()
+    # the commands to display in this menu
+    cmds = engine._menu.%s()
+    # build the list that houdini expects
+    for cmd in cmds:
+        menu_items.extend([cmd.get_id(), cmd.name])
+except Exception as e:
+    if engine:
+        # store the exception on the menu object for display in the callback
+        engine._menu._menu_error = e
+    else:
+        import traceback
+        traceback.print_exc()
+    # just give houdini a special error item for the menu
+    menu_items.extend(
+        ["tk.houdini.menu.error", "Menu Error. Click for Details..."])
+else:
+    if engine:
+        engine._menu._menu_error = None
+finally:
+    return menu_items
+"""
+
+# this template is used when executing items int the dynamic menu. kwargs are
+# available when this runs to access the id selected by the user. the id is 
+# used to map back to a callback for the associated command. For additional
+# information, see the houdini docs for the dynamic menus:
+# http://www.sidefx.com/docs/houdini15.0/basics/config_menus
+_g_dynamic_menu_script = \
+"""
+import hou
+engine = None
+try:
+    import tank.platform.engine
+    # get the selected menu id
+    command_id = kwargs["selectedtoken"]
+    engine = tank.platform.engine.current_engine()
+    # special id if errors occured and they clicked for more info
+    if command_id == "tk.houdini.menu.error":
+        # try to locate the exception on the menu object and raise it
+        if engine._menu._menu_error:
+            raise engine._menu._menu_error
+        # no stored exception, tell the user to look in the shell
+        else:
+            raise Exception("The error message should show up in your shell.")
+    # the special context item. launch the context in browser
+    if command_id == engine._menu._context_menu_item_id:
+        from tank.platform.qt import QtCore, QtGui
+        url = engine.context.shotgun_url
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
+    # should be a registered command. launch it
+    else:
+        engine.launch_command(command_id)
+except Exception as e:
+    # handle any exceptions raised during menu building
+    msg = "An error occured building the Shotgun menu...\\n\\n%s" % (e,)
+    if engine:
+        hou.ui.displayMessage(msg, severity=hou.severityType.Error)
+    else:
+        print msg
 """
 
