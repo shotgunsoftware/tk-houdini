@@ -192,7 +192,7 @@ class AppCommandsMenu(AppCommandsUI):
         return self._context_commands
 
     def _get_commands_by_app(self):
-        """This method returns a list of commands sorted by app name.
+        """This method returns a flattened list of registered app commands.
         
         This is called directly as a part of the dynamic menu generation code
         as houdini builds submenus when the user clicks on the top-level
@@ -210,7 +210,7 @@ class AppCommandsMenu(AppCommandsUI):
             cmds = favourite_cmds
 
             # get the grouped commands, then flatten it out into a list
-            for app_name in sorted(cmds_by_app.keys()):
+            for app_name in cmds_by_app.keys():
                 for cmd in cmds_by_app[app_name]:
                     if not cmd.favourite:
                         cmds.append(cmd)
