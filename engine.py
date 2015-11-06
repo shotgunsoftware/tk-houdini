@@ -116,10 +116,13 @@ class HoudiniEngine(tank.platform.Engine):
                 if hou.applicationVersion() > (12, 5, 0):
                     menu_file = menu_file + ".xml"
 
-                menu = tk_houdini.AppCommandsMenu(self, commands)
+                # keep the reference to the menu handler for convenience so
+                # that we can access it from the menu scripts when they get
+                # ahold of the current engine.
+                self._menu = tk_houdini.AppCommandsMenu(self, commands)
                 if not os.path.exists(menu_file):
                     # just create the xml for the menus
-                    menu.create_menu(menu_file)
+                    self._menu.create_menu(menu_file)
 
             if commands and enable_sg_shelf:
 
