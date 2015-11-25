@@ -138,20 +138,24 @@ class HoudiniEngine(tank.platform.Engine):
                 shelf_file = os.path.join(xml_tmp_dir, "sg_shelf.xml")
                 self._shelf.create_shelf(shelf_file)
 
-            # Get the list of registered commands to build panels for. The
-            # commands returned are AppCommand objects defined in
-            # tk_houdini.ui_generation
-            panel_commands = tk_houdini.get_registered_panels(self)
+            if commands and self._panels_supported():
 
-            # expose the wrapped panel method on the engine so that the 
-            # panels can call it directly
-            self.get_wrapped_panel_widget = tk_houdini.get_wrapped_panel_widget
- 
-            if commands and panel_commands:
-                self._panels_file = os.path.join(xml_tmp_dir, "sg_panels.pypanel")
-                panels = tk_houdini.AppCommandsPanelHandler(self, commands,
-                    panel_commands)
-                panels.create_panels(self._panels_file)
+                # Get the list of registered commands to build panels for. The
+                # commands returned are AppCommand objects defined in
+                # tk_houdini.ui_generation
+                panel_commands = tk_houdini.get_registered_panels(self)
+
+                # expose the wrapped panel method on the engine so that the 
+                # panels can call it directly
+                self.get_wrapped_panel_widget = \
+                    tk_houdini.get_wrapped_panel_widget
+    
+                if panel_commands:
+                    self._panels_file = os.path.join(xml_tmp_dir,
+                        "sg_panels.pypanel")
+                    panels = tk_houdini.AppCommandsPanelHandler(self, commands,
+                        panel_commands)
+                    panels.create_panels(self._panels_file)
 
             # Figure out the tmp OP Library path for this session
             oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")

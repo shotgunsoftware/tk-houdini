@@ -616,14 +616,16 @@ class AppCommandsShelf(AppCommandsUI):
             name=cmd.name.replace(" ", "_"),
             label=cmd.name,
             script=_g_launch_script % cmd.get_id(),
-            help=cmd.get_description(),
+            #help=cmd.get_description(),         
             help_url=cmd.get_documentation_url_str(),
             icon=cmd.get_icon()
         )
         # NOTE: there seems to be a bug in houdini where the 'help' does
         # not display in the tool's tooltip even though the tool's help
         # string is clearly populated in the tool when you edit it in the
-        # ui.
+        # ui. It is also causing popup errors related to getParsedTooltip 
+        # in some builds. Leaving it commented out until this is fixed by
+        # SESI. 
 
         return tool
 
@@ -1002,9 +1004,19 @@ def createInterface():
         )
 
     pane_tab = kwargs["paneTab"]
-    if pane_tab:
-        pane_tab.setLabel(panel_info['title'])
-        pane_tab.setName(panel_info['id'])
+
+    # it appears that sometimes the pane_tab available here is not the one 
+    # we're interested in. sometimes it is not set and sometimes it is a 
+    # different tab all together. so just check to make sure it is set and 
+    # make sure it has the 'setLabel' method available. that at least implies
+    # that it is a python panel 
+    if pane_tab and hasattr(pane_tab, 'setLabel'):
+        title = panel_info.get('title', None)
+        name = panel_info.get('id', None)
+        if title:
+            pane_tab.setLabel(title)
+        if name:
+            pane_tab.setName(name)
 
     return panel_widget
 
@@ -1046,7 +1058,7 @@ finally:
     return menu_items
 """
 
-# this template is used when executing items int the dynamic menu. kwargs are
+# this template is used when executing items in the dynamic menu. kwargs are
 # available when this runs to access the id selected by the user. the id is 
 # used to map back to a callback for the associated command. For additional
 # information, see the houdini docs for the dynamic menus:
