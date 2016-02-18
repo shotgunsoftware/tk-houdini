@@ -47,6 +47,13 @@ class HoudiniEngine(tank.platform.Engine):
                 "Your version of Houdini is not supported on OS X. Currently, "
                 "Toolkit only supports version 14+ on OS X.")
 
+        try:
+            hou_ver_str = ".".join([str(v) for v in hou.applicationVersion()])
+            self.log_user_attribute_metric("Houdini version", hou_ver_str)
+        except:
+            # ignore all errors. ex: using a core that doesn't support metrics
+            pass
+
         # keep track of if a UI exists
         self._ui_enabled = hasattr(hou, 'ui')
 
