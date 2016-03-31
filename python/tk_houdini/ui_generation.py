@@ -434,62 +434,32 @@ class AppCommandsPanelHandler(AppCommandsUI):
 
         root = ET.Element("pythonPanelDocument")
 
-        # get the cmds that launch panels so we can get additional info
-        # about the panels when we need it.
-        cmds_by_app_inst = {}
-        for cmd in self._commands:
-            if not cmd.get_type() == "panel":
-                continue
-            app_cmds = cmds_by_app_inst.setdefault(cmd.get_app_instance_name(), [])
-            app_cmds.append(cmd)
-
         for panel_cmd in self._panel_commands:
 
-            # match the panel command with a registered command to get the
-            # info needed to display the panel in the UI.
-
-            if not panel_cmd.get_app_name():
-                # we need to find the matching command and the app is required
-                # for that. if we can't get the app name, just continue
-                continue
-
-            app_inst_name = panel_cmd.get_app_instance_name()
-            app_cmds = cmds_by_app_inst[app_inst_name]
-
-            if len(app_cmds) == 1:
-                # assume this is the right command
-                launch_cmd = app_cmds[0]
-            else:
-                # multiple registered panel apps. Until there is a reliable way
-                # to map registered panels to registered commands, not sure
-                # there is a good way to make this work in houdini. just log
-                # the troubles for now.
-                self._engine.log_debug(
-                    "Multiple registered panel commands for app instance '%s'. "
-                    "Unable to build the panel." % (app_inst_name,)
-                )
-                continue
-
-            icon = panel_cmd.get_icon() or launch_cmd.get_icon()
+            panel_info = self._engine.get_panel_info(panel_cmd.name)
 
             interface = ET.SubElement(root, "interface")
             interface.set('name', panel_cmd.name)
-            interface.set('label', launch_cmd.name)
-            if icon:
-                interface.set('icon', launch_cmd.get_icon())
+            interface.set('label', panel_info["title"])
 
-            doc_url = panel_cmd.get_documentation_url_str() or \
-                launch_cmd.get_documentation_url_str()
+            icon = panel_cmd.get_icon()
+            if icon:
+                interface.set('icon', icon)
+
+            doc_url = panel_cmd.get_documentation_url_str()
             if not doc_url:
                 doc_url = ""
             interface.set('help_url', doc_url)
 
             script = ET.SubElement(interface, "script")
-            script.text = "CDATA_START" + \
-                _g_panel_script % (icon, launch_cmd.name, panel_cmd.name) + \
-                "CDATA_END"
+            script_code = _g_panel_script % (
+                icon,
+                panel_info["title"],
+                panel_cmd.name
+            )
+            script.text = "CDATA_START" + script_code + "CDATA_END"
 
-            desc = panel_cmd.get_description() or launch_cmd.get_description()
+            desc = panel_cmd.get_description()
             if not desc:
                 desc = ""
 
@@ -712,13 +682,19 @@ class AppCommand(object):
         return None
 
     def get_icon(self):
+
+        icon_path = None
+
         if "icon" in self.properties:
+            icon_path = self.properties["icon"]
+        elif "app" in self.properties:
+            icon_path = self.properties["app"].descriptor.get_icon_256()
 
-            # houdini required "/" for UNC paths instead of "\\". 
-            icon_path = self.properties["icon"].replace("\\", "/")
+        if icon_path:
+            # houdini required "/" for UNC paths instead of "\\".
+            icon_path = icon_path.replace("\\", "/")
 
-            return icon_path
-        return None
+        return icon_path
 
     def get_id(self):
         title_trans = ''.join(chr(c) if chr(c).isupper() or chr(c).islower() else '_' for c in range(256))
@@ -1000,7 +976,7 @@ def createInterface():
         return NoPanelWidget(
             "It looks like you're running Houdini outside of a Shotgun "
             "context. Next time you launch Houdini from within a Shotgun "
-            "context, you will see the '%s' here."
+            "context, you will see the '%s' panel here."
         )
 
     try:
