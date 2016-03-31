@@ -436,22 +436,39 @@ class AppCommandsPanelHandler(AppCommandsUI):
 
         # get the cmds that launch panels so we can get additional info
         # about the panels when we need it.
-        cmds_by_panel_callback = {}
+        cmds_by_app_inst = {}
         for cmd in self._commands:
             if not cmd.get_type() == "panel":
                 continue
-            cmds_by_panel_callback[cmd.callback] = cmd
+            app_cmds = cmds_by_app_inst.setdefault(cmd.get_app_instance_name(), [])
+            app_cmds.append(cmd)
 
         for panel_cmd in self._panel_commands:
 
-            if not panel_cmd.callback in cmds_by_panel_callback:
-                # currently we rely on a menu command to be registered 
-                # for each panel in order to get the information we need
-                # to display the panel in the UI. If there is no corresponding
-                # command, don't show the panel.
+            # match the panel command with a registered command to get the
+            # info needed to display the panel in the UI.
+
+            if not panel_cmd.get_app_name():
+                # we need to find the matching command and the app is required
+                # for that. if we can't get the app name, just continue
                 continue
 
-            launch_cmd = cmds_by_panel_callback[panel_cmd.callback]
+            app_inst_name = panel_cmd.get_app_instance_name()
+            app_cmds = cmds_by_app_inst[app_inst_name]
+
+            if len(app_cmds) == 1:
+                # assume this is the right command
+                launch_cmd = app_cmds[0]
+            else:
+                # multiple registered panel apps. Until there is a reliable way
+                # to map registered panels to registered commands, not sure
+                # there is a good way to make this work in houdini. just log
+                # the troubles for now.
+                self._engine.log_debug(
+                    "Multiple registered panel commands for app instance '%s'. "
+                    "Unable to build the panel." % (app_inst_name,)
+                )
+                continue
 
             icon = panel_cmd.get_icon() or launch_cmd.get_icon()
 
