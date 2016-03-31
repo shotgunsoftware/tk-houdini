@@ -434,45 +434,32 @@ class AppCommandsPanelHandler(AppCommandsUI):
 
         root = ET.Element("pythonPanelDocument")
 
-        # get the cmds that launch panels so we can get additional info
-        # about the panels when we need it.
-        cmds_by_panel_callback = {}
-        for cmd in self._commands:
-            if not cmd.get_type() == "panel":
-                continue
-            cmds_by_panel_callback[cmd.callback] = cmd
-
         for panel_cmd in self._panel_commands:
 
-            if not panel_cmd.callback in cmds_by_panel_callback:
-                # currently we rely on a menu command to be registered 
-                # for each panel in order to get the information we need
-                # to display the panel in the UI. If there is no corresponding
-                # command, don't show the panel.
-                continue
-
-            launch_cmd = cmds_by_panel_callback[panel_cmd.callback]
-
-            icon = panel_cmd.get_icon() or launch_cmd.get_icon()
+            panel_info = self._engine.get_panel_info(panel_cmd.name)
 
             interface = ET.SubElement(root, "interface")
             interface.set('name', panel_cmd.name)
-            interface.set('label', launch_cmd.name)
-            if icon:
-                interface.set('icon', launch_cmd.get_icon())
+            interface.set('label', panel_info["title"])
 
-            doc_url = panel_cmd.get_documentation_url_str() or \
-                launch_cmd.get_documentation_url_str()
+            icon = panel_cmd.get_icon()
+            if icon:
+                interface.set('icon', icon)
+
+            doc_url = panel_cmd.get_documentation_url_str()
             if not doc_url:
                 doc_url = ""
             interface.set('help_url', doc_url)
 
             script = ET.SubElement(interface, "script")
-            script.text = "CDATA_START" + \
-                _g_panel_script % (icon, launch_cmd.name, panel_cmd.name) + \
-                "CDATA_END"
+            script_code = _g_panel_script % (
+                icon,
+                panel_info["title"],
+                panel_cmd.name
+            )
+            script.text = "CDATA_START" + script_code + "CDATA_END"
 
-            desc = panel_cmd.get_description() or launch_cmd.get_description()
+            desc = panel_cmd.get_description()
             if not desc:
                 desc = ""
 
@@ -695,13 +682,19 @@ class AppCommand(object):
         return None
 
     def get_icon(self):
+
+        icon_path = None
+
         if "icon" in self.properties:
+            icon_path = self.properties["icon"]
+        elif "app" in self.properties:
+            icon_path = self.properties["app"].descriptor.get_icon_256()
 
-            # houdini required "/" for UNC paths instead of "\\". 
-            icon_path = self.properties["icon"].replace("\\", "/")
+        if icon_path:
+            # houdini required "/" for UNC paths instead of "\\".
+            icon_path = icon_path.replace("\\", "/")
 
-            return icon_path
-        return None
+        return icon_path
 
     def get_id(self):
         title_trans = ''.join(chr(c) if chr(c).isupper() or chr(c).islower() else '_' for c in range(256))
@@ -983,7 +976,7 @@ def createInterface():
         return NoPanelWidget(
             "It looks like you're running Houdini outside of a Shotgun "
             "context. Next time you launch Houdini from within a Shotgun "
-            "context, you will see the '%s' here."
+            "context, you will see the '%s' panel here."
         )
 
     try:
