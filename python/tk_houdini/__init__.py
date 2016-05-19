@@ -12,6 +12,7 @@ from .ui_generation import (
     AppCommandsMenu,
     AppCommandsShelf,
     AppCommandsPanelHandler,
+    ensure_file_change_timer_running,
     get_registered_commands,
     get_registered_panels,
     get_wrapped_panel_widget,

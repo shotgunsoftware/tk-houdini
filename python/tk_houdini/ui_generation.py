@@ -18,6 +18,12 @@ g_menu_item_script = os.path.join(os.path.dirname(__file__), "menu_action.py")
 # #3716 Fixes UNC problems with menus. Prefix '\' are otherwise concatenated to a single character, therefore using '/' instead.
 g_menu_item_script = g_menu_item_script.replace("\\", "/")
 
+# global used to indicate that the file change time has been initialized and
+# started
+g_file_change_timer = None
+
+# stores the path of the current file for use by the file change timeout callback
+g_current_file = None
 
 class AppCommandsUI(object):
     """Base class for interface elements that trigger command actions."""
@@ -765,6 +771,31 @@ def get_registered_commands(engine):
         commands.append(AppCommand(cmd_name, cmd_details))
     return commands
 
+
+def ensure_file_change_timer_running():
+    """
+    Ensures a timer is running to periodically check for current file change.
+
+    """
+
+    # do nothing if it is already running
+    global g_file_change_timer
+    if g_file_change_timer:
+        return
+
+    import hou
+    import sgtk
+    from sgtk.platform.qt import QtCore
+
+    global g_current_file
+    g_current_file = hou.hipFile.path()
+
+    # start up a timer to execute a callback to check for current file changes
+    g_file_change_timer = QtCore.QTimer()
+    g_file_change_timer.timeout.connect(_on_file_change_timeout)
+    g_file_change_timer.start(1000)
+
+
 def get_registered_panels(engine):
     """Returns a list of AppCommands for the engine's registered panels.
 
@@ -881,6 +912,66 @@ def _format_xml(xml):
     formatted_xml = formatted_xml.replace("CDATA_END", "]]>")
 
     return formatted_xml
+
+def _on_file_change_timeout():
+    """
+    Checks to see if the current file has changed. If it has, try to set the
+    new context for the file.
+    """
+
+    import hou
+    cur_file = hou.hipFile.path()
+
+    global g_current_file
+    if cur_file == g_current_file:
+        # the current file is the same as it was last time. no file change,
+        # no need to proceed
+        return
+
+    # update the current file global so that the next timeout won't do anything
+    # it isn't supposed to
+    g_current_file = cur_file
+
+    import sgtk
+    cur_engine = None
+
+    # attempt to get the current engine and context
+    try:
+        cur_engine = sgtk.platform.current_engine()
+        cur_context = cur_engine.context
+        engine_name = cur_engine.name
+    except Exception, e:
+        engine_name = "tk-houdini"
+        cur_context = None
+
+    try:
+        tk = sgtk.tank_from_path(cur_file)
+    except sgtk.TankError, e:
+        # Unable to get tk api instance from the path. won't be able to get a
+        # new context. if there is an engine running, destroy it.
+        if cur_engine:
+            cur_engine.destroy()
+        return
+
+    new_context = tk.context_from_path(cur_file, cur_context)
+
+    if cur_context == new_context:
+        return
+
+    if cur_engine:
+        cur_engine.destroy()
+
+    # try to create new engine
+    try:
+        sgtk.platform.start_engine(engine_name, tk, new_context)
+    except sgtk.TankEngineInitError, e:
+        msg = (
+            "There was a problem starting a new instance of the '%s' engine "
+            "for context '%s'\n"
+            "Error: %s" % (engine_name, new_context, e)
+        )
+        hou.ui.displayMessage(msg, severity=hou.severityType.Error)
+        return
 
 def _write_xml(xml, xml_path):
     """Write the full element tree to the supplied xml file.
@@ -1029,11 +1120,15 @@ menu_items = []
 try:
     import tank.platform.engine
     engine = tank.platform.engine.current_engine()
-    # the commands to display in this menu
-    cmds = engine._menu.%s()
-    # build the list that houdini expects
-    for cmd in cmds:
-        menu_items.extend([cmd.get_id(), cmd.name])
+    if engine:
+        # the commands to display in this menu
+        cmds = engine._menu.%s()
+        # build the list that houdini expects
+        for cmd in cmds:
+            menu_items.extend([cmd.get_id(), cmd.name])
+    else:
+        global _g_no_engine_cmd
+        menu_items.extend(["tk.houdini.menu.no.shotgun", "Not working in a Shotgun Context"])
 except Exception as e:
     if engine:
         # store the exception on the menu object for display in the callback
@@ -1065,6 +1160,17 @@ try:
     # get the selected menu id
     command_id = kwargs["selectedtoken"]
     engine = tank.platform.engine.current_engine()
+    # special id if there is no shotgun context/engine
+    if command_id == "tk.houdini.menu.no.shotgun":
+        msg = (
+            "It appears as though you are not currenly working in a Shotgun "
+            "context. There is no Shotgun for Houdini Engine running so no "
+            "menu or shelf items are available. In order to restart the Shotgun "
+            "integration, please close and reopen this file or choose a file "
+            "from your Shotgun project in the 'Recent Files' menu. If you "
+            "believe this to be an error, please contact your support team."
+        )
+        hou.ui.displayMessage(msg, severity=hou.severityType.Warning)
     # special id if errors occured and they clicked for more info
     if command_id == "tk.houdini.menu.error":
         # try to locate the exception on the menu object and raise it
