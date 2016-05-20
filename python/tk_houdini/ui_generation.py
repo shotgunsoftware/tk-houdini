@@ -1130,7 +1130,6 @@ try:
         for cmd in cmds:
             menu_items.extend([cmd.get_id(), cmd.name])
     else:
-        global _g_no_engine_cmd
         menu_items.extend(["tk.houdini.menu.no.shotgun", "Not working in a Shotgun Context"])
 except Exception as e:
     if engine:
