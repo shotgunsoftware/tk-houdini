@@ -953,17 +953,20 @@ def _on_file_change_timeout():
             cur_engine.destroy()
         return
 
+    # get the new context from the file
     new_context = tk.context_from_path(cur_file, cur_context)
 
+    # if the contexts are the same, either the user has not changed context or
+    # the context change has already been handled, for example by workfiles2
     if cur_context == new_context:
         return
 
-    if cur_engine:
-        cur_engine.destroy()
-
     # try to create new engine
     try:
-        sgtk.platform.start_engine(engine_name, tk, new_context)
+        if cur_engine:
+            sgtk.platform.change_context(new_context)
+        else:
+            sgtk.platform.start_engine(engine_name, tk, new_context)
     except sgtk.TankEngineInitError, e:
         msg = (
             "There was a problem starting a new instance of the '%s' engine "

@@ -89,7 +89,7 @@ class HoudiniEngine(tank.platform.Engine):
             return
 
         tk_houdini = self.import_module("tk_houdini")
-        tk_houdini.ensure_file_change_timer_running(self)
+        tk_houdini.ensure_file_change_timer_running()
 
     def post_app_init(self):
         """
