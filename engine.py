@@ -80,6 +80,17 @@ class HoudiniEngine(tank.platform.Engine):
             else:
                 self.log_warning("PySide not bundled for python %d.%d" % (py_ver[0], py_ver[1]))
 
+    def pre_app_init(self):
+        """
+        Called at startup, but after QT has been initialized.
+        """
+
+        if not self._ui_enabled:
+            return
+
+        tk_houdini = self.import_module("tk_houdini")
+        tk_houdini.ensure_file_change_timer_running()
+
     def post_app_init(self):
         """
         Init that runs after all apps have been loaded.
