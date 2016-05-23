@@ -1130,7 +1130,7 @@ try:
         for cmd in cmds:
             menu_items.extend([cmd.get_id(), cmd.name])
     else:
-        menu_items.extend(["tk.houdini.menu.no.shotgun", "Not working in a Shotgun Context"])
+        menu_items.extend(["tk.houdini.menu.no.shotgun", "Toolkit is disabled - Click for details"])
 except Exception as e:
     if engine:
         # store the exception on the menu object for display in the callback
@@ -1168,7 +1168,7 @@ try:
             "It appears as though you are not currenly working in a Shotgun "
             "context. There is no Shotgun for Houdini Engine running so no "
             "menu or shelf items are available. In order to restart the Shotgun "
-            "integration, please close and reopen this file or choose a file "
+            "integration, please close and reopen Houdini or choose a file "
             "from your Shotgun project in the 'Recent Files' menu. If you "
             "believe this to be an error, please contact your support team."
         )

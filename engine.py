@@ -88,8 +88,13 @@ class HoudiniEngine(tank.platform.Engine):
         if not self._ui_enabled:
             return
 
-        tk_houdini = self.import_module("tk_houdini")
-        tk_houdini.ensure_file_change_timer_running()
+        if hou.applicationVersion()[0] >= 15:
+            # In houdini 15+, we can use the dynamic menus and shelf api to
+            # properly handle cases where a file is loaded outside of a SG
+            # context. Make sure the timer that looks for current file changes
+            # is running.
+            tk_houdini = self.import_module("tk_houdini")
+            tk_houdini.ensure_file_change_timer_running()
 
     def post_app_init(self):
         """
