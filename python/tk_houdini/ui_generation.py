@@ -932,6 +932,12 @@ def _on_file_change_timeout():
     # it isn't supposed to
     g_current_file = cur_file
 
+    # if the file name is untitled.hip, don't automatically destroy the engine.
+    # allow the user to continue working in the same context
+    file_name = os.path.split(cur_file)[-1]
+    if file_name.lower() == "untitled.hip":
+        return
+
     import sgtk
     cur_engine = None
 
