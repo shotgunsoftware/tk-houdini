@@ -36,7 +36,7 @@ def bootstrap(tank, context):
         # houdini respects semicolons as delimiters in all cases.
         hou_path_str = os.environ.get("HOUDINI_PATH")
         if hou_path_str:
-            hou_path_str.rstrip(";")
+            hou_path_str = hou_path_str.rstrip(";")
             hou_paths = hou_path_str.split(";")
         else:
             hou_paths = []
@@ -44,10 +44,7 @@ def bootstrap(tank, context):
         # paths to prepend that are not already in the houdini path
         prepend_paths = [tmpdir, engine_startup]
         prepend_paths = [p for p in prepend_paths if not p in hou_paths]
-
-        # reverse so that they're prepended in the right order
-        for path in reversed(prepend_paths):
-            hou_paths.insert(0, path)
+        prepend_paths.extend(hou_paths)
 
         # append the ampersand if it's not already in the paths
         if not "&" in hou_paths:
