@@ -44,13 +44,15 @@ def bootstrap(tank, context):
         # paths to prepend that are not already in the houdini path
         prepend_paths = [tmpdir, engine_startup]
         prepend_paths = [p for p in prepend_paths if not p in hou_paths]
-        prepend_paths.extend(hou_paths)
+
+        new_paths = prepend_paths
+        new_paths.extend(hou_paths)
 
         # append the ampersand if it's not already in the paths
         if not "&" in hou_paths:
-            hou_paths.append("&")
+            new_paths.append("&")
 
-        os.environ["HOUDINI_PATH"] = ";".join(hou_paths)
+        os.environ["HOUDINI_PATH"] = ";".join(new_paths)
     except:
         # had an error, clean up the tmp dir
         shutil.rmtree(tmpdir)
