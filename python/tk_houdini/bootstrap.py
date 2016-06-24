@@ -32,13 +32,25 @@ def bootstrap(tank, context):
         engine_startup = os.path.join(os.path.dirname(__file__), "..", "..", "startup")
         engine_startup = os.path.normpath(engine_startup)
 
-        # include our directories in the HOUDINI_PATH
-        if 'HOUDINI_PATH' in os.environ:
-            old_path = os.environ['HOUDINI_PATH'].rstrip(';&')
-            new_path = "%s;%s;%s" % (tmpdir, engine_startup, old_path)
+        # note: not using sgtk.util.environment.prepend_path_to_env_var since
+        # houdini respects semicolons as delimiters in all cases.
+        hou_path_str = os.environ.get("HOUDINI_PATH")
+        if hou_path_str:
+            hou_path_str = hou_path_str.rstrip(";")
+            hou_paths = hou_path_str.split(";")
         else:
-            new_path = "%s;%s" % (tmpdir, engine_startup)
-        os.environ['HOUDINI_PATH'] = "%s;&" % new_path
+            hou_paths = []
+
+        # paths to prepend that are not already in the houdini path
+        prepend_paths = [tmpdir, engine_startup]
+        prepend_paths = [p for p in prepend_paths if not p in hou_paths]
+        prepend_paths.extend(hou_paths)
+
+        # append the ampersand if it's not already in the paths
+        if not "&" in hou_paths:
+            hou_paths.append("&")
+
+        os.environ["HOUDINI_PATH"] = ";".join(hou_paths)
     except:
         # had an error, clean up the tmp dir
         shutil.rmtree(tmpdir)
