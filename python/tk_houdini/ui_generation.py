@@ -609,16 +609,18 @@ class AppCommandsShelf(AppCommandsUI):
             name=cmd.name.replace(" ", "_"),
             label=cmd.name,
             script=_g_launch_script % cmd.get_id(),
-            #help=cmd.get_description(),         
-            help_url=cmd.get_documentation_url_str(),
+            #help=cmd.get_description(),
+            #help_url=cmd.get_documentation_url_str(),
             icon=cmd.get_icon()
         )
         # NOTE: there seems to be a bug in houdini where the 'help' does
         # not display in the tool's tooltip even though the tool's help
         # string is clearly populated in the tool when you edit it in the
-        # ui. It is also causing popup errors related to getParsedTooltip 
+        # ui. It is also causing popup errors related to getParsedTooltip
         # in some builds. Leaving it commented out until this is fixed by
-        # SESI. 
+        # SESI.
+        # NOTE: Commenting out help_url due to apparent Houdini bug whereby
+        # empty url results in a ValueError on first mouseover. zd37814
 
         return tool
 
