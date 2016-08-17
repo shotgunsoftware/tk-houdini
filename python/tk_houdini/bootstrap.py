@@ -10,6 +10,7 @@
 
 import os
 import shutil
+import sys
 import tempfile
 
 
@@ -33,6 +34,11 @@ def bootstrap(tank, context):
         # note: not using sgtk.util.environment.prepend_path_to_env_var since
         # houdini respects semicolons as delimiters in all cases.
         hou_path_str = os.environ.get("HOUDINI_PATH")
+
+        # default to using the OS-specific path separator. windows should
+        # always use semicolon since colon is the drive separator.
+        path_sep = os.pathsep
+
         if hou_path_str:
 
             # It turns out Houdini allows HOUDINI_PATH to be separated by
@@ -40,27 +46,19 @@ def bootstrap(tank, context):
             # assumed semicolons regardless of the current OS. Some clients on
             # POSIX OSs however, who define HOUDINI_PATH in their env prior to
             # tk engine bootstrap, use colons as the path separator. This is
-            # completely valid and matches the POSIX convention. To account for
-            # the legacy behavior of this engine and the option to use either
-            # style in Houdini, we first check to see if HOUDINI_PATH is already
-            # using one separator or another. If it is, continue using the
-            # separator found in the path. If it is not already using a
-            # specific separator, fallback to the separator for the current OS.
-            if ":" in hou_path_str:
-                # colon found, continue using
-                path_sep = ":"
-            elif ";" in hou_path_str:
-                # semicolon found, continue using
-                path_sep = ";"
-            else:
-                # no existing separator. fall back to os separator
-                path_sep = os.pathsep
+            # completely valid and matches the POSIX convention.
+
+            if sys.platform != "win32":
+                # for non-windows OS, see if semicolon is in use
+                if ";" in hou_path_str:
+                    # already using semi-colons, continue using semicolons.
+                    # this will prevent clients relying on the legacy engine
+                    # behavior to continue without making any changes.
+                    path_sep = ";"
 
             hou_path_str = hou_path_str.rstrip(path_sep)
             hou_paths = hou_path_str.split(path_sep)
         else:
-            # use the os's path separator
-            path_sep = os.pathsep
             hou_paths = []
 
         # paths to prepend that are not already in the houdini path
