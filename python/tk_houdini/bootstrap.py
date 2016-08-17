@@ -52,7 +52,7 @@ def bootstrap(tank, context):
                 # for non-windows OS, see if semicolon is in use
                 if ";" in hou_path_str:
                     # already using semi-colons, continue using semicolons.
-                    # this will prevent clients relying on the legacy engine
+                    # this will allow clients relying on the legacy engine
                     # behavior to continue without making any changes.
                     path_sep = ";"
 
