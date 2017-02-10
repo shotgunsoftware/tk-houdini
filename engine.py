@@ -94,7 +94,8 @@ class HoudiniEngine(tank.platform.Engine):
             # context. Make sure the timer that looks for current file changes
             # is running.
             tk_houdini = self.import_module("tk_houdini")
-            tk_houdini.ensure_file_change_timer_running()
+            if self.get_setting("automatic_context_switch", True):
+                tk_houdini.ensure_file_change_timer_running()
 
     def post_app_init(self):
         """

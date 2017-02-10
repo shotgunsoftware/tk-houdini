@@ -14,6 +14,12 @@
 # expected fields in the configuration file for this engine
 configuration:
 
+    automatic_context_switch:
+        type: bool
+        description: "Controls whether toolkit should attempt to automatically adjust its
+                     context every time the currently loaded file changes. Defaults to True."
+        default_value: True
+
     enable_sg_menu:
         type: bool
         description: "Controls whether a menu will be built with commands
