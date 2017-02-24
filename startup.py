@@ -62,6 +62,7 @@ class HoudiniLauncher(SoftwareLauncher):
     # with an appropriate glob or regex string. As Side FX adds modifies the
     # install path on a given OS for a new release, a new template will need
     # to be added here.
+    # TODO: check hou 16 on windows/linux
     EXECUTABLE_MATCH_TEMPLATES = {
         "darwin": [
             # /Applications/Houdini 15.5.565/Houdini.app
@@ -72,7 +73,7 @@ class HoudiniLauncher(SoftwareLauncher):
         ],
         "win32": [
             # C:\Program Files\Side Effects Software\Houdini 15.5.565\bin\houdinifx.exe
-            "C:\Program Files\Side Effects Software\Houdini {version}\bin\{executable}.exe",
+            "C:\\Program Files\\Side Effects Software\\Houdini {version}\\bin\\{executable}.exe",
         ],
         "linux": [
             # example path: /opt/hfs14.0.444/bin/houdinifx
@@ -90,8 +91,13 @@ class HoudiniLauncher(SoftwareLauncher):
         :returns: List of :class:`SoftwareVersion` instances
         """
 
-        # TODO: tmp until available via args/settings
-        variations = ["Houdini", "Houdini Core", "Houdini FX"]
+        # get a list of product variations to scan for from the engine
+        # configuration. This will be a list of Houdini products that we should
+        # return SoftwareVersion objects for. The list will look something like
+        # this: ["Houdini", "Houdini Core", "Houdini FX"]. We'll compare the
+        # matched extracted variation strings from the matched executables to
+        # ensure they're in this list.
+        variations = self.get_setting("scan_products")
 
         self.logger.debug("Scanning for Houdini versions...")
         self.logger.debug("Version constraints: %s" % (versions,))
@@ -112,11 +118,9 @@ class HoudiniLauncher(SoftwareLauncher):
         # all the executable templates for the current OS
         match_templates = self.EXECUTABLE_MATCH_TEMPLATES[sys.platform]
 
-        # build up a dictionary where the key is the match template and the
-        # value is a list of matching executables. we'll need to keep the
-        # association between template and matches for later when we extract
-        # the components (version and variation)
-        executable_matches = {}
+        # all the executables matching the supplied filters.
+        software_versions = []
+
         for match_template in match_templates:
 
             # build the glob pattern by formatting the template for globbing
@@ -124,43 +128,40 @@ class HoudiniLauncher(SoftwareLauncher):
             self.logger.debug(
                 "Globbing for executable matching: %s ..." % (glob_pattern,)
             )
-            matching_paths = glob.glob(glob_pattern)
-            if matching_paths:
-                # found matches, remember this association (template: matches)
-                executable_matches[match_template] = matching_paths
-                self.logger.debug(
-                    "Found %s matches: %s" % (
-                        len(matching_paths),
-                        matching_paths
-                    )
-                )
 
-        # all the executables matching the supplied filters.
-        software_versions = []
+            # now match against files on disk
+            executable_paths = glob.glob(glob_pattern)
 
-        # now that we have a list of matching executables on disk and the
-        # corresponding template used to find them, we can extract the component
-        # pieces to see if they match the supplied version/variant constraints
-        for (match_template, executable_paths) in executable_matches.iteritems():
+            self.logger.debug("Found %s matches" % (len(executable_paths),))
+
+            if not executable_paths:
+                # no matches. move on to the next template
+                continue
+
+            regex_pattern = match_template
+
+            if sys.platform == "win32":
+                # on windows make sure we double escape the path separators
+                # prior to matching to prevent evaluation as regex components.
+                regex_pattern = regex_pattern.replace("\\", "\\\\")
 
             # construct the regex string to extract the components
-            regex_pattern = match_template.format(**self.COMPONENT_REGEX_LOOKUP)
+            regex_pattern = regex_pattern.format(**self.COMPONENT_REGEX_LOOKUP)
 
-            # TODO: account for \ on windows...
-
-            # accumulate the software version objects to return. this will include
+            # accumulate the software version objects to return. this will
             # include the head/tail anchors in the regex
             regex_pattern = "^%s$" % (regex_pattern,)
 
             self.logger.debug(
-                "Now matching components with regex: %s" % (regex_pattern,)
-            )
+                "Matching components against regex: %s" % (regex_pattern,))
 
             # compile the regex
             executable_regex = re.compile(regex_pattern, re.IGNORECASE)
 
-            # iterate over each executable found for the glob pattern and find
-            # matched components via the regex
+            # now that we have a list of matching executables on disk we can
+            # extract the component pieces to see if they match the supplied
+            # version/variant constraints. iterate over each executable found
+            # for the glob pattern and find matched components via the regex
             for executable_path in executable_paths:
 
                 self.logger.debug("Processing path: %s" % (executable_path,))
@@ -177,7 +178,7 @@ class HoudiniLauncher(SoftwareLauncher):
                 executable_name = match.groupdict().get("executable")
 
                 # we need a variant to match against. If that isn't provided,
-                # then an executable name shoudld be available. We can map that
+                # then an executable name should be available. We can map that
                 # to the proper variant.
                 if not executable_variant:
                     executable_variant = \
@@ -197,17 +198,26 @@ class HoudiniLauncher(SoftwareLauncher):
                         continue
 
                 # variant filter
-                if executable_variant and executable_variant not in variations:
-                    self.logger.debug(
-                        "'%s' does not match the variation constraint" % (
-                            executable_variant,
+                if variations and executable_variant:
+
+                    if executable_variant not in variations:
+                        # the matched product variant doesn't match
+                        self.logger.debug(
+                            "'%s' does not match the variation constraint" % (
+                                executable_variant,
+                            )
                         )
-                    )
+                        continue
+
+                # no executable variant. we don't recognize this product
+                if not executable_variant:
+                    self.logger.debug("This product is unrecognized. Skipping.")
                     continue
 
                 # if we're here then we know the version is valid or there is
-                # no version filter. we also know that the variant is a match.
-                # we can safely create a software version instance to return
+                # no version filter. we also know that the variant is a match or
+                # there is no variant filter. we can safely create a software
+                # version instance to return
 
                 display_name = "%s %s" % (executable_variant, executable_version)
                 # Either we don't have a version constraint list of this
