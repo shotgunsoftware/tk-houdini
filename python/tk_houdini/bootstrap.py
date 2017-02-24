@@ -18,17 +18,46 @@ g_temp_env = 'TK_HOUDINI_TMP'
 
 
 def bootstrap(tank, context):
+    """
+    Interface for older versions of tk-multi-launchapp.
+
+    This is deprecated and now replaced with the ``startup.py`` file and
+    ``SoftwareLauncher`` interface.
+
+    Prepares the environment for a tk-houdini bootstrap. This method is
+    called directly from the tk-multi-launchapp.
+    """
+
+    # get the necessary environment variable for launch
+    env = compute_environment()
+
+    # set the environment
+    os.environ.update(env)
+
+def compute_environment():
+    """
+    Returns a dict of key/value pairs representing the environment variables
+    needed to launch houdini and startup toolkit.
+    """
+
+    env = {}
+
     # setup a path for the engine to write out its menu file
     tmpdir = tempfile.mkdtemp(prefix='tk-houdini')
     try:
         # set env var to point engine at temp HOUDINI_PATH path
-        os.environ[g_temp_env] = tmpdir
+        env[g_temp_env] = tmpdir
 
         # This allows Qt to load, but I think it makes Houdini unstable...
-        os.environ['OBJC_DISABLE_GC'] = 'YES'
+        env['OBJC_DISABLE_GC'] = 'YES'
 
         # place in path for static startup files
-        engine_startup = os.path.join(os.path.dirname(__file__), "..", "..", "startup")
+        engine_startup = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "startup"
+        )
         engine_startup = os.path.normpath(engine_startup)
 
         # note: not using sgtk.util.environment.prepend_path_to_env_var since
@@ -72,8 +101,10 @@ def bootstrap(tank, context):
         if not "&" in hou_paths:
             new_paths.append("&")
 
-        os.environ["HOUDINI_PATH"] = path_sep.join(new_paths)
+        env["HOUDINI_PATH"] = path_sep.join(new_paths)
     except:
         # had an error, clean up the tmp dir
         shutil.rmtree(tmpdir)
         raise
+
+    return env
