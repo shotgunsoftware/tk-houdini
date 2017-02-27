@@ -37,16 +37,6 @@ configuration:
                      rebuilt dynamically as the Shotgun context changes."
         default_value: true
 
-    scan_products:
-        type: list
-        description: "Defines the SideFX products to scan for when using the
-                     Software entity in SG to locate executables. This list is
-                     used as a filter when matching known product executables
-                     and bundles on disk."
-        default_value: [Houdini, Houdini Core, Houdini FX]
-        values:
-            type: str
-
     debug_logging:
         type: bool
         description: Controls whether debug messages should be emitted to the logger

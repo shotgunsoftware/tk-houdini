@@ -22,15 +22,15 @@ class HoudiniLauncher(SoftwareLauncher):
     engine with the current context in the new session of Houdini.
     """
 
-    # A lookup to map an executable name to a variation. This is critical for
-    # windows and linux where the variation does not show up in the path.
-    EXECUTABLE_TO_VARIANT = {
-        "houdini": "Houdini",
-        "hescape": "Houdini",
-        "happrentice": "Houdini Apprentice",
-        "houdinicore": "Houdini Core",
-        "houdinifx": "Houdini FX",
-        "hindie": "Houdini Indie",
+    # A lookup to map an executable name to a product. This is critical for
+    # windows and linux where the product does not show up in the path.
+    EXECUTABLE_TO_PRODUCT = {
+        "houdini": "houdini",
+        "hescape": "houdini",
+        "happrentice": "houdini apprentice",
+        "houdinicore": "houdini core",
+        "houdinifx": "houdini fx",
+        "hindie": "houdini indie",
     }
 
     # Glob strings to insert into the executable template paths when globbing
@@ -40,18 +40,18 @@ class HoudiniLauncher(SoftwareLauncher):
     # template paths defined below.
     COMPONENT_GLOB_LOOKUP = {
         "version": "*",
-        "variant": "*",
+        "product": "*",
         "executable": "*",
         "version_back": "*",
     }
 
     # Named regex strings to insert into the executable template paths when
-    # matching against supplied versions and variants. Similar to the glob
+    # matching against supplied versions and products. Similar to the glob
     # strings, these allow us to alter the regex matching for any of the
     # variable components of the path in one place
     COMPONENT_REGEX_LOOKUP = {
         "version": "(?P<version>[\d.]+)",
-        "variant": "(?P<variant>[\w\s]+)",
+        "product": "(?P<product>[\w\s]+)",
         "executable": "(?P<executable>[\w]+)",
         "version_back": "(?P=version)",
     }
@@ -66,10 +66,10 @@ class HoudiniLauncher(SoftwareLauncher):
     EXECUTABLE_MATCH_TEMPLATES = {
         "darwin": [
             # /Applications/Houdini 15.5.565/Houdini.app
-            "/Applications/Houdini {version}/{variant}.app",
+            "/Applications/Houdini {version}/{product}.app",
 
             # /Applications/Houdini/Houdini16.0.504.20/Houdini Core 16.0.504.20.app
-            "/Applications/Houdini/Houdini{version}/{variant} {version_back}.app",
+            "/Applications/Houdini/Houdini{version}/{product} {version_back}.app",
         ],
         "win32": [
             # C:\Program Files\Side Effects Software\Houdini 15.5.565\bin\houdinifx.exe
@@ -81,27 +81,22 @@ class HoudiniLauncher(SoftwareLauncher):
         ]
     }
 
-    def scan_software(self, versions=None, display_name=None, icon=None):
+    def scan_software(self, versions=None, products=None):
         """
         Performs a scan for software installations.
 
         :param list versions: List of strings representing versions to search
             for. If set to None, search for all versions.
 
+        :param list products: List of strings representing products to search
+            for. If set to None, search for all versions.
+
         :returns: List of :class:`SoftwareVersion` instances
         """
 
-        # get a list of product variations to scan for from the engine
-        # configuration. This will be a list of Houdini products that we should
-        # return SoftwareVersion objects for. The list will look something like
-        # this: ["Houdini", "Houdini Core", "Houdini FX"]. We'll compare the
-        # matched extracted variation strings from the matched executables to
-        # ensure they're in this list.
-        variations = self.get_setting("scan_products")
-
         self.logger.debug("Scanning for Houdini versions...")
         self.logger.debug("Version constraints: %s" % (versions,))
-        self.logger.debug("Variation constraints: %s" % (variations,))
+        self.logger.debug("Product constraints: %s" % (products,))
 
         # use the bundled icon
         icon_path = os.path.join(
@@ -160,7 +155,7 @@ class HoudiniLauncher(SoftwareLauncher):
 
             # now that we have a list of matching executables on disk we can
             # extract the component pieces to see if they match the supplied
-            # version/variant constraints. iterate over each executable found
+            # version/product constraints. iterate over each executable found
             # for the glob pattern and find matched components via the regex
             for executable_path in executable_paths:
 
@@ -174,15 +169,15 @@ class HoudiniLauncher(SoftwareLauncher):
 
                 # extract the components (default to None if not included)
                 executable_version = match.groupdict().get("version")
-                executable_variant = match.groupdict().get("variant")
+                executable_product = match.groupdict().get("product")
                 executable_name = match.groupdict().get("executable")
 
-                # we need a variant to match against. If that isn't provided,
+                # we need a product to match against. If that isn't provided,
                 # then an executable name should be available. We can map that
-                # to the proper variant.
-                if not executable_variant:
-                    executable_variant = \
-                        self.EXECUTABLE_TO_VARIANT.get(executable_name)
+                # to the proper product.
+                if not executable_product:
+                    executable_product = \
+                        self.EXECUTABLE_TO_PRODUCT.get(executable_name)
 
                 # version filter.
                 if versions and executable_version:
@@ -197,35 +192,37 @@ class HoudiniLauncher(SoftwareLauncher):
                         )
                         continue
 
-                # variant filter
-                if variations and executable_variant:
+                # product filter
+                if products and executable_product:
 
-                    if executable_variant not in variations:
-                        # the matched product variant doesn't match
+                    if executable_product not in products:
+                        # the matched product product doesn't match
                         self.logger.debug(
-                            "'%s' does not match the variation constraint" % (
-                                executable_variant,
+                            "'%s' does not match the product constraint" % (
+                                executable_product,
                             )
                         )
                         continue
 
-                # no executable variant. we don't recognize this product
-                if not executable_variant:
+                # no executable product. we don't recognize this product
+                if not executable_product:
                     self.logger.debug("This product is unrecognized. Skipping.")
                     continue
 
                 # if we're here then we know the version is valid or there is
-                # no version filter. we also know that the variant is a match or
-                # there is no variant filter. we can safely create a software
+                # no version filter. we also know that the product is a match or
+                # there is no product filter. we can safely create a software
                 # version instance to return
 
-                display_name = "%s %s" % (executable_variant, executable_version)
+                executable_display = executable_product.replace("Houdini", "")
+                display_name = "%s %s" % (executable_display, executable_version)
                 # Either we don't have a version constraint list of this
                 # version matches one of the constraints. Add this to the
                 # list of SW versions to return.
                 software_versions.append(
                     SoftwareVersion(
                         executable_version,
+                        executable_product,
                         display_name,
                         executable_path,
                         icon_path
