@@ -25,12 +25,12 @@ class HoudiniLauncher(SoftwareLauncher):
     # A lookup to map an executable name to a product. This is critical for
     # windows and linux where the product does not show up in the path.
     EXECUTABLE_TO_PRODUCT = {
-        "houdini": "houdini",
-        "hescape": "houdini",
-        "happrentice": "houdini apprentice",
-        "houdinicore": "houdini core",
-        "houdinifx": "houdini fx",
-        "hindie": "houdini indie",
+        "houdini": "Houdini",
+        "hescape": "Houdini",
+        "happrentice": "Houdini Apprentice",
+        "houdinicore": "Houdini Core",
+        "houdinifx": "Houdini FX",
+        "hindie": "Houdini Indie",
     }
 
     # Glob strings to insert into the executable template paths when globbing
@@ -75,13 +75,13 @@ class HoudiniLauncher(SoftwareLauncher):
             # C:\Program Files\Side Effects Software\Houdini 15.5.565\bin\houdinifx.exe
             "C:\\Program Files\\Side Effects Software\\Houdini {version}\\bin\\{executable}.exe",
         ],
-        "linux": [
+        "linux2": [
             # example path: /opt/hfs14.0.444/bin/houdinifx
             "/opt/hfs{version}/bin/{executable}",
         ]
     }
 
-    def scan_software(self, versions=None, products=None):
+    def scan_software(self):
         """
         Performs a scan for software installations.
 
@@ -94,9 +94,57 @@ class HoudiniLauncher(SoftwareLauncher):
         :returns: List of :class:`SoftwareVersion` instances
         """
 
+        software_versions = []
+
+        for sw_version in self._find_software_versions():
+            if self.is_version_supported(sw_version):
+                self.logger.debug("Accepting %s", sw_version)
+                software_versions.append(sw_version)
+            else:
+                self.logger.debug("Rejecting %s", sw_version)
+                continue
+
+        return software_versions
+
+    def prepare_launch(self, exec_path, args, file_to_open=None):
+        """
+        Prepares the given software for launch
+
+        :param str exec_path: Path to DCC executable to launch
+
+        :param str args: Command line arguments as strings
+
+        :param str file_to_open: (optional) Full path name of a file to open on
+            launch
+
+        :returns: :class:`LaunchInformation` instance
+        """
+
+        tk_houdini_python_path = os.path.join(
+            self.disk_location,
+            "python",
+        )
+
+        sys.path.insert(0, tk_houdini_python_path)
+        from tk_houdini import bootstrap
+
+        # determine all environment variables
+        required_env = bootstrap.compute_environment()
+
+        # Add std context and site info to the env
+        std_env = self.get_standard_plugin_environment()
+        required_env.update(std_env)
+
+        return LaunchInformation(exec_path, args, required_env)
+
+    def _find_software_versions(self):
+        """
+        Scan the filesystem for all houdini executables.
+
+        :return: A list of :class:`SoftwareVersion` objects.
+        """
+
         self.logger.debug("Scanning for Houdini versions...")
-        self.logger.debug("Version constraints: %s" % (versions,))
-        self.logger.debug("Product constraints: %s" % (products,))
 
         # use the bundled icon
         icon_path = os.path.join(
@@ -106,15 +154,15 @@ class HoudiniLauncher(SoftwareLauncher):
         )
         self.logger.debug("Using icon path: %s" % (icon_path,))
 
-        if sys.platform not in ["darwin", "win32", "linux"]:
+        if sys.platform not in ["darwin", "win32", "linux2"]:
             self.logger.debug("Houdini not supported on this platform.")
             return []
 
         # all the executable templates for the current OS
         match_templates = self.EXECUTABLE_MATCH_TEMPLATES[sys.platform]
 
-        # all the executables matching the supplied filters.
-        software_versions = []
+        # all the discovered executables
+        all_sw_versions = []
 
         for match_template in match_templates:
 
@@ -154,8 +202,7 @@ class HoudiniLauncher(SoftwareLauncher):
             executable_regex = re.compile(regex_pattern, re.IGNORECASE)
 
             # now that we have a list of matching executables on disk we can
-            # extract the component pieces to see if they match the supplied
-            # version/product constraints. iterate over each executable found
+            # extract the component pieces. iterate over each executable found
             # for the glob pattern and find matched components via the regex
             for executable_path in executable_paths:
 
@@ -179,96 +226,21 @@ class HoudiniLauncher(SoftwareLauncher):
                     executable_product = \
                         self.EXECUTABLE_TO_PRODUCT.get(executable_name)
 
-                # version filter.
-                if versions and executable_version:
-
-                    # TODO: is supported, minimum version check
-
-                    if executable_version not in versions:
-                        self.logger.debug(
-                            "'%s' does not match the version constraint" % (
-                                executable_version,
-                            )
-                        )
-                        continue
-
-                # product filter
-                if products and executable_product:
-
-                    if executable_product not in products:
-                        # the matched product product doesn't match
-                        self.logger.debug(
-                            "'%s' does not match the product constraint" % (
-                                executable_product,
-                            )
-                        )
-                        continue
-
                 # no executable product. we don't recognize this product
                 if not executable_product:
                     self.logger.debug("This product is unrecognized. Skipping.")
                     continue
 
-                # if we're here then we know the version is valid or there is
-                # no version filter. we also know that the product is a match or
-                # there is no product filter. we can safely create a software
-                # version instance to return
-
                 executable_display = executable_product.replace("Houdini", "")
                 display_name = "%s %s" % (executable_display, executable_version)
-                # Either we don't have a version constraint list of this
-                # version matches one of the constraints. Add this to the
-                # list of SW versions to return.
-                software_versions.append(
-                    SoftwareVersion(
-                        executable_version,
-                        executable_product,
-                        display_name,
-                        executable_path,
-                        icon_path
-                    )
+                sw_version = SoftwareVersion(
+                    executable_version,
+                    executable_product,
+                    display_name,
+                    executable_path,
+                    icon_path
                 )
-                self.logger.debug("Filter match: %s" % (display_name,))
+                all_sw_versions.append(sw_version)
 
-        return software_versions
-
-    def prepare_launch(self, exec_path, args, file_to_open=None):
-        """
-        Prepares the given software for launch
-
-        :param str exec_path: Path to DCC executable to launch
-
-        :param str args: Command line arguments as strings
-
-        :param str file_to_open: (optional) Full path name of a file to open on
-            launch
-
-        :returns: :class:`LaunchInformation` instance
-        """
-
-        tk_houdini_python_path = os.path.join(
-            self.disk_location,
-            "python",
-        )
-
-        sys.path.insert(0, tk_houdini_python_path)
-        from tk_houdini import bootstrap
-
-        # determine all environment variables
-        required_env = bootstrap.compute_environment()
-
-        # Add std context and site info to the env
-        std_env = self.get_standard_plugin_environment()
-        required_env.update(std_env)
-
-        return LaunchInformation(exec_path, args, required_env)
-
-
-
-
-
-
-
-
-
+        return all_sw_versions
 
