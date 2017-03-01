@@ -16,7 +16,6 @@ import os
 import sys
 import ctypes
 import shutil
-import tempfile
 
 import tank
 
@@ -54,9 +53,6 @@ class HoudiniEngine(tank.platform.Engine):
         except:
             # ignore all errors. ex: using a core that doesn't support metrics
             pass
-
-        # setup the temp directory
-        self.temp_dir = tempfile.mkdtemp(prefix='tk-houdini')
 
         # keep track of if a UI exists
         self._ui_enabled = hasattr(hou, 'ui')
