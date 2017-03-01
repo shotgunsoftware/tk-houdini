@@ -57,7 +57,7 @@ class HoudiniLauncher(SoftwareLauncher):
     }
 
     # This dictionary defines a list of executable template strings for each
-    # of the supported operating systems. The templates can are used for both
+    # of the supported operating systems. The templates are used for both
     # globbing and regex matches by replacing the named format placeholders
     # with an appropriate glob or regex string. As Side FX adds modifies the
     # install path on a given OS for a new release, a new template will need
@@ -73,7 +73,7 @@ class HoudiniLauncher(SoftwareLauncher):
         ],
         "win32": [
             # C:\Program Files\Side Effects Software\Houdini 15.5.565\bin\houdinifx.exe
-            "C:\\Program Files\\Side Effects Software\\Houdini {version}\\bin\\{executable}.exe",
+            "C:/Program Files/Side Effects Software/Houdini {version}/bin/{executable}.exe",
         ],
         "linux2": [
             # example path: /opt/hfs14.0.444/bin/houdinifx
@@ -81,15 +81,14 @@ class HoudiniLauncher(SoftwareLauncher):
         ]
     }
 
+    @property
+    def minimum_supported_version(self):
+        """The minimum supported Houdini version."""
+        return "12.0"
+
     def scan_software(self):
         """
         Performs a scan for software installations.
-
-        :param list versions: List of strings representing versions to search
-            for. If set to None, search for all versions.
-
-        :param list products: List of strings representing products to search
-            for. If set to None, search for all versions.
 
         :returns: List of :class:`SoftwareVersion` instances
         """
@@ -144,7 +143,7 @@ class HoudiniLauncher(SoftwareLauncher):
         :return: A list of :class:`SoftwareVersion` objects.
         """
 
-        self.logger.debug("Scanning for Houdini versions...")
+        self.logger.debug("Scanning for Houdini executables...")
 
         # use the bundled icon
         icon_path = os.path.join(
@@ -154,7 +153,7 @@ class HoudiniLauncher(SoftwareLauncher):
         )
         self.logger.debug("Using icon path: %s" % (icon_path,))
 
-        if sys.platform not in ["darwin", "win32", "linux2"]:
+        if sys.platform not in self.EXECUTABLE_MATCH_TEMPLATES:
             self.logger.debug("Houdini not supported on this platform.")
             return []
 
@@ -181,15 +180,8 @@ class HoudiniLauncher(SoftwareLauncher):
                 # no matches. move on to the next template
                 continue
 
-            regex_pattern = match_template
-
-            if sys.platform == "win32":
-                # on windows make sure we double escape the path separators
-                # prior to matching to prevent evaluation as regex components.
-                regex_pattern = regex_pattern.replace("\\", "\\\\")
-
             # construct the regex string to extract the components
-            regex_pattern = regex_pattern.format(**self.COMPONENT_REGEX_LOOKUP)
+            regex_pattern = match_template.format(**self.COMPONENT_REGEX_LOOKUP)
 
             # accumulate the software version objects to return. this will
             # include the head/tail anchors in the regex
