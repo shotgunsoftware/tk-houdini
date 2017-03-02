@@ -84,26 +84,7 @@ class HoudiniLauncher(SoftwareLauncher):
     @property
     def minimum_supported_version(self):
         """The minimum supported Houdini version."""
-        return "12.0"
-
-    def scan_software(self):
-        """
-        Performs a scan for software installations.
-
-        :returns: List of :class:`SoftwareVersion` instances
-        """
-
-        software_versions = []
-
-        for sw_version in self._find_software_versions():
-            if self.is_version_supported(sw_version):
-                self.logger.debug("Accepting %s", sw_version)
-                software_versions.append(sw_version)
-            else:
-                self.logger.debug("Rejecting %s", sw_version)
-                continue
-
-        return software_versions
+        return "15.0"
 
     def prepare_launch(self, exec_path, args, file_to_open=None):
         """
@@ -136,7 +117,7 @@ class HoudiniLauncher(SoftwareLauncher):
 
         return LaunchInformation(exec_path, args, required_env)
 
-    def _find_software_versions(self):
+    def _scan_software(self):
         """
         Scan the filesystem for all houdini executables.
 
@@ -153,12 +134,8 @@ class HoudiniLauncher(SoftwareLauncher):
         )
         self.logger.debug("Using icon path: %s" % (icon_path,))
 
-        if sys.platform not in self.EXECUTABLE_MATCH_TEMPLATES:
-            self.logger.debug("Houdini not supported on this platform.")
-            return []
-
         # all the executable templates for the current OS
-        match_templates = self.EXECUTABLE_MATCH_TEMPLATES[sys.platform]
+        match_templates = self.EXECUTABLE_MATCH_TEMPLATES.get(sys.platform, [])
 
         # all the discovered executables
         all_sw_versions = []
@@ -223,16 +200,14 @@ class HoudiniLauncher(SoftwareLauncher):
                     self.logger.debug("This product is unrecognized. Skipping.")
                     continue
 
-                executable_display = executable_product.replace("Houdini", "")
-                display_name = "%s %s" % (executable_display, executable_version)
-                sw_version = SoftwareVersion(
-                    executable_version,
-                    executable_product,
-                    display_name,
-                    executable_path,
-                    icon_path
+                all_sw_versions.append(
+                    SoftwareVersion(
+                        executable_version,
+                        executable_product,
+                        executable_path,
+                        icon_path
+                    )
                 )
-                all_sw_versions.append(sw_version)
 
         return all_sw_versions
 
