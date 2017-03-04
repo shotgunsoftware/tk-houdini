@@ -13,6 +13,7 @@ import os
 import re
 import sys
 
+import sgtk
 from sgtk.platform import SoftwareLauncher, SoftwareVersion, LaunchInformation
 
 
@@ -100,20 +101,47 @@ class HoudiniLauncher(SoftwareLauncher):
         :returns: :class:`LaunchInformation` instance
         """
 
+        # construct the path to the engine's python directory and add it to sys
+        # path. this provides us access to the bootstrap module which contains
+        # helper methods for constructing the proper environment based on the
+        # bootstrap scanario.
         tk_houdini_python_path = os.path.join(
             self.disk_location,
             "python",
         )
-
         sys.path.insert(0, tk_houdini_python_path)
+
         from tk_houdini import bootstrap
 
-        # determine all environment variables
-        required_env = bootstrap.compute_environment()
+        # Check the engine settings to see whether any plugins have been
+        # specified to load.
+        launch_plugins = self.get_setting("launch_builtin_plugins")
+        if launch_plugins:
 
-        # Add std context and site info to the env
-        std_env = self.get_standard_plugin_environment()
-        required_env.update(std_env)
+            # Prepare the launch environment with variables required by the
+            # plugin bootstrap.
+            self.logger.info("Launch plugins: %s" % (launch_plugins,))
+            required_env = bootstrap.get_plugin_startup_env(launch_plugins)
+
+        else:
+
+            # pull the env var names from the bootstrap module
+            engine_env = bootstrap.g_sgtk_engine_env
+            context_env = bootstrap.g_sgtk_context_env
+
+            # Prepare the launch environment with variables required by the
+            # classic bootstrap.
+            required_env = bootstrap.get_classic_startup_env()
+            required_env[engine_env] = self.engine_name
+            required_env[context_env] = sgtk.context.serialize(self.context)
+
+        # populate the file to open env. Note this env variable name existed
+        # pre software launch setup.
+        if file_to_open:
+            file_to_open_env = bootstrap.g_sgtk_file_to_open_env
+            required_env[file_to_open_env] = file_to_open
+
+        self.logger.info("Launch environment: %s" % (required_env,))
 
         return LaunchInformation(exec_path, args, required_env)
 

@@ -16,8 +16,7 @@ import inspect
 import os
 import sys
 
-
-def classic_startup():
+def plugin_startup():
 
     # use inspect to get the current file path since attempts to access
     # __file__ result in a NameError.
@@ -25,33 +24,32 @@ def classic_startup():
         inspect.getsourcefile(lambda: 0)
     )
 
-    # construct the path to the engine's python directory and add it to sys
-    # path. this provides us access to the bootstrap module which contains
-    # helper methods for constructing the proper environment based on the
-    # bootstrap scanario. For this file, the python directory is 3 levels up.
-    tk_houdini_python_path = \
+    # construct the path to the plugin root's folder, 3 folders above this file.
+    plugin_root_path = \
         os.path.abspath(
             os.path.join(
                 current_file_path,
                 "..",
                 "..",
                 "..",
-                "python",
             )
         )
 
-    # add to the system path
-    sys.path.insert(0, tk_houdini_python_path)
+    # the plugin python path will be just below the root level. add it to
+    # sys.path
+    plugin_python_path = os.path.join(plugin_root_path, "python")
+    sys.path.insert(0, plugin_python_path)
 
-    # now that the path is there, we can import the classic bootstrap logic
+    # now that the path is there, we can import the bootstrap module and call
+    # the plugin bootstrap code
     try:
-        from tk_houdini import bootstrap
-        bootstrap.bootstrap_classic()
+        from tk_houdini_basic import plugin_bootstrap
+        plugin_bootstrap.bootstrap(plugin_root_path)
     except Exception, e:
         import traceback
         stack_trace = traceback.format_exc()
 
-        message = "Shotgun Toolkit Error: %s" % (e,)
+        message = "Shotgun Toolkit Plugin Error: %s" % (e,)
         details = "Error stack trace:\n\n%s" % (stack_trace)
 
         import hou
@@ -61,5 +59,4 @@ def classic_startup():
             print message
             print details
 
-
-classic_startup()
+plugin_startup()

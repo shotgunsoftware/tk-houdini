@@ -56,6 +56,18 @@ configuration:
                 name: { type: str }
                 app_instance: { type: str }
 
+    launch_builtin_plugins:
+        type: list
+        description: "Comma-separated list of tk-houdini plugins to load when
+                     launching Houdini. Use of this feature disables the classic
+                     mechanism for bootstrapping Toolkit when Houdini is
+                     launched. Therefore, if any plugins are specified using
+                     this setting, the first one in the list must be responsible
+                     for starting Toolkit when Houdini is launched."
+        default_value: []
+        values:
+            type: str
+
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
 

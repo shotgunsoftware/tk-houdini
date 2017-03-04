@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Shotgun Software Inc.
+# Copyright (c) 2017 Shotgun Software Inc.
 #
 # CONFIDENTIAL AND PROPRIETARY
 #
@@ -10,52 +10,56 @@
 
 """
 This file is loaded automatically by Houdini at startup.
-It sets up the tank context and prepares the Tank Houdini engine.
 """
+
+import inspect
 import os
-import traceback
-
-import hou
+import sys
 
 
-def exception(msg):
-    details = traceback.format_exc()
-    if hou.isUIAvailable():
-        hou.ui.displayMessage(msg, details=details)
-    else:
-        print msg
-        print details
+def classic_startup():
 
+    # use inspect to get the current file path since attempts to access
+    # __file__ result in a NameError.
+    current_file_path = os.path.abspath(
+        inspect.getsourcefile(lambda: 0)
+    )
 
-def bootstrap_tank():
+    # construct the path to the engine's python directory and add it to sys
+    # path. this provides us access to the bootstrap module which contains
+    # helper methods for constructing the proper environment based on the
+    # bootstrap scanario. For this file, the python directory is 3 levels up.
+    tk_houdini_python_path = \
+        os.path.abspath(
+            os.path.join(
+                current_file_path,
+                "..",
+                "..",
+                "..",
+                "python",
+            )
+        )
+
+    # add to the system path
+    sys.path.insert(0, tk_houdini_python_path)
+
+    # now that the path is there, we can import the classic bootstrap logic
     try:
-        import tank
-    except ImportError:
-        exception("Could not import Tank!")
-        return
-
-    if not "TANK_ENGINE" in os.environ:
-        exception("Tank: Missing required environment variable TANK_ENGINE.")
-        return
-
-    engine_name = os.environ.get("TANK_ENGINE")
-    try:
-        context = tank.context.deserialize(os.environ.get("TANK_CONTEXT"))
+        from tk_houdini import bootstrap
+        bootstrap.bootstrap_classic()
     except Exception, e:
-        exception("Tank: Could not create context! Tank will be disabled.  Details: %s" % e)
+        import traceback
+        stack_trace = traceback.format_exc()
 
-    try:
-        engine = tank.platform.start_engine(engine_name, context.tank, context)
-    except Exception, e:
-        exception("Tank: Could not start engine: %s" % e)
+        message = "Shotgun Toolkit Error: %s" % (e,)
+        details = "Error stack trace:\n\n%s" % (stack_trace)
 
-    file_to_open = os.environ.get("TANK_FILE_TO_OPEN")
-    if file_to_open:
-        hou.hipFile.load(file_to_open)
+        import hou
+        if hou.isUIAvailable():
+            hou.ui.displayMessage(message, details=details)
+        else:
+            print message
+            print details
 
-    # clean up temp env vars
-    for var in ["TANK_ENGINE", "TANK_CONTEXT", "TANK_FILE_TO_OPEN"]:
-        if var in os.environ:
-            del os.environ[var]
 
-bootstrap_tank()
+classic_startup()
