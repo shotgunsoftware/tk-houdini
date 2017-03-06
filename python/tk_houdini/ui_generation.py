@@ -714,6 +714,8 @@ def get_registered_commands(engine):
 
     # ---- build a couple of "always present" commands
 
+    commands = []
+
     sg_icon = os.path.join(engine.disk_location, "resources",
         "shotgun_logo.png")
 
@@ -729,22 +731,27 @@ def get_registered_commands(engine):
         },
     )
 
-    fs_icon = os.path.join(engine.disk_location, "resources",
-        "shotgun_folder.png")
+    commands.append(jump_to_sg_cmd)
 
-    jump_to_fs_cmd = AppCommand(
-        name="Jump to File System",
-        command_dict={
-         'properties': {
-          'icon': fs_icon.replace("\\", "/"), # account for UNC path
-          'description': "Open the current Shotgun context in your file browser.",
-          'type': "context_menu",
-         },
-         'callback': lambda: _jump_to_fs(engine),
-        },
-    )
+    if engine.context.filesystem_locations:
+        # Only show the jump to fs command if there are folders on disk.
 
-    commands = [jump_to_sg_cmd, jump_to_fs_cmd]
+        fs_icon = os.path.join(engine.disk_location, "resources",
+            "shotgun_folder.png")
+
+        jump_to_fs_cmd = AppCommand(
+            name="Jump to File System",
+            command_dict={
+             'properties': {
+              'icon': fs_icon.replace("\\", "/"), # account for UNC path
+              'description': "Open the current Shotgun context in your file browser.",
+              'type': "context_menu",
+             },
+             'callback': lambda: _jump_to_fs(engine),
+            },
+        )
+
+        commands.append(jump_to_fs_cmd)
 
     for (cmd_name, cmd_details) in engine.commands.items():
         commands.append(AppCommand(cmd_name, cmd_details))
