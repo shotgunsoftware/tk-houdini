@@ -168,16 +168,14 @@ def get_plugin_startup_env(plugin_names):
 
     for plugin_name in plugin_names:
 
-        # Each plugin should have a startup directory at the top level. this
-        # directory should include the standard pythonX.Xlibs/pythonrc.py setup
-        # which houdini will execute at startup time.
+        # Each plugin should have the standard pythonX.Xlibs/pythonrc.py folders
+        # at the top-level which houdini will execute at startup time.
         plugin_startup_path = os.path.join(
             os.path.dirname(__file__),
             "..",
             "..",
             "plugins",
             plugin_name,
-            "startup"
         )
         plugin_startup_path = os.path.normpath(plugin_startup_path)
 

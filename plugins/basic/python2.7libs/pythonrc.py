@@ -24,12 +24,11 @@ def plugin_startup():
         inspect.getsourcefile(lambda: 0)
     )
 
-    # construct the path to the plugin root's folder, 3 folders above this file.
+    # construct the path to the plugin root's folder, 2 folders above this file.
     plugin_root_path = \
         os.path.abspath(
             os.path.join(
                 current_file_path,
-                "..",
                 "..",
                 "..",
             )

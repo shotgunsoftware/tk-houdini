@@ -24,12 +24,11 @@ def plugin_startup():
         inspect.getsourcefile(lambda: 0)
     )
 
-    # construct the path to the plugin root's folder, 3 folders above this file.
+    # construct the path to the plugin root's folder, 2 folders above this file.
     plugin_root_path = \
         os.path.abspath(
             os.path.join(
                 current_file_path,
-                "..",
                 "..",
                 "..",
             )
@@ -40,8 +39,7 @@ def plugin_startup():
     plugin_python_path = os.path.join(plugin_root_path, "python")
     sys.path.insert(0, plugin_python_path)
 
-    # now that the path is there, we can import the bootstrap module and call
-    # the plugin bootstrap code
+    # now that the path is there, we can import the plugin bootstrap logic
     try:
         from tk_houdini_basic import plugin_bootstrap
         plugin_bootstrap.bootstrap(plugin_root_path)
@@ -49,7 +47,7 @@ def plugin_startup():
         import traceback
         stack_trace = traceback.format_exc()
 
-        message = "Shotgun Toolkit Plugin Error: %s" % (e,)
+        message = "Shotgun Toolkit Error: %s" % (e,)
         details = "Error stack trace:\n\n%s" % (stack_trace)
 
         import hou
