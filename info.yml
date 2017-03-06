@@ -64,6 +64,7 @@ configuration:
                      launched. Therefore, if any plugins are specified using
                      this setting, the first one in the list must be responsible
                      for starting Toolkit when Houdini is launched."
+        allows_empty: True
         default_value: []
         values:
             type: str

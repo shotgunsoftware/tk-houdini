@@ -23,14 +23,14 @@ g_temp_env = "TK_HOUDINI_TMP"
 
 # Name of the env variable that stores the serialized context used durring
 # classit toolkit bootstrap
-g_sgtk_context_env = "SGTK_CONTEXT"
+g_sgtk_context_env = "TANK_CONTEXT"
 
 # Name of the env variable that stores the name the engine instance name for
 # classic toolkit bootstrap
-g_sgtk_engine_env = "SGTK_ENGINE"
+g_sgtk_engine_env = "TANK_ENGINE"
 
 # Name of the file to open after bootstrap
-g_sgtk_file_to_open_env = "SGTK_FILE_TO_OPEN"
+g_sgtk_file_to_open_env = "TANK_FILE_TO_OPEN"
 
 ################################################################################
 # methods for bootstrapping toolkit within houdini
