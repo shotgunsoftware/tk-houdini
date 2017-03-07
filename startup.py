@@ -123,6 +123,9 @@ class HoudiniLauncher(SoftwareLauncher):
             self.logger.info("Launch plugins: %s" % (launch_plugins,))
             required_env = bootstrap.get_plugin_startup_env(launch_plugins)
 
+            # Add context and site info
+            required_env.update(self.get_standard_plugin_environment())
+
         else:
 
             # pull the env var names from the bootstrap module
