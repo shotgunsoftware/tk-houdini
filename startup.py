@@ -154,11 +154,10 @@ class HoudiniLauncher(SoftwareLauncher):
 
         self.logger.debug("Scanning for Houdini executables...")
 
-        # use the bundled icon
+        # use the bundled engine icon
         icon_path = os.path.join(
             self.disk_location,
-            "resources",
-            "houdini_logo.png"
+            "icon_256.png"
         )
         self.logger.debug("Using icon path: %s" % (icon_path,))
 
