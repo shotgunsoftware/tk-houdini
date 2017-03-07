@@ -18,21 +18,19 @@ import sys
 
 def plugin_startup():
 
+    # construct the path to the plugin root's folder.
+    #      plugins/basic/python2.Xlibs/pythonrc.py
+    #      -------------|
+    # this part ^
+
     # use inspect to get the current file path since attempts to access
     # __file__ result in a NameError.
     current_file_path = os.path.abspath(
         inspect.getsourcefile(lambda: 0)
     )
 
-    # construct the path to the plugin root's folder, 2 folders above this file.
-    plugin_root_path = \
-        os.path.abspath(
-            os.path.join(
-                current_file_path,
-                "..",
-                "..",
-            )
-        )
+    current_dir_path = os.path.dirname(current_file_path)
+    plugin_root_path = os.path.dirname(current_dir_path)
 
     # the plugin python path will be just below the root level. add it to
     # sys.path

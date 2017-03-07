@@ -148,7 +148,7 @@ def get_classic_startup_env():
         os.path.dirname(__file__),
         "..",
         "..",
-        "startup"
+        "classic_startup"
     )
     startup_path = os.path.normpath(startup_path)
 

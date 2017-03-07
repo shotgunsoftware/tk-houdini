@@ -502,7 +502,7 @@ class HoudiniEngine(tank.platform.Engine):
                             "%s startup running app '%s' command '%s'." %
                             (self.name, app_instance_name, cmd_name)
                         )
-                        commands_to_run.append(cmd_function)
+                        commands_to_run.append((cmd_name, cmd_function))
                 else:
                     # add commands whose name is listed in the 'run_at_startup'
                     # setting.
@@ -512,9 +512,9 @@ class HoudiniEngine(tank.platform.Engine):
                             "%s startup running app '%s' command '%s'." %
                             (self.name, app_instance_name, setting_cmd_name)
                         )
-                        commands_to_run.append(cmd_function)
+                        commands_to_run.append((setting_cmd_name, cmd_function))
                     else:
-                        known_commands = ', '.join(
+                        known_commands = ", ".join(
                             "'%s'" % name for name in cmd_dict)
                         self.log_warning(
                             "%s configuration setting 'run_at_startup' "
@@ -535,12 +535,13 @@ class HoudiniEngine(tank.platform.Engine):
         # to houdini as an event loop callback. This will run when houdini is
         # idle which should be after the UI loads up.
         def run_when_idle():
-            for command in commands_to_run:
+            for (cmd_name, command) in commands_to_run:
                 # iterate over all the commands and execute them.
+                self.log_debug("Executing startup command: %s" % (cmd_name,))
                 command()
 
             # have the function unregister itself. it does this by looping over
-            # all the registered commands and finding itself by looking for a
+            # all the registered callbacks and finding itself by looking for a
             # special attribute that is added below (just before registering it
             # as an event loop callback).
             for callback in hou.ui.eventLoopCallbacks():
@@ -551,7 +552,7 @@ class HoudiniEngine(tank.platform.Engine):
         # and unregister itself when executed.
         run_when_idle.tk_houdini_startup_commands = True
 
-        # add the function as an event loop callbac
+        # add the function as an event loop callback
         hou.ui.addEventLoopCallback(run_when_idle)
 
     ############################################################################
