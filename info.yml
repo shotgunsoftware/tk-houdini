@@ -56,6 +56,37 @@ configuration:
                 name: { type: str }
                 app_instance: { type: str }
 
+    launch_builtin_plugins:
+        type: list
+        description: "Comma-separated list of tk-houdini plugins to load when
+                     launching Houdini. Use of this feature disables the classic
+                     mechanism for bootstrapping Toolkit when Houdini is
+                     launched. Therefore, if any plugins are specified using
+                     this setting, the first one in the list must be responsible
+                     for starting Toolkit when Houdini is launched."
+        allows_empty: True
+        default_value: []
+        values:
+            type: str
+
+    run_at_startup:
+        type: list
+        description: "Controls what apps will run on startup.  This is a list
+                     where each element is a dictionary with two keys:
+                     'app_instance' and 'name'.  The app_instance value connects
+                     this entry to a particular app instance defined in the
+                     environment configuration file.  The name is the menu name
+                     of the command to run when the Houdini engine starts up. If
+                     name is '' then all commands from the given app instance
+                     are started."
+        allows_empty: True
+        default_value: []
+        values:
+            type: dict
+            items:
+                name: { type: str }
+                app_instance: { type: str }
+
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
 
@@ -66,4 +97,3 @@ description: "Shotgun Pipeline Toolkit integration in Houdini"
 # Required minimum versions for this item to run
 requires_shotgun_version:
 requires_core_version: "v0.14.56"
-

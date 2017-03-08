@@ -40,30 +40,7 @@ class AppCommandsUI(object):
         # changed to not do a full restart on context switch, then this will
         # not be the case.
         if not hasattr(self, '_context_name'):
-
-            # context menu
-            ctx = self._engine.context
-
-            if ctx.entity is None:
-                ctx_name = "%s" % ctx.project["name"]
-            elif ctx.step is None and ctx.task is None:
-                # entity only
-                # e.g. Shot ABC_123
-                ctx_name = "%s %s" % (ctx.entity["type"], ctx.entity["name"])
-            else:
-                # we have either step or task
-                task_step = None
-                if ctx.step:
-                    task_step = ctx.step.get("name")
-                if ctx.task:
-                    task_step = ctx.task.get("name")
-
-                # e.g. [Lighting, Shot ABC_123]
-                ctx_name = "%s, %s %s" % (
-                    task_step, ctx.entity["type"], ctx.entity["name"])
-
-            self._engine.log_debug("Constructed context name: %s" % (ctx_name,))
-            self._context_name = ctx_name
+            self._context_name = str(self._engine.context)
 
         return self._context_name
 
@@ -737,6 +714,8 @@ def get_registered_commands(engine):
 
     # ---- build a couple of "always present" commands
 
+    commands = []
+
     sg_icon = os.path.join(engine.disk_location, "resources",
         "shotgun_logo.png")
 
@@ -752,22 +731,27 @@ def get_registered_commands(engine):
         },
     )
 
-    fs_icon = os.path.join(engine.disk_location, "resources",
-        "shotgun_folder.png")
+    commands.append(jump_to_sg_cmd)
 
-    jump_to_fs_cmd = AppCommand(
-        name="Jump to File System",
-        command_dict={
-         'properties': {
-          'icon': fs_icon.replace("\\", "/"), # account for UNC path
-          'description': "Open the current Shotgun context in your file browser.",
-          'type': "context_menu",
-         },
-         'callback': lambda: _jump_to_fs(engine),
-        },
-    )
+    if engine.context.filesystem_locations:
+        # Only show the jump to fs command if there are folders on disk.
 
-    commands = [jump_to_sg_cmd, jump_to_fs_cmd]
+        fs_icon = os.path.join(engine.disk_location, "resources",
+            "shotgun_folder.png")
+
+        jump_to_fs_cmd = AppCommand(
+            name="Jump to File System",
+            command_dict={
+             'properties': {
+              'icon': fs_icon.replace("\\", "/"), # account for UNC path
+              'description': "Open the current Shotgun context in your file browser.",
+              'type': "context_menu",
+             },
+             'callback': lambda: _jump_to_fs(engine),
+            },
+        )
+
+        commands.append(jump_to_fs_cmd)
 
     for (cmd_name, cmd_details) in engine.commands.items():
         commands.append(AppCommand(cmd_name, cmd_details))
@@ -1029,9 +1013,7 @@ else:
 # The code that is stored in the python panel interfaces. 
 _g_panel_script = \
 """
-from PySide import QtGui
-
-from tank.platform.qt import QtCore
+from sgtk.platform.qt import QtCore, QtGui
 
 class NoPanelWidget(QtGui.QWidget):
     
@@ -1140,12 +1122,11 @@ try:
     else:
         menu_items.extend(["tk.houdini.menu.no.shotgun", "Toolkit is disabled - Click for details"])
 except Exception as e:
+    import traceback
+    error = traceback.format_exc()
     if engine:
         # store the exception on the menu object for display in the callback
-        engine._menu._menu_error = e
-    else:
-        import traceback
-        traceback.print_exc()
+        engine._menu._menu_error = Exception(str(e) + ". " + error)
     # just give houdini a special error item for the menu
     menu_items.extend(
         ["tk.houdini.menu.error", "Menu Error. Click for Details..."])
