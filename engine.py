@@ -224,6 +224,9 @@ class HoudiniEngine(tank.platform.Engine):
         # houdini itself, despite the global nature of the method. 
         self._initialize_dark_look_and_feel()
 
+        # Run a series of app instance commands at startup.
+        self._run_app_instance_commands()
+
     def destroy_engine(self):
         """
         Engine shutdown.
@@ -243,7 +246,7 @@ class HoudiniEngine(tank.platform.Engine):
         if bootstrap.g_temp_env in os.environ:
             # clean up and keep on going
             shutil.rmtree(os.environ[bootstrap.g_temp_env])
-            
+
     @property
     def has_ui(self):
         """
@@ -450,6 +453,107 @@ class HoudiniEngine(tank.platform.Engine):
         # NOTE: there is an outstanding bug at SESI to backport a fix to make
         # setInterface work properly in houdini 14. If that goes through, we'll
         # be able to make embedded panels work in houdini 14 too.
+
+    def _run_app_instance_commands(self):
+        """
+        Runs the series of app instance commands listed in the 'run_at_startup'
+        setting of the environment configuration yaml file.
+        """
+
+        # Build a dictionary mapping app instance names to dictionaries of
+        # commands they registered with the engine.
+        app_instance_commands = {}
+        for (cmd_name, value) in self.commands.iteritems():
+            app_instance = value["properties"].get("app")
+            if app_instance:
+                # Add entry 'command name: command function' to the command
+                # dictionary of this app instance.
+                cmd_dict = app_instance_commands.setdefault(
+                    app_instance.instance_name, {})
+                cmd_dict[cmd_name] = value["callback"]
+
+        # build a list of commands to run and then execute them all at once
+        # after houdini's UI has finished loading.
+        commands_to_run = []
+
+        # Run the series of app instance commands listed in the 'run_at_startup'
+        # setting.
+        for app_setting_dict in self.get_setting("run_at_startup", []):
+
+            app_instance_name = app_setting_dict["app_instance"]
+
+            # Menu name of the command to run or '' to run all commands of the
+            # given app instance.
+            setting_cmd_name = app_setting_dict["name"]
+
+            # Retrieve the command dictionary of the given app instance.
+            cmd_dict = app_instance_commands.get(app_instance_name)
+
+            if cmd_dict is None:
+                self.log_warning(
+                    "%s configuration setting 'run_at_startup' requests app "
+                    "'%s' that is not installed." %
+                    (self.name, app_instance_name))
+            else:
+                if not setting_cmd_name:
+                    # add commands to the list for the given app instance.
+                    for (cmd_name, cmd_function) in cmd_dict.iteritems():
+                        self.log_debug(
+                            "%s startup running app '%s' command '%s'." %
+                            (self.name, app_instance_name, cmd_name)
+                        )
+                        commands_to_run.append((cmd_name, cmd_function))
+                else:
+                    # add commands whose name is listed in the 'run_at_startup'
+                    # setting.
+                    cmd_function = cmd_dict.get(setting_cmd_name)
+                    if cmd_function:
+                        self.log_debug(
+                            "%s startup running app '%s' command '%s'." %
+                            (self.name, app_instance_name, setting_cmd_name)
+                        )
+                        commands_to_run.append((setting_cmd_name, cmd_function))
+                    else:
+                        known_commands = ", ".join(
+                            "'%s'" % name for name in cmd_dict)
+                        self.log_warning(
+                            "%s configuration setting 'run_at_startup' "
+                            "requests app '%s' unknown command '%s'. Known "
+                            "commands: %s" % (
+                                self.name,
+                                app_instance_name,
+                                setting_cmd_name,
+                                known_commands
+                            )
+                        )
+
+        # no commands to run. just bail
+        if not commands_to_run:
+            return
+
+        # here we wrap the commands to run in a single function we can hand over
+        # to houdini as an event loop callback. This will run when houdini is
+        # idle which should be after the UI loads up.
+        def run_when_idle():
+            for (cmd_name, command) in commands_to_run:
+                # iterate over all the commands and execute them.
+                self.log_debug("Executing startup command: %s" % (cmd_name,))
+                command()
+
+            # have the function unregister itself. it does this by looping over
+            # all the registered callbacks and finding itself by looking for a
+            # special attribute that is added below (just before registering it
+            # as an event loop callback).
+            for callback in hou.ui.eventLoopCallbacks():
+                if hasattr(callback, "tk_houdini_startup_commands"):
+                    hou.ui.removeEventLoopCallback(callback)
+
+        # add the special attribute that the function will look use to find
+        # and unregister itself when executed.
+        run_when_idle.tk_houdini_startup_commands = True
+
+        # add the function as an event loop callback
+        hou.ui.addEventLoopCallback(run_when_idle)
 
     ############################################################################
     # UI Handling
