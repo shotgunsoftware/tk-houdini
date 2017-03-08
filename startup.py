@@ -8,9 +8,7 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-import glob
 import os
-import re
 import sys
 
 import sgtk
@@ -34,18 +32,6 @@ class HoudiniLauncher(SoftwareLauncher):
         "hindie": "Houdini Indie",
     }
 
-    # Glob strings to insert into the executable template paths when globbing
-    # for executables and bundles on disk. Globbing is admittedly limited in
-    # terms of specific match strings, but if we need to introduce more precise
-    # match strings later, we can do it in one place rather than each of the
-    # template paths defined below.
-    COMPONENT_GLOB_LOOKUP = {
-        "version": "*",
-        "product": "*",
-        "executable": "*",
-        "version_back": "*",
-    }
-
     # Named regex strings to insert into the executable template paths when
     # matching against supplied versions and products. Similar to the glob
     # strings, these allow us to alter the regex matching for any of the
@@ -63,8 +49,7 @@ class HoudiniLauncher(SoftwareLauncher):
     # with an appropriate glob or regex string. As Side FX adds modifies the
     # install path on a given OS for a new release, a new template will need
     # to be added here.
-    # TODO: check hou 16 on windows/linux
-    EXECUTABLE_MATCH_TEMPLATES = {
+    EXECUTABLE_TEMPLATES = {
         "darwin": [
             # /Applications/Houdini 15.5.565/Houdini.app
             "/Applications/Houdini {version}/{product}.app",
@@ -85,7 +70,7 @@ class HoudiniLauncher(SoftwareLauncher):
     @property
     def minimum_supported_version(self):
         """The minimum supported Houdini version."""
-        return "15.0"
+        return "12.0"
 
     def prepare_launch(self, exec_path, args, file_to_open=None):
         """
@@ -148,14 +133,29 @@ class HoudiniLauncher(SoftwareLauncher):
 
         return LaunchInformation(exec_path, args, required_env)
 
-    def _scan_software(self):
+    def scan_software(self):
         """
-        Scan the filesystem for all houdini executables.
+        Scan the filesystem for houdini executables.
 
         :return: A list of :class:`SoftwareVersion` objects.
         """
 
         self.logger.debug("Scanning for Houdini executables...")
+
+        supported_sw_versions = []
+        for sw_version in self._find_software():
+            (supported, reason) = self._is_supported(sw_version)
+            if supported:
+                supported_sw_versions.append(sw_version)
+            else:
+                self.logger.debug(
+                    "SoftwareVersion %s is not supported: %s" %
+                    (sw_version, reason)
+                )
+
+        return supported_sw_versions
+
+    def _find_software(self):
 
         # use the bundled engine icon
         icon_path = os.path.join(
@@ -165,58 +165,28 @@ class HoudiniLauncher(SoftwareLauncher):
         self.logger.debug("Using icon path: %s" % (icon_path,))
 
         # all the executable templates for the current OS
-        match_templates = self.EXECUTABLE_MATCH_TEMPLATES.get(sys.platform, [])
+        executable_templates = self.EXECUTABLE_TEMPLATES.get(sys.platform, [])
 
         # all the discovered executables
-        all_sw_versions = []
+        sw_versions = []
 
-        for match_template in match_templates:
+        for executable_template in executable_templates:
 
-            # build the glob pattern by formatting the template for globbing
-            glob_pattern = match_template.format(**self.COMPONENT_GLOB_LOOKUP)
-            self.logger.debug(
-                "Globbing for executable matching: %s ..." % (glob_pattern,)
+            self.logger.debug("Processing template %s.", executable_template)
+
+            executable_matches = self._glob_and_match(
+                executable_template,
+                self.COMPONENT_REGEX_LOOKUP
             )
 
-            # now match against files on disk
-            executable_paths = glob.glob(glob_pattern)
+            # Extract all products from that executable.
+            for (executable_path, key_groups, key_dict) in executable_matches:
 
-            self.logger.debug("Found %s matches" % (len(executable_paths),))
-
-            if not executable_paths:
-                # no matches. move on to the next template
-                continue
-
-            # construct the regex string to extract the components
-            regex_pattern = match_template.format(**self.COMPONENT_REGEX_LOOKUP)
-
-            # accumulate the software version objects to return. this will
-            # include the head/tail anchors in the regex
-            regex_pattern = "^%s$" % (regex_pattern,)
-
-            self.logger.debug(
-                "Matching components against regex: %s" % (regex_pattern,))
-
-            # compile the regex
-            executable_regex = re.compile(regex_pattern, re.IGNORECASE)
-
-            # now that we have a list of matching executables on disk we can
-            # extract the component pieces. iterate over each executable found
-            # for the glob pattern and find matched components via the regex
-            for executable_path in executable_paths:
-
-                self.logger.debug("Processing path: %s" % (executable_path,))
-
-                match = executable_regex.match(executable_path)
-
-                if not match:
-                    self.logger.debug("Path did not match regex.")
-                    continue
-
-                # extract the components (default to None if not included)
-                executable_version = match.groupdict().get("version")
-                executable_product = match.groupdict().get("product")
-                executable_name = match.groupdict().get("executable")
+                # extract the matched keys form the key_dict (default to None if
+                # not included)
+                executable_version = key_dict.get("version")
+                executable_product = key_dict.get("product")
+                executable_name = key_dict.get("executable")
 
                 # we need a product to match against. If that isn't provided,
                 # then an executable name should be available. We can map that
@@ -227,10 +197,13 @@ class HoudiniLauncher(SoftwareLauncher):
 
                 # no executable product. we don't recognize this product
                 if not executable_product:
-                    self.logger.debug("This product is unrecognized. Skipping.")
+                    self.logger.debug(
+                        "Product '%s' is unrecognized. Skipping." %
+                        (executable_product,)
+                    )
                     continue
 
-                all_sw_versions.append(
+                sw_versions.append(
                     SoftwareVersion(
                         executable_version,
                         executable_product,
@@ -239,5 +212,4 @@ class HoudiniLauncher(SoftwareLauncher):
                     )
                 )
 
-        return all_sw_versions
-
+        return sw_versions
