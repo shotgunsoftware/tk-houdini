@@ -61,9 +61,7 @@ configuration:
         description: "Comma-separated list of tk-houdini plugins to load when
                      launching Houdini. Use of this feature disables the classic
                      mechanism for bootstrapping Toolkit when Houdini is
-                     launched. Therefore, if any plugins are specified using
-                     this setting, the first one in the list must be responsible
-                     for starting Toolkit when Houdini is launched."
+                     launched."
         allows_empty: True
         default_value: []
         values:
