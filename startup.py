@@ -37,10 +37,10 @@ class HoudiniLauncher(SoftwareLauncher):
     # strings, these allow us to alter the regex matching for any of the
     # variable components of the path in one place
     COMPONENT_REGEX_LOOKUP = {
-        "version": "(?P<version>[\d.]+)",
-        "product": "(?P<product>[\w\s]+)",
-        "executable": "(?P<executable>[\w]+)",
-        "version_back": "(?P=version)",
+        "version": "[\d.]+",
+        "product": "[\w\s]+",
+        "executable": "[\w]+",
+        "version_back": "[\d.]+",
     }
 
     # This dictionary defines a list of executable template strings for each
@@ -180,7 +180,7 @@ class HoudiniLauncher(SoftwareLauncher):
             )
 
             # Extract all products from that executable.
-            for (executable_path, key_groups, key_dict) in executable_matches:
+            for (executable_path, key_dict) in executable_matches:
 
                 # extract the matched keys form the key_dict (default to None if
                 # not included)
