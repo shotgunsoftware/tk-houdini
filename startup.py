@@ -26,7 +26,6 @@ class HoudiniLauncher(SoftwareLauncher):
     EXECUTABLE_TO_PRODUCT = {
         "houdini": "Houdini",
         "hescape": "Houdini",
-        "happrentice": "Houdini Apprentice",
         "houdinicore": "Houdini Core",
         "houdinifx": "Houdini FX",
         "hindie": "Houdini Indie",
@@ -195,8 +194,8 @@ class HoudiniLauncher(SoftwareLauncher):
                     executable_product = \
                         self.EXECUTABLE_TO_PRODUCT.get(executable_name)
 
-                # no executable product. we don't recognize this product
-                if not executable_product:
+                # only include the products that are covered in the EXECUTABLE_TO_PRODUCT dict
+                if executable_product is None or executable_product not in self.EXECUTABLE_TO_PRODUCT.values():
                     self.logger.debug(
                         "Product '%s' is unrecognized. Skipping." %
                         (executable_product,)
