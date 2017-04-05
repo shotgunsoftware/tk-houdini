@@ -26,9 +26,11 @@ class HoudiniLauncher(SoftwareLauncher):
     EXECUTABLE_TO_PRODUCT = {
         "houdini": "Houdini",
         "hescape": "Houdini",
+        "happrentice": "Houdini Apprentice",
         "houdinicore": "Houdini Core",
         "houdinifx": "Houdini FX",
         "hindie": "Houdini Indie",
+
     }
 
     # Named regex strings to insert into the executable template paths when
