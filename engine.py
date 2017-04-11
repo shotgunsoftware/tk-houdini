@@ -38,14 +38,8 @@ class HoudiniEngine(tank.platform.Engine):
 
         self.log_debug("%s: Initializing..." % self)
 
-        if hou.applicationVersion()[0] < 12:
-            raise tank.TankError("Your version of Houdini is not supported. Currently, Toolkit only supports version 12+")
-
-        # Support OS X on 14+ only
-        if sys.platform == "darwin" and hou.applicationVersion()[0] < 14:
-            raise tank.TankError(
-                "Your version of Houdini is not supported on OS X. Currently, "
-                "Toolkit only supports version 14+ on OS X.")
+        if hou.applicationVersion()[0] < 14:
+            raise tank.TankError("Your version of Houdini is not supported. Currently, Toolkit only supports version 14+")
 
         try:
             hou_ver_str = ".".join([str(v) for v in hou.applicationVersion()])
@@ -58,13 +52,9 @@ class HoudiniEngine(tank.platform.Engine):
         self._ui_enabled = hasattr(hou, 'ui')
 
         # pyside is integrated as of houdini 14.
-        if hou.applicationVersion()[0] >= 14:
-            self._integrated_pyside = True
-            self._ui_type = "PySide"
-            self.log_debug("Using integrated PySide.")
-        else:
-            self._integrated_pyside = False
-            self._ui_type = None
+        self._integrated_pyside = True
+        self._ui_type = "PySide"
+        self.log_debug("Using integrated PySide.")
 
         # add our built-in pyside to the python path when on windows
         if not self._integrated_pyside and sys.platform == "win32":
@@ -136,8 +126,8 @@ class HoudiniEngine(tank.platform.Engine):
                 # setup houdini menus
                 menu_file = os.path.join(xml_tmp_dir, "MainMenuCommon")
 
-                # as of houdini 12.5 add .xml
-                if hou.applicationVersion() > (12, 5, 0):
+                # as of houdini 14 add .xml
+                if hou.applicationVersion() >= (14, 0, 0):
                     menu_file = menu_file + ".xml"
 
                 # keep the reference to the menu handler for convenience so
