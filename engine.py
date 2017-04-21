@@ -745,6 +745,30 @@ class HoudiniEngine(tank.platform.Engine):
         # lastly, return the instantiated widget
         return widget
 
+    def save_as(self):
+        """
+        Open a file dialog to choose a file path to save the current session to
+        """
+
+        from tank.platform.qt import QtGui
+
+        # houdini doesn't appear to have a "save as" dialog accessible via
+        # python. so open our own Qt file dialog.
+        file_dialog = QtGui.QFileDialog(
+            parent=self._get_dialog_parent(),
+            caption="Save As",
+            directory=hou.hipFile.path(),
+            filter="Houdini Files (*.hip, *.hipnc)"
+        )
+        file_dialog.setLabelText(QtGui.QFileDialog.Accept, "Save")
+        file_dialog.setLabelText(QtGui.QFileDialog.Reject, "Cancel")
+        file_dialog.setOption(QtGui.QFileDialog.DontResolveSymlinks)
+        file_dialog.setOption(QtGui.QFileDialog.DontUseNativeDialog)
+        if not file_dialog.exec_():
+            return
+        path = file_dialog.selectedFiles()[0]
+        hou.hipFile.save(file_name=path)
+
     def _get_dialog_parent(self):
         """
         Get the QWidget parent for all dialogs created through show_dialog &
@@ -755,21 +779,30 @@ class HoudiniEngine(tank.platform.Engine):
 
         parent = None
 
-        # attempt to find the houdini main window for parenting. The default
-        # implementation in tk-core uses the activeWindow which can be None 
-        # and can also be an already open toolkit dialog. 
-        app = QtGui.QApplication.instance()
-        for widget in app.topLevelWidgets():
+        # newer versions have access to main window
+        if hasattr(hou, "qt") and hasattr(hou.ui, "mainWindow"):
+            parent = hou.qt.mainWindow()
+        elif hasattr(hou, "ui") and hasattr(hou.ui, "mainQtWindow"):
+            parent = hou.ui.mainQtWindow()
 
-            # try to get a hold of the main window. it seems to be the only
-            # one with windowIconText set. There should be a better way to do
-            # this.
-            if (widget.isWindow() and 
-                not isinstance(widget, QtGui.QDialog) and
-                widget.windowIconText()):
-                parent = widget
+        # older versions do not...
+        else:
+
+            # attempt to find the houdini main window for parenting. The default
+            # implementation in tk-core uses the activeWindow which can be None
+            # and can also be an already open toolkit dialog.
+            app = QtGui.QApplication.instance()
+            for widget in app.topLevelWidgets():
+
+                # try to get a hold of the main window. it seems to be the only
+                # one with windowIconText set. There should be a better way to
+                # do this.
+                if (widget.isWindow() and
+                        not isinstance(widget, QtGui.QDialog) and
+                        widget.windowIconText()):
+                    parent = widget
 
         self.log_debug(
             "Found top level widget %s for dialog parenting" % (parent,))
         return parent
-                
+
