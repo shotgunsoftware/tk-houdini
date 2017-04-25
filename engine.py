@@ -38,14 +38,11 @@ class HoudiniEngine(tank.platform.Engine):
 
         self.log_debug("%s: Initializing..." % self)
 
-        if hou.applicationVersion()[0] < 12:
-            raise tank.TankError("Your version of Houdini is not supported. Currently, Toolkit only supports version 12+")
-
-        # Support OS X on 14+ only
-        if sys.platform == "darwin" and hou.applicationVersion()[0] < 14:
+        if hou.applicationVersion()[0] < 14:
             raise tank.TankError(
-                "Your version of Houdini is not supported on OS X. Currently, "
-                "Toolkit only supports version 14+ on OS X.")
+                "Your version of Houdini is not supported. Currently, Toolkit "
+                "only supports version 14+"
+            )
 
         try:
             hou_ver_str = ".".join([str(v) for v in hou.applicationVersion()])
@@ -56,29 +53,6 @@ class HoudiniEngine(tank.platform.Engine):
 
         # keep track of if a UI exists
         self._ui_enabled = hasattr(hou, 'ui')
-
-        # pyside is integrated as of houdini 14.
-        if hou.applicationVersion()[0] >= 14:
-            self._integrated_pyside = True
-            self._ui_type = "PySide"
-            self.log_debug("Using integrated PySide.")
-        else:
-            self._integrated_pyside = False
-            self._ui_type = None
-
-        # add our built-in pyside to the python path when on windows
-        if not self._integrated_pyside and sys.platform == "win32":
-            py_ver = sys.version_info[0:2]
-            if py_ver == (2, 6):
-                pyside_path = os.path.join(self.disk_location, "resources", "pyside112_py26_win64")
-                sys.path.append(pyside_path)
-                self.log_debug("Using bundled PySide: %s" % (pyside_path,))
-            elif py_ver == (2, 7):
-                pyside_path = os.path.join(self.disk_location, "resources", "pyside121_py27_win64")
-                sys.path.append(pyside_path)
-                self.log_debug("Using bundled PySide: %s" % (pyside_path,))
-            else:
-                self.log_warning("PySide not bundled for python %d.%d" % (py_ver[0], py_ver[1]))
 
     def pre_app_init(self):
         """
@@ -101,6 +75,8 @@ class HoudiniEngine(tank.platform.Engine):
         """
         Init that runs after all apps have been loaded.
         """
+
+        from tank.platform.qt import QtCore
 
         if not self.has_ui:
             # no UI. everything after this requires the UI!
@@ -187,27 +163,7 @@ class HoudiniEngine(tank.platform.Engine):
             # Setup the OTLs that need to be loaded for the Toolkit apps
             self._load_otls(oplibrary_path)
 
-        # no integrated pyside support. need to run custom event loop. see
-        # python/tk_houdini/python_qt_houdini.py
-        if not self._integrated_pyside:
-
-            # startup Qt
-            from tank.platform.qt import QtGui
-
-            app = QtGui.QApplication.instance()
-            if app is None:
-
-                # create the QApplication
-                sys.argv[0] = "Shotgun"
-                app = QtGui.QApplication(sys.argv)
-                app.setQuitOnLastWindowClosed(False)
-                app.setApplicationName(sys.argv[0])
-
-            self.log_debug("No integrated PySide. Starting integrated event loop.")
-            tk_houdini.python_qt_houdini.exec_(app)
-
         # tell QT to interpret C strings as utf-8
-        from tank.platform.qt import QtCore
         utf8 = QtCore.QTextCodec.codecForName("utf-8")
         QtCore.QTextCodec.setCodecForCStrings(utf8)
         self.log_debug("set utf-8 codec for widget text")
@@ -455,82 +411,6 @@ class HoudiniEngine(tank.platform.Engine):
     # UI Handling
     ############################################################################
 
-    def _define_qt_base(self):
-        """
-        Defines QT implementation for the engine. Checks for pyside then pyqt.
-        """
-
-        # If we're using a version of Houdini that comes integrated with
-        # PySide, then we don't need to worry about searching for PySide/PyQt
-        # on the system.  Simply return the base class implementation which
-        # should include the integrated PySide's QtGui and QtCore.
-        if self._integrated_pyside:
-            return super(HoudiniEngine, self)._define_qt_base()
-        self.log_debug("No integrated PySide. Locating system/bundled Qt.")
-
-        # proxy class used when QT does not exist on the system.
-        # this will raise an exception when any QT code tries to use it
-        class QTProxy(object):
-            def __getattr__(self, name):
-                raise tank.TankError("Looks like you are trying to run an App that uses a QT "
-                                     "based UI, however the Houdini engine could not find a PyQt "
-                                     "or PySide installation in your python system path. We "
-                                     "recommend that you install PySide if you want to "
-                                     "run UI applications from Houdini.")
-
-        base = {"qt_core": QTProxy(), "qt_gui": QTProxy(), "dialog_base": None}
-
-        if not self._ui_type:
-            try:
-                from PySide import QtCore, QtGui
-                import PySide
-
-                # Some old versions of PySide don't include version information
-                # so add something here so that we can use PySide.__version__ 
-                # later without having to check!
-                if not hasattr(PySide, "__version__"):
-                    PySide.__version__ = "<unknown>"
-
-                base["qt_core"] = QtCore
-                base["qt_gui"] = QtGui
-                base["dialog_base"] = QtGui.QDialog
-                self.log_debug("Successfully initialized PySide '%s' located in %s."
-                               % (PySide.__version__, PySide.__file__))
-                self._ui_type = "PySide"
-            except ImportError:
-                pass
-            except Exception, e:
-                import traceback
-                self.log_warning("Error setting up pyside. Pyside based UI "
-                                 "support will not be available: %s" % e)
-                self.log_debug(traceback.format_exc())
-
-        if not self._ui_type:
-            try:
-                from PyQt4 import QtCore, QtGui
-                import PyQt4
-
-                # hot patch the library to make it work with pyside code
-                QtCore.Signal = QtCore.pyqtSignal
-                QtCore.Slot = QtCore.pyqtSlot
-                QtCore.Property = QtCore.pyqtProperty
-                base["qt_core"] = QtCore
-                base["qt_gui"] = QtGui
-                base["dialog_base"] = QtGui.QDialog
-                self.log_debug("Successfully initialized PyQt '%s' located in %s."
-                               % (QtCore.PYQT_VERSION_STR, PyQt4.__file__))
-                self._ui_type = "PyQt"
-            except ImportError:
-                pass
-            except Exception, e:
-                import traceback
-                self.log_warning("Error setting up PyQt. PyQt based UI support "
-                                 "will not be available: %s" % e)
-                self.log_debug(traceback.format_exc())
-
-        return base
-
-
     def _create_dialog(self, title, bundle, widget, parent):
         """
         Overriden from the base Engine class - create a TankQDialog with the specified widget 
@@ -574,12 +454,7 @@ class HoudiniEngine(tank.platform.Engine):
         if sys.platform == "win32":
             ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
             ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
-            if self._ui_type == "PySide":
-                hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
-            elif self._ui_type == "PyQt":
-                hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId().ascobject())
-            else:
-                raise NotImplementedError("Unsupported ui type: %s" % self._ui_type)
+            hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
             ctypes.windll.user32.SetActiveWindow(hwnd)
 
         return dialog
@@ -589,12 +464,6 @@ class HoudiniEngine(tank.platform.Engine):
         Launches a modal dialog. Overridden from base class.
         """
         from tank.platform.qt import QtCore, QtGui
-        
-        if not self._ui_type:
-            self.log_error("Cannot show dialog %s! No QT support appears to exist in this engine. "
-                           "In order for the houdini engine to run UI based apps, either pyside "
-                           "or PyQt needs to be installed in your system." % title)
-            return
         
         # In houdini, the script editor runs in a custom thread. Any commands executed here
         # which are calling UI functionality may cause problems with QT. Check that we are
@@ -617,12 +486,6 @@ class HoudiniEngine(tank.platform.Engine):
         Shows a modeless dialog. Overridden from base class.
         """        
         from tank.platform.qt import QtCore, QtGui
-        
-        if not self._ui_type:
-            self.log_error("Cannot show dialog %s! No QT support appears to exist in this engine. "
-                           "In order for the houdini engine to run UI based apps, either pyside "
-                           "or PyQt needs to be installed in your system." % title)
-            return
         
         # In houdini, the script editor runs in a custom thread. Any commands executed here
         # which are calling UI functionality may cause problems with QT. Check that we are
