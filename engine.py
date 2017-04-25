@@ -41,7 +41,7 @@ class HoudiniEngine(tank.platform.Engine):
         if hou.applicationVersion()[0] < 14:
             raise tank.TankError(
                 "Your version of Houdini is not supported. Currently, Toolkit "
-                "only supports version 14+"
+                "only supports version 14+."
             )
 
         try:
