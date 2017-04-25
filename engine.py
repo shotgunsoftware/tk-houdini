@@ -36,7 +36,7 @@ class HoudiniEngine(tank.platform.Engine):
         Main initialization entry point.
         """        
 
-        self.log_debug("%s: Initializing..." % self)
+        self.logger.debug("%s: Initializing..." % self)
 
         if hou.applicationVersion()[0] < 14:
             raise tank.TankError(
@@ -166,7 +166,7 @@ class HoudiniEngine(tank.platform.Engine):
         # tell QT to interpret C strings as utf-8
         utf8 = QtCore.QTextCodec.codecForName("utf-8")
         QtCore.QTextCodec.setCodecForCStrings(utf8)
-        self.log_debug("set utf-8 codec for widget text")
+        self.logger.debug("set utf-8 codec for widget text")
 
         # Typically we only call this method for engines which don't have a
         # well defined styling. Houdini appears to use stylesheets to handle
@@ -185,7 +185,7 @@ class HoudiniEngine(tank.platform.Engine):
         Engine shutdown.
         """
         
-        self.log_debug("%s: Destroying..." % self)
+        self.logger.debug("%s: Destroying..." % self)
 
         if hasattr(self, "_shelf") and self._shelf:
             # there doesn't appear to be a way to programmatically add a shelf
@@ -206,31 +206,19 @@ class HoudiniEngine(tank.platform.Engine):
         Detect and return if houdini is running in batch mode
         """
         return self._ui_enabled
-            
-    def log_debug(self, msg):
-        """
-        Debug logging
-        """        
-        if self.get_setting("debug_logging", False):
-            print "Shotgun Debug: %s" % msg
 
-    def log_info(self, msg):
+    def _emit_log_message(self, handler, record):
         """
-        Info logging
-        """        
-        print "Shotgun: %s" % msg
+        Called by the engine whenever a new log message is available. All log
+        messages from the toolkit logging namespace will be passed to this
+        method.
+        """
 
-    def log_error(self, msg):
-        """
-        Error logging
-        """        
-        print "Shotgun Error: %s" % msg
+        # call out to handler to format message in a standard way
+        msg_str = handler.format(record)
 
-    def log_warning(self, msg):
-        """
-        Warning logging
-        """        
-        print "Shotgun Warning: %s" % msg
+        # display message
+        print msg_str
 
     ############################################################################
     # panel interfaces
@@ -263,7 +251,7 @@ class HoudiniEngine(tank.platform.Engine):
             # called via the callback. So, we set a flag that `show_panel` can
             # use to short-circuit and return the info needed.
             self._panel_info_request = True
-            self.log_debug("Retrieving panel widget for %s" % panel_id)
+            self.logger.debug("Retrieving panel widget for %s" % panel_id)
             panel_info = panel_dict['callback']()
             del self._panel_info_request
             return panel_info
@@ -326,7 +314,7 @@ class HoudiniEngine(tank.platform.Engine):
             except hou.OperationFailed:
                 # likely due to panels file not being a valid file, missing, etc. 
                 # hopefully not the case, but try to continue gracefully.
-                self.log_warning(
+                self.logger.warning(
                     "Unable to find interface for panel '%s' in file: %s" % 
                     (panel_id, self._panels_file))
 
@@ -369,7 +357,7 @@ class HoudiniEngine(tank.platform.Engine):
         """        
         callback = self._callback_map.get(cmd_id)
         if callback is None:
-            self.log_error("No callback found for id: %s" % cmd_id)
+            self.logger.error("No callback found for id: %s" % cmd_id)
             return
         callback()
 
@@ -469,7 +457,7 @@ class HoudiniEngine(tank.platform.Engine):
         # which are calling UI functionality may cause problems with QT. Check that we are
         # running in the main thread
         if QtCore.QThread.currentThread() != QtGui.QApplication.instance().thread():
-            self.execute_in_main_thread(self.log_error, "Error creating dialog: You can only launch UIs "
+            self.execute_in_main_thread(self.logger.error, "Error creating dialog: You can only launch UIs "
                                         "in the main thread. Try using the execute_in_main_thread() method.")
             return        
 
@@ -491,7 +479,7 @@ class HoudiniEngine(tank.platform.Engine):
         # which are calling UI functionality may cause problems with QT. Check that we are
         # running in the main thread
         if QtCore.QThread.currentThread() != QtGui.QApplication.instance().thread():
-            self.execute_in_main_thread(self.log_error, "Error creating dialog: You can only launch UIs "
+            self.execute_in_main_thread(self.logger.error, "Error creating dialog: You can only launch UIs "
                                         "in the main thread. Try using the execute_in_main_thread() method.")
             return
 
@@ -528,7 +516,7 @@ class HoudiniEngine(tank.platform.Engine):
                 widget.windowIconText()):
                 parent = widget
 
-        self.log_debug(
+        self.logger.debug(
             "Found top level widget %s for dialog parenting" % (parent,))
         return parent
                 

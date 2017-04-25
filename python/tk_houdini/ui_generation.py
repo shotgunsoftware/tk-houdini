@@ -62,7 +62,7 @@ class AppCommandsUI(object):
                 ctx_name = "%s, %s %s" % (
                     task_step, ctx.entity["type"], ctx.entity["name"])
 
-            self._engine.log_debug("Constructed context name: %s" % (ctx_name,))
+            self._engine.logger.debug("Constructed context name: %s" % (ctx_name,))
             self._context_name = ctx_name
 
         return self._context_name
@@ -113,7 +113,7 @@ class AppCommandsUI(object):
                         app_name = "Other Items"
                     cmds_by_app.setdefault(app_name, []).append(cmd)
 
-            self._engine.log_debug("Grouped registered commands.")
+            self._engine.logger.debug("Grouped registered commands.")
             self._grouped_commands = (context_cmds, cmds_by_app, favourite_cmds)
 
         return self._grouped_commands
@@ -142,10 +142,10 @@ class AppCommandsMenu(AppCommandsUI):
         # houdini 15+ allows for dynamic menu creation, so do that if possible.
         # otherwise, fallback to the static menu
         if hou.applicationVersion()[0] >= 15:
-            self._engine.log_debug("Constructing dynamic Shotgun menu.")
+            self._engine.logger.debug("Constructing dynamic Shotgun menu.")
             self._create_dynamic_menu(xml_path)
         else:
-            self._engine.log_debug("Constructing static Shotgun menu.")
+            self._engine.logger.debug("Constructing static Shotgun menu.")
             self._create_static_menu(xml_path)
 
     def _get_context_commands(self):
@@ -191,7 +191,7 @@ class AppCommandsMenu(AppCommandsUI):
             cmds = [context_cmd]
             cmds.extend(context_cmds)
 
-            self._engine.log_debug(
+            self._engine.logger.debug(
                 "Collected context commands for dynamic menu.")
             self._context_commands = cmds
 
@@ -221,7 +221,7 @@ class AppCommandsMenu(AppCommandsUI):
                     if not cmd.favourite:
                         cmds.append(cmd)
 
-            self._engine.log_debug("Collected app commands for dynamic menu.")
+            self._engine.logger.debug("Collected app commands for dynamic menu.")
             self._commands_by_app = cmds
 
         return self._commands_by_app
@@ -311,7 +311,7 @@ class AppCommandsMenu(AppCommandsUI):
         # format the xml and write it to disk
         xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
         _write_xml(xml, xml_path)
-        self._engine.log_debug("Dynamic menu written to: %s" % (xml_path,))
+        self._engine.logger.debug("Dynamic menu written to: %s" % (xml_path,))
 
     def _create_static_menu(self, xml_path):
         """Construct the static Shotgun menu for older versions of Houdini.
@@ -360,7 +360,7 @@ class AppCommandsMenu(AppCommandsUI):
         # format the xml and write it to disk
         xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
         _write_xml(xml, xml_path)
-        self._engine.log_debug("Static menu written to: %s" % (xml_path,))
+        self._engine.logger.debug("Static menu written to: %s" % (xml_path,))
 
     def _menuNode(self, parent, label, id):
         """Constructs a submenu for the supplied parent."""
@@ -491,7 +491,7 @@ class AppCommandsPanelHandler(AppCommandsUI):
 
         xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
         _write_xml(xml, panels_file)
-        self._engine.log_debug("Panels written to: %s" % (panels_file,))
+        self._engine.logger.debug("Panels written to: %s" % (panels_file,))
 
         # install the panels
         hou.pypanel.installFile(panels_file)
@@ -551,11 +551,11 @@ class AppCommandsShelf(AppCommandsUI):
         shelf = hou.shelves.shelves().get(self._name, None)
         if shelf:
             # existing shelf. point it to the new shelf file for this session
-            self._engine.log_debug("Using existing shelf.")
-            self._engine.log_debug("  Setting shelf file: %s" % shelf_file)
+            self._engine.logger.debug("Using existing shelf.")
+            self._engine.logger.debug("  Setting shelf file: %s" % shelf_file)
             shelf.setFilePath(shelf_file)
         else:
-            self._engine.log_debug("Creating new shelf: %s" % self._name)
+            self._engine.logger.debug("Creating new shelf: %s" % self._name)
             shelf = hou.shelves.newShelf(
                 file_path=shelf_file,
                 name=self._name,
@@ -603,7 +603,7 @@ class AppCommandsShelf(AppCommandsUI):
 
         import hou
 
-        self._engine.log_debug("Creating tool: %s" % cmd.name)
+        self._engine.logger.debug("Creating tool: %s" % cmd.name)
         tool = hou.shelves.newTool(
             file_path=shelf_file,
             name=cmd.name.replace(" ", "_"),
@@ -638,7 +638,7 @@ class AppCommandsShelf(AppCommandsUI):
         # get rid of all the tools on the shelf
         self.destroy_tools()
 
-        self._engine.log_debug("Destroying shelf: %s" % shelf.name())
+        self._engine.logger.debug("Destroying shelf: %s" % shelf.name())
         shelf.destroy()
 
     def destroy_tools(self):
@@ -654,7 +654,7 @@ class AppCommandsShelf(AppCommandsUI):
 
         # destroy all the tools on the shelf to be safe
         for tool in shelf.tools():
-            self._engine.log_debug("Destroying tool: %s" % tool.name())
+            self._engine.logger.debug("Destroying tool: %s" % tool.name())
             tool.destroy()
 
 class AppCommand(object):
@@ -860,7 +860,7 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
                     self.parent().setStyleSheet("")
                 engine._apply_external_styleshet(bundle, self)
             except Exception:
-                engine.log_warning(
+                engine.logger.warning(
                     "Unable to re-apply stylesheet for panel: %s" % (title,)
                 )
             finally:
@@ -902,7 +902,7 @@ def _jump_to_fs(engine):
 
         exit_code = os.system(cmd)
         if exit_code != 0:
-            engine.log_error("Failed to launch '%s'!" % cmd)
+            engine.logger.error("Failed to launch '%s'!" % cmd)
 
 def _format_xml(xml):
     """Do any required formatting. Typically before writing to disk."""
