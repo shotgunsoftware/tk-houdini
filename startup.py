@@ -106,7 +106,7 @@ class HoudiniLauncher(SoftwareLauncher):
 
             # Prepare the launch environment with variables required by the
             # plugin bootstrap.
-            self.logger.info("Launch plugins: %s" % (launch_plugins,))
+            self.logger.debug("Launch plugins: %s" % (launch_plugins,))
             required_env = bootstrap.get_plugin_startup_env(launch_plugins)
 
             # Add context and site info
@@ -130,7 +130,7 @@ class HoudiniLauncher(SoftwareLauncher):
             file_to_open_env = bootstrap.g_sgtk_file_to_open_env
             required_env[file_to_open_env] = file_to_open
 
-        self.logger.info("Launch environment: %s" % (required_env,))
+        self.logger.debug("Launch environment: %s" % (required_env,))
 
         return LaunchInformation(exec_path, args, required_env)
 
