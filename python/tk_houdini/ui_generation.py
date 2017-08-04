@@ -1095,6 +1095,9 @@ def createInterface():
         if name:
             pane_tab.setName(name)
 
+    parent = engine._get_dialog_parent()
+    if parent:
+        parent.setStyleSheet("")
     return panel_widget
 
 """

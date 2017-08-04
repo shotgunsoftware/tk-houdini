@@ -11,8 +11,6 @@ not expressly granted therein are reserved by Shotgun Software Inc.
 
 */
 
-
-
 /*tabwidget*/
 QTabWidget {
     background-color: #323232;
