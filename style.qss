@@ -21,9 +21,7 @@ QTabWidget {
 QTabBar::tab {
     padding: 5px 10px 5px 10px;
     background-color: #272727;
-    width: 50px;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
+    min-width: 50px;
     margin-left: 2px;
     margin-right: 2px;
 }
@@ -45,10 +43,17 @@ QToolButton {
     padding: 5px 10px 5px 10px;
 }
 
-QLabel {
+QLabel, QCheckBox {
     margin-left: 5px;
+    margin-right: 5px;
+    background-color: transparent;
 }
 
 QTabWidget::pane {
+    border: 1px solid #323232;
+}
+
+QLineEdit, QComboBox, QSpinBox, QScrollBar {
+    background-color: #272727;
     border: 1px solid #323232;
 }

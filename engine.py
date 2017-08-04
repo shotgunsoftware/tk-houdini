@@ -548,8 +548,11 @@ class HoudiniEngine(tank.platform.Engine):
             dialog.setWindowFlags(
                 dialog.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
 
-        # manually re-apply any bundled stylesheet to the dialog
-        self._apply_external_styleshet(bundle, dialog)
+        # manually re-apply any bundled stylesheet to the dialog if we are older
+        # than H16. In 16 we inherited styling problems and need to rely on the
+        # engine level qss only.
+        if hou.applicationVersion()[0] < 16:
+            self._apply_external_styleshet(bundle, dialog)
 
         # If we're in 16+, we also need to apply the engine-level qss.
         if hou.applicationVersion()[0] >= 16:
