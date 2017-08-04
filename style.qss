@@ -11,9 +11,11 @@ not expressly granted therein are reserved by Shotgun Software Inc.
 
 */
 
+
+
 /*tabwidget*/
 QTabWidget {
-    background-color: transparent;
+    background-color: #323232;
 }
 
 QTabBar::tab {
@@ -22,7 +24,8 @@ QTabBar::tab {
     width: 50px;
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
-    margin: 2px;
+    margin-left: 2px;
+    margin-right: 2px;
 }
 
 QTabBar::tab:selected {
@@ -44,4 +47,8 @@ QToolButton {
 
 QLabel {
     margin-left: 5px;
+}
+
+QTabWidget::pane {
+    border: 1px solid #323232;
 }

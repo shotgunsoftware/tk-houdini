@@ -62,6 +62,8 @@ class HoudiniEngine(tank.platform.Engine):
         if not self._ui_enabled:
             return
 
+        from tank.platform.qt import QtCore
+
         if hou.applicationVersion()[0] >= 15:
             # In houdini 15+, we can use the dynamic menus and shelf api to
             # properly handle cases where a file is loaded outside of a SG
