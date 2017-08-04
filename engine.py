@@ -71,6 +71,17 @@ class HoudiniEngine(tank.platform.Engine):
             if self.get_setting("automatic_context_switch", True):
                 tk_houdini.ensure_file_change_timer_running()
 
+        if hou.applicationVersion()[0] >= 16:
+            # The "qss_watcher" setting causes us to monitor the engine's
+            # style.qss file and re-apply it on the fly when it changes
+            # on disk. This is very useful for development work,
+            if self.get_setting("qss_watcher", False):
+                self._qss_watcher = QtCore.QFileSystemWatcher(
+                    [os.path.join(self.disk_location, tank.platform.constants.BUNDLE_STYLESHEET_FILE)],
+                )
+
+                self._qss_watcher.fileChanged.connect(self.reload_qss)
+
     def post_app_init(self):
         """
         Init that runs after all apps have been loaded.
@@ -538,6 +549,10 @@ class HoudiniEngine(tank.platform.Engine):
         # manually re-apply any bundled stylesheet to the dialog
         self._apply_external_styleshet(bundle, dialog)
 
+        # If we're in 16+, we also need to apply the engine-level qss.
+        if hou.applicationVersion()[0] >= 16:
+            self._apply_external_styleshet(self, dialog)
+
         # raise and activate the dialog:
         dialog.raise_()
         dialog.activateWindow()
@@ -550,6 +565,17 @@ class HoudiniEngine(tank.platform.Engine):
             ctypes.windll.user32.SetActiveWindow(hwnd)
 
         return dialog
+
+    def reload_qss(self):
+        """
+        Causes the style.qss file that comes with the tk-rv engine to
+        be re-applied to all dialogs that the engine has previously
+        launched.
+        """
+        self.log_warning("Reloading engine QSS...")
+        for dialog in self.created_qt_dialogs:
+            self._apply_external_styleshet(self, dialog)
+            dialog.update()
 
     def show_modal(self, title, bundle, widget_class, *args, **kwargs):
         """
