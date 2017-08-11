@@ -551,12 +551,12 @@ class HoudiniEngine(tank.platform.Engine):
         # manually re-apply any bundled stylesheet to the dialog if we are older
         # than H16. In 16 we inherited styling problems and need to rely on the
         # engine level qss only.
-        if hou.applicationVersion()[0] < 16:
-            self._apply_external_styleshet(bundle, dialog)
-
         # If we're in 16+, we also need to apply the engine-level qss.
         if hou.applicationVersion()[0] >= 16:
             self._apply_external_styleshet(self, dialog)
+
+        if hou.applicationVersion()[0] < 16:
+            self._apply_external_styleshet(bundle, dialog)
 
         # raise and activate the dialog:
         dialog.raise_()

@@ -842,10 +842,11 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
             try:
                 if self.parent():
                     self.parent().setStyleSheet("")
+
                 engine._apply_external_styleshet(bundle, self)
-            except Exception:
+            except Exception, e:
                 engine.logger.warning(
-                    "Unable to re-apply stylesheet for panel: %s" % (title,)
+                    "Unable to re-apply stylesheet for panel: %s %s" % (title, e)
                 )
             finally:
                 self._changing_stylesheet = False
