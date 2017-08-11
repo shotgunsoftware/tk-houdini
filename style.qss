@@ -29,16 +29,32 @@ QTabBar::tab:selected {
 }
 
 QPushButton {
-    background-color: #272727;
+    background-color: rgb(50, 50, 50);
     border-radius: 4px;
     padding: 5px 10px 5px 10px;
     min-width: 60px;
 }
 
-QToolButton {
+QPushButton::pressed {
     background-color: #272727;
+}
+
+QPushButton:disabled {
+    background-color: rgb(75, 75, 75);
+}
+
+QToolButton {
+    background-color: rgb(50, 50, 50);
     border-radius: 4px;
     padding: 5px 10px 5px 10px;
+}
+
+QToolButton::pressed {
+    background-color: #272727;
+}
+
+QToolButton:disabled {
+    background-color: rgb(75, 75, 75);
 }
 
 QLabel, QCheckBox {
