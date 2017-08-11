@@ -74,11 +74,6 @@ class HoudiniEngine(tank.platform.Engine):
                 tk_houdini.ensure_file_change_timer_running()
 
         if hou.applicationVersion()[0] >= 16:
-            dialog_parent = self._get_dialog_parent()
-
-            if dialog_parent is not None:
-                dialog_parent.setStyleSheet("")
-
             # The "qss_watcher" setting causes us to monitor the engine's
             # style.qss file and re-apply it on the fly when it changes
             # on disk. This is very useful for development work,

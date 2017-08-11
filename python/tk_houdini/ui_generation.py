@@ -832,11 +832,11 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
             # if we're about to paint, see if we need to re-apply the style
             elif event.type() == QtCore.QEvent.Paint:
                 if not self._stylesheet_applied:
-                    self._apply_stylesheet()
+                    self.apply_stylesheet()
 
             return False
 
-        def _apply_stylesheet(self):
+        def apply_stylesheet(self):
 
             self._changing_stylesheet = True
             try:
@@ -1073,6 +1073,7 @@ def createInterface():
             panel_info['bundle'],
             panel_info['title'],
         )
+        panel_widget.apply_stylesheet()
     except Exception:
         import traceback
         return NoPanelWidget(
