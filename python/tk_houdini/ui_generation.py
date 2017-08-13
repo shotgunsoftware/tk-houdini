@@ -818,6 +818,7 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
     
         def __init__(self, *args, **kwargs):
             super(PanelWrapper, self).__init__(*args, **kwargs)
+            self.setParent(None)
             self._stylesheet_applied = False
             self._changing_stylesheet = False
             self.installEventFilter(self)
@@ -842,6 +843,16 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
             try:
                 if self.parent():
                     self.parent().setStyleSheet("")
+
+                    # In Houdini 16, we ended up with panel styling issues
+                    # if the top level parent widget did not yet have its
+                    # qss cleared. The code below is the equivalent to what
+                    # we do when we launch a dialog via the engine, so it
+                    # should be no less safe than that.
+                    import hou
+                    if hou.applicationVersion()[0] >= 16:
+                        import sgtk.platform
+                        sgtk.platform.current_engine()._get_dialog_parent().setStyleSheet("")
 
                 engine._apply_external_styleshet(bundle, self)
             except Exception, e:
@@ -1096,17 +1107,6 @@ def createInterface():
             pane_tab.setLabel(title)
         if name:
             pane_tab.setName(name)
-
-    def _set_parent_stylesheet():
-        parent = panel_widget.parent()
-        if parent:
-            parent.setStyleSheet("")
-
-    from sgtk.platform.qt import QtCore
-    timer = QtCore.QTimer(panel_widget)
-    timer.timeout.connect(_set_parent_stylesheet)
-    timer.setSingleShot(True)
-    timer.start(1000)
 
     return panel_widget
 
