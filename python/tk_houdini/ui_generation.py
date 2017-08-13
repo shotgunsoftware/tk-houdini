@@ -1097,9 +1097,17 @@ def createInterface():
         if name:
             pane_tab.setName(name)
 
-    parent = engine._get_dialog_parent()
-    if parent:
-        parent.setStyleSheet("")
+    def _set_parent_stylesheet():
+        parent = panel_widget.parent()
+        if parent:
+            parent.setStyleSheet("")
+
+    from sgtk.platform.qt import QtCore
+    timer = QtCore.QTimer(panel_widget)
+    timer.timeout.connect(_set_parent_stylesheet)
+    timer.setSingleShot(True)
+    timer.start(1000)
+
     return panel_widget
 
 """
