@@ -832,20 +832,31 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
             # if we're about to paint, see if we need to re-apply the style
             elif event.type() == QtCore.QEvent.Paint:
                 if not self._stylesheet_applied:
-                    self._apply_stylesheet()
+                    self.apply_stylesheet()
 
             return False
 
-        def _apply_stylesheet(self):
+        def apply_stylesheet(self):
 
             self._changing_stylesheet = True
             try:
                 if self.parent():
                     self.parent().setStyleSheet("")
+
+                    # In Houdini 16, we ended up with panel styling issues
+                    # if the top level parent widget did not yet have its
+                    # qss cleared. The code below is the equivalent to what
+                    # we do when we launch a dialog via the engine, so it
+                    # should be no less safe than that.
+                    import hou
+                    if hou.applicationVersion()[0] >= 16:
+                        import sgtk.platform
+                        sgtk.platform.current_engine()._get_dialog_parent().setStyleSheet("")
+
                 engine._apply_external_styleshet(bundle, self)
-            except Exception:
+            except Exception, e:
                 engine.logger.warning(
-                    "Unable to re-apply stylesheet for panel: %s" % (title,)
+                    "Unable to re-apply stylesheet for panel: %s %s" % (title, e)
                 )
             finally:
                 self._changing_stylesheet = False
@@ -1072,6 +1083,7 @@ def createInterface():
             panel_info['bundle'],
             panel_info['title'],
         )
+        panel_widget.apply_stylesheet()
     except Exception:
         import traceback
         return NoPanelWidget(

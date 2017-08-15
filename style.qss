@@ -1,0 +1,73 @@
+/*
+Copyright (c) 2017 Shotgun Software Inc.
+ 
+CONFIDENTIAL AND PROPRIETARY
+
+This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+Source Code License included in this distribution package. See LICENSE.
+By accessing, using, copying or modifying this work you indicate your 
+agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+not expressly granted therein are reserved by Shotgun Software Inc.
+
+*/
+
+/*tabwidget*/
+QTabWidget {
+    background-color: #323232;
+}
+
+QTabBar::tab {
+    padding: 5px 10px 5px 10px;
+    background-color: #272727;
+    min-width: 50px;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+QTabBar::tab:selected {
+    background-color: #323232;
+}
+
+QPushButton {
+    background-color: rgb(50, 50, 50);
+    border-radius: 4px;
+    padding: 5px 10px 5px 10px;
+    min-width: 60px;
+}
+
+QPushButton::pressed {
+    background-color: #272727;
+}
+
+QPushButton:disabled {
+    background-color: rgb(75, 75, 75);
+}
+
+QToolButton {
+    background-color: rgb(50, 50, 50);
+    border-radius: 4px;
+    padding: 5px 10px 5px 10px;
+}
+
+QToolButton::pressed {
+    background-color: #272727;
+}
+
+QToolButton:disabled {
+    background-color: rgb(75, 75, 75);
+}
+
+QLabel, QCheckBox {
+    margin-left: 5px;
+    margin-right: 5px;
+    background-color: transparent;
+}
+
+QTabWidget::pane {
+    border: 1px solid #323232;
+}
+
+QLineEdit, QComboBox, QSpinBox, QScrollBar {
+    background-color: #272727;
+    border: 1px solid #323232;
+}
