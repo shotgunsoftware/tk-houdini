@@ -42,6 +42,13 @@ def plugin_startup():
         # system httplib is likely to require. If it doesn't have it,
         # then we need to force the use of our bundled httplib before
         # we let the bootstrap happen.
+        #
+        # The issue, ultimately, is that the ssl bundled with H16
+        # does not provide the _create_default_https_context function,
+        # which is called by the httplib that comes with system Python
+        # on CentOS 7.x, which itself is used by httplib2, which is used
+        # by shotgun_api3. The end result is that shotgun_api3 fails on
+        # connect when the address is https with an AttributeError.
         import ssl
         if not hasattr(ssl, "_create_default_https_context"):
             # Add the submodule containing httplib to sys.path so that
