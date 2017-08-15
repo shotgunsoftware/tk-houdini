@@ -17,6 +17,7 @@ import os
 import sys
 
 
+
 def classic_startup():
 
     # use inspect to get the current file path since attempts to access
@@ -43,6 +44,30 @@ def classic_startup():
     # add to the system path
     sys.path.insert(0, tk_houdini_python_path)
 
+    # We need to check to make sure we don't have an incompatibility
+    # between httplib and Houdini's bundled ssl.py. This is a problem
+    # on some Linux distros (CentOS 7.x) with H16. We also then had to
+    # package the urllib2 library that is compatible with our bundled
+    # httplib.
+    if sys.platform.startswith("linux") and sys.version.startswith("2.7.5"):
+        # We can check to see if ssl has the function we know that
+        # system httplib is likely to require. If it doesn't have it,
+        # then we need to force the use of our bundled httplib before
+        # we let the bootstrap happen.
+        import ssl
+        if not hasattr(ssl, "_create_default_https_context"):
+            # Clear httplib if it's already been imported.
+            if "httplib" in sys.modules:
+                del sys.modules["httplib"]
+            if "urllib2" in sys.modules:
+                del sys.modules["urllib2"]
+
+            # Add the submodule containing httplib to sys.path so that
+            # the next time it's imported it'll come from there instead
+            # of the system Python install.
+            packages_path = os.path.join(tk_houdini_python_path, "packages")
+            sys.path.insert(0, packages_path)
+
     # now that the path is there, we can import the classic bootstrap logic
     try:
         from tk_houdini import bootstrap
@@ -63,3 +88,11 @@ def classic_startup():
 
 
 classic_startup()
+
+# In case we cleared httplib/urllib2 from sys.modules during plugin startup,
+# we will import it here in the global scope. That will ensure that
+# we have httplib coming from the correct module after we've potentially
+# manipulated sys.path.
+import httplib
+import urllib2
+
