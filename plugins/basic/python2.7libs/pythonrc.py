@@ -35,7 +35,7 @@ def plugin_startup():
     # We need to check to make sure we don't have an incompatibility
     # between httplib and Houdini's bundled ssl.py. This is a problem
     # on some Linux distros (CentOS 7.x) with H16.
-    if sys.platform == "linux2" and sys.version.startswith("2.7.5"):
+    if sys.platform.startswith("linux") and sys.version.startswith("2.7.5"):
         # We can check to see if ssl has the function we know that
         # system httplib is likely to require. If it doesn't have it,
         # then we need to force the use of our bundled httplib before
@@ -82,3 +82,10 @@ def plugin_startup():
             print details
 
 plugin_startup()
+
+# In case we cleared httplib from sys.modules during plugin startup,
+# we will import it here in the global scope. That will ensure that
+# we have httplib coming from the correct module after we've potentially
+# manipulated sys.path.
+import httplib
+
