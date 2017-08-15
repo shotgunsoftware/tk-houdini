@@ -32,6 +32,32 @@ def plugin_startup():
     current_dir_path = os.path.dirname(current_file_path)
     plugin_root_path = os.path.dirname(current_dir_path)
 
+    # We need to check to make sure we don't have an incompatibility
+    # between httplib and Houdini's bundled ssl.py. This is a problem
+    # on some Linux distros (CentOS 7.x) with H16.
+    if sys.platform == "linux2" and sys.version.startswith("2.7.5"):
+        # We can check to see if ssl has the function we know that
+        # system httplib is likely to require. If it doesn't have it,
+        # then we need to force the use of our bundled httplib before
+        # we let the bootstrap happen.
+        import ssl
+        if not hasattr(ssl, "_create_default_https_context"):
+            # Add the submodule containing httplib to sys.path so that
+            # the next time it's imported it'll come from there instead
+            # of the system Python install.
+            plugins_path = os.path.dirname(plugin_root_path)
+            packages_path = os.path.join(
+                os.path.dirname(plugins_path),
+                "python",
+                "packages",
+            )
+
+            sys.path.insert(0, packages_path)
+
+            # Clear httplib if it's already been imported.
+            if "httplib" in sys.modules:
+                del sys.modules["httplib"]
+
     # the plugin python path will be just below the root level. add it to
     # sys.path
     plugin_python_path = os.path.join(plugin_root_path, "python")
