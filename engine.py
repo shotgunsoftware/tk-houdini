@@ -389,6 +389,16 @@ class HoudiniEngine(tank.platform.Engine):
         ver = hou.applicationVersion()
     
         # first version where saving python panel in desktop was fixed
+        if sys.platform.startswith("darwin"):
+            # We have some serious painting problems with Python panes in
+            # H16 that are specific to OS X. We have word out to SESI, and
+            # are waiting to hear back from them as to how we might be able
+            # to proceed. Until that is sorted out, though, we're going to
+            # have to disable panel support on OS X for H16. Our panel apps
+            # appear to function just fine in dialog mode.
+            if ver >= (16, 0, 0):
+                return False
+
         if ver >= (15, 0, 272):
             return True
 
