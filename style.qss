@@ -57,7 +57,7 @@ QToolButton:disabled {
     background-color: rgb(75, 75, 75);
 }
 
-QLabel, QCheckBox {
+QCheckBox {
     margin-left: 5px;
     margin-right: 5px;
     background-color: transparent;
