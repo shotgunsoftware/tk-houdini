@@ -489,6 +489,18 @@ class HoudiniEngine(tank.platform.Engine):
         # to houdini as an event loop callback. This will run when houdini is
         # idle which should be after the UI loads up.
         def run_when_idle():
+            # We have a problem in H16 where the event loop callback is
+            # being called too early. We want to wait, but we don't want
+            # to block. There are a few options on how to make that happen,
+            # but rather than do something time based, it's acting more reliable
+            # when we wait some number of event loop iterations before completing
+            # our job. Going with 10 seems to get us past the threshold reliably
+            # without it being noticeable to the user.
+            if run_when_idle._call_count < 10:
+                run_when_idle._call_count += 1
+                self.log_debug("Waiting to launch startup apps (%s/10)..." % run_when_idle._call_count)
+                return
+
             for (cmd_name, command) in commands_to_run:
                 # iterate over all the commands and execute them.
                 self.log_debug("Executing startup command: %s" % (cmd_name,))
@@ -505,6 +517,7 @@ class HoudiniEngine(tank.platform.Engine):
         # add the special attribute that the function will look use to find
         # and unregister itself when executed.
         run_when_idle.tk_houdini_startup_commands = True
+        run_when_idle._call_count = 0
 
         # add the function as an event loop callback
         hou.ui.addEventLoopCallback(run_when_idle)
@@ -535,6 +548,12 @@ class HoudiniEngine(tank.platform.Engine):
             # re-application below. See the comment about initializing the dark
             # look and feel above.
             dialog.parent().setStyleSheet("")
+
+            # This will ensure our dialogs don't fall behind Houdini's main
+            # window when they lose focus.
+            if sys.platform.startswith("darwin"):
+                dialog.setWindowFlags(
+                    dialog.windowFlags() | QtCore.Qt.Tool)
         else:
             # no parent found, so style should be ok. this is probably,
             # hopefully, a rare case, but since our logic for identifying the
