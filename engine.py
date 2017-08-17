@@ -545,15 +545,27 @@ class HoudiniEngine(tank.platform.Engine):
             dialog.setWindowFlags(
                 dialog.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
 
-        # manually re-apply any bundled stylesheet to the dialog if we are older
-        # than H16. In 16 we inherited styling problems and need to rely on the
-        # engine level qss only.
-        # If we're in 16+, we also need to apply the engine-level qss.
-        if hou.applicationVersion()[0] >= 16:
-            self._apply_external_styleshet(self, dialog)
-
-        if hou.applicationVersion()[0] < 16:
+        # A bit of a hack here, which goes along with the disabling of panel support
+        # for H16 on OS X. Because of that, we are also having to treat the panel
+        # differently here for styling purposes. Houdini's styling affects it less,
+        # because a significant portion of the shotgun panel is explicitly styled.
+        # As such, we need to just accept what it provides and not worry about
+        # any engine-level styling.
+        #
+        # TODO: Remove this when we re-enable panel support in H16 on OS X.
+        if bundle.name == "tk-multi-shotgunpanel":
             self._apply_external_styleshet(bundle, dialog)
+        else:
+            # manually re-apply any bundled stylesheet to the dialog if we are older
+            # than H16. In 16 we inherited styling problems and need to rely on the
+            # engine level qss only.
+            #
+            # If we're in 16+, we also need to apply the engine-level qss.
+            if hou.applicationVersion()[0] >= 16:
+                self._apply_external_styleshet(self, dialog)
+
+            if hou.applicationVersion()[0] < 16:
+                self._apply_external_styleshet(bundle, dialog)
 
         # raise and activate the dialog:
         dialog.raise_()
