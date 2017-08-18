@@ -16,6 +16,7 @@ import os
 import sys
 import ctypes
 import shutil
+import time
 
 import tank
 
@@ -489,6 +490,18 @@ class HoudiniEngine(tank.platform.Engine):
         # to houdini as an event loop callback. This will run when houdini is
         # idle which should be after the UI loads up.
         def run_when_idle():
+            # We don't want to spin forever, so if we don't find a usable parent
+            # that's visible within 5 seconds, we'll just go ahead and run the
+            # commands.
+            timeout_secs = 5.0
+
+            if (time.time() - run_when_idle._start_time) < timeout_secs:
+                # We want to try to wait for our top-level parent to become visible
+                # before we run our commands, if possible.
+                parent_window = self._get_dialog_parent()
+                if self._get_dialog_parent() is None or not parent_window.isVisible():
+                    return
+
             for (cmd_name, command) in commands_to_run:
                 # iterate over all the commands and execute them.
                 self.log_debug("Executing startup command: %s" % (cmd_name,))
@@ -505,6 +518,7 @@ class HoudiniEngine(tank.platform.Engine):
         # add the special attribute that the function will look use to find
         # and unregister itself when executed.
         run_when_idle.tk_houdini_startup_commands = True
+        run_when_idle._start_time = time.time()
 
         # add the function as an event loop callback
         hou.ui.addEventLoopCallback(run_when_idle)
@@ -535,6 +549,12 @@ class HoudiniEngine(tank.platform.Engine):
             # re-application below. See the comment about initializing the dark
             # look and feel above.
             dialog.parent().setStyleSheet("")
+
+            # This will ensure our dialogs don't fall behind Houdini's main
+            # window when they lose focus.
+            if sys.platform.startswith("darwin"):
+                dialog.setWindowFlags(
+                    dialog.windowFlags() | QtCore.Qt.Tool)
         else:
             # no parent found, so style should be ok. this is probably,
             # hopefully, a rare case, but since our logic for identifying the
