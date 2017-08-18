@@ -16,6 +16,7 @@ import os
 import sys
 import ctypes
 import shutil
+import time
 
 import tank
 
@@ -489,17 +490,17 @@ class HoudiniEngine(tank.platform.Engine):
         # to houdini as an event loop callback. This will run when houdini is
         # idle which should be after the UI loads up.
         def run_when_idle():
-            # We have a problem in H16 where the event loop callback is
-            # being called too early. We want to wait, but we don't want
-            # to block. There are a few options on how to make that happen,
-            # but rather than do something time based, it's acting more reliable
-            # when we wait some number of event loop iterations before completing
-            # our job. Going with 10 seems to get us past the threshold reliably
-            # without it being noticeable to the user.
-            if run_when_idle._call_count < 10:
-                run_when_idle._call_count += 1
-                self.log_debug("Waiting to launch startup apps (%s/10)..." % run_when_idle._call_count)
-                return
+            # We don't want to spin forever, so if we don't find a usable parent
+            # that's visible within 5 seconds, we'll just go ahead and run the
+            # commands.
+            timeout_secs = 5.0
+
+            if (time.time() - run_when_idle._start_time) < timeout_secs:
+                # We want to try to wait for our top-level parent to become visible
+                # before we run our commands, if possible.
+                parent_window = self._get_dialog_parent()
+                if self._get_dialog_parent() is None or not parent_window.isVisible():
+                    return
 
             for (cmd_name, command) in commands_to_run:
                 # iterate over all the commands and execute them.
@@ -517,7 +518,7 @@ class HoudiniEngine(tank.platform.Engine):
         # add the special attribute that the function will look use to find
         # and unregister itself when executed.
         run_when_idle.tk_houdini_startup_commands = True
-        run_when_idle._call_count = 0
+        run_when_idle._start_time = time.time()
 
         # add the function as an event loop callback
         hou.ui.addEventLoopCallback(run_when_idle)
