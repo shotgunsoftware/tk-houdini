@@ -34,9 +34,22 @@ class HoudiniEngine(tank.platform.Engine):
         :returns: A {"name": application name, "version": application version}
                   dictionary with informations about the application hosting this
                   engine.
+
+        References:
+        latest: http://www.sidefx.com/docs/houdini/hom/hou/applicationVersion
         """
-        hou_ver_str = ".".join([str(v) for v in hou.applicationVersion()])
-        return {"name": "Houdini", "version": hou_ver_str}
+        host_info = {"name": "houdini", "version": "unknown"}
+
+        if hasattr(hou, "applicationVersionString"):
+            host_info["version"] = hou.applicationVersionString()
+        else:
+            # Fallback to older way
+            host_info["version"] = ".".join([str(v) for v in hou.applicationVersion()])
+
+        if hasattr(hou, "applicationName"):
+            host_info["name"] = hou.applicationName()
+
+        return host_info
 
     ############################################################################
     # init and basic properties
