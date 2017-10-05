@@ -84,9 +84,6 @@ class HoudiniSessionCollector(HookBaseClass):
         # create an item representing the current houdini session
         item = self.collect_current_houdini_session(settings, parent_item)
 
-        # keep track of collected nodes
-        self._collected_nodes = []
-
         # remember if we collect any alembic/mantra nodes
         self._alembic_nodes_collected = False
         self._mantra_nodes_collected = False
@@ -211,6 +208,13 @@ class HoudiniSessionCollector(HookBaseClass):
                     item.name = "%s (%s)" % (item.name, node.path())
 
     def collect_tk_alembicnodes(self, parent_item):
+        """
+        Checks for an installed `tk-houdini-alembicnode` app. If installed, will
+        search for instances of the node in the current session and create an
+        item for each one with an output on disk.
+
+        :param parent_item: The item to parent new items to.
+        """
 
         publisher = self.parent
         engine = publisher.engine
@@ -257,6 +261,13 @@ class HoudiniSessionCollector(HookBaseClass):
             self._alembic_nodes_collected = True
 
     def collect_tk_mantranodes(self, parent_item):
+        """
+        Checks for an installed `tk-houdini-mantranode` app. If installed, will
+        search for instances of the node in the current session and create an
+        item for each one with an output on disk.
+
+        :param parent_item: The item to parent new items to.
+        """
 
         publisher = self.parent
         engine = publisher.engine
