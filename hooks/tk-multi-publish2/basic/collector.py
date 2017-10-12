@@ -29,7 +29,8 @@ _HOUDINI_OUTPUTS = {
 
 class HoudiniSessionCollector(HookBaseClass):
     """
-    Collector that operates on the houdini session
+    Collector that operates on the current houdini session. Should inherit from
+    the basic collector hook.
     """
 
     @property
@@ -57,7 +58,7 @@ class HoudiniSessionCollector(HookBaseClass):
 
         # settings specific to this collector
         houdini_session_settings = {
-            "Work file Template": {
+            "Work Template": {
                 "type": "template",
                 "default": None,
                 "description": "Template path for artist work files. Should "
@@ -133,9 +134,9 @@ class HoudiniSessionCollector(HookBaseClass):
         )
         session_item.set_icon_from_path(icon_path)
 
-        # if a work file template is defined, add it to the item properties so
-        # that it can be used by attached publish plugins
-        work_template_setting = settings.get("Work file Template")
+        # if a work template is defined, add it to the item properties so that
+        # it can be used by attached publish plugins
+        work_template_setting = settings.get("Work Template")
         if work_template_setting:
             work_template = publisher.engine.get_template_by_name(
                 work_template_setting.value)
@@ -145,12 +146,11 @@ class HoudiniSessionCollector(HookBaseClass):
             # current session path won't change once the item has been created.
             # the attached publish plugins will need to resolve the fields at
             # execution time.
-            session_item.properties["work_file_template"] = work_template
+            session_item.properties["work_template"] = work_template
             self.logger.debug(
-                "Work file template defined for Houdini collection.")
+                "Work template defined for Houdini collection.")
 
         self.logger.info("Collected current Houdini session")
-
         return session_item
 
     def collect_node_outputs(self, parent_item):
@@ -182,6 +182,7 @@ class HoudiniSessionCollector(HookBaseClass):
                 # get all the nodes for the category and type
                 nodes = hou.nodeType(node_category, node_type).instances()
 
+                # iterate over each node
                 for node in nodes:
 
                     # get the evaluated path parm value
@@ -304,7 +305,10 @@ class HoudiniSessionCollector(HookBaseClass):
             # allow the base class to collect and create the item. it
             # should know how to handle the output path
             item = super(HoudiniSessionCollector, self)._collect_file(
-                parent_item, out_path)
+                parent_item,
+                out_path,
+                frame_sequence=True
+            )
 
             # the item has been created. update the display name to
             # include the node path to make it clear to the user how it
