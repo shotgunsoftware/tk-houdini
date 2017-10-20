@@ -239,6 +239,10 @@ class HoudiniSessionCollector(HookBaseClass):
             )
             return
 
+        # retrieve the work file template defined by the app. we'll set this
+        # on the collected alembicnode items for use during publishing.
+        work_template = alembicnode_app.get_work_file_template()
+
         for node in tk_alembic_nodes:
 
             out_path = alembicnode_app.get_output_path(node)
@@ -258,6 +262,9 @@ class HoudiniSessionCollector(HookBaseClass):
             # include the node path to make it clear to the user how it
             # was collected within the current session.
             item.name = "%s (%s)" % (item.name, node.path())
+
+            if work_template:
+                item.properties["work_template"] = work_template
 
             self._alembic_nodes_collected = True
 
@@ -292,6 +299,10 @@ class HoudiniSessionCollector(HookBaseClass):
             )
             return
 
+        # retrieve the work file template defined by the app. we'll set this
+        # on the collected alembicnode items for use during publishing.
+        work_template = mantranode_app.get_work_file_template()
+
         for node in tk_mantra_nodes:
 
             out_path = mantranode_app.get_output_path(node)
@@ -314,5 +325,8 @@ class HoudiniSessionCollector(HookBaseClass):
             # include the node path to make it clear to the user how it
             # was collected within the current session.
             item.name = "%s (%s)" % (item.name, node.path())
+
+            if work_template:
+                item.properties["work_template"] = work_template
 
             self._mantra_nodes_collected = True
