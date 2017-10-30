@@ -210,11 +210,12 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
         if not path:
             # the session still requires saving. provide a save button.
             # validation fails.
+            error_msg = "The Houdini session has not been saved."
             self.logger.error(
-                "The Houdini session has not been saved.",
+                error_msg,
                 extra=_get_save_as_action()
             )
-            return False
+            raise Exception(error_msg)
 
         # ---- check the session against any attached work template
 
@@ -262,8 +263,9 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
                 (next_version_path, version) = self._get_next_version_info(
                     next_version_path, item)
 
+            error_msg = "The next version of this file already exists on disk."
             self.logger.error(
-                "The next version of this file already exists on disk.",
+                error_msg,
                 extra={
                     "action_button": {
                         "label": "Save to v%s" % (version,),
@@ -273,7 +275,7 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
                     }
                 }
             )
-            return False
+            raise Exception(error_msg)
 
         # ---- populate the necessary properties and call base class validation
 
