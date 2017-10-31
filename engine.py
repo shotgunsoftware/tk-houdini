@@ -27,7 +27,30 @@ class HoudiniEngine(tank.platform.Engine):
     """
     Houdini Engine implementation
     """
-    
+
+    @property
+    def host_info(self):
+        """
+        :returns: A {"name": application name, "version": application version}
+                  dictionary with informations about the application hosting this
+                  engine.
+
+        References:
+        latest: http://www.sidefx.com/docs/houdini/hom/hou/applicationVersion
+        """
+        host_info = {"name": "houdini", "version": "unknown"}
+
+        if hasattr(hou, "applicationVersionString"):
+            host_info["version"] = hou.applicationVersionString()
+        else:
+            # Fallback to older way
+            host_info["version"] = ".".join([str(v) for v in hou.applicationVersion()])
+
+        if hasattr(hou, "applicationName"):
+            host_info["name"] = hou.applicationName()
+
+        return host_info
+
     ############################################################################
     # init and basic properties
     ############################################################################
@@ -44,13 +67,6 @@ class HoudiniEngine(tank.platform.Engine):
                 "Your version of Houdini is not supported. Currently, Toolkit "
                 "only supports version 14+."
             )
-
-        try:
-            hou_ver_str = ".".join([str(v) for v in hou.applicationVersion()])
-            self.log_user_attribute_metric("Houdini version", hou_ver_str)
-        except:
-            # ignore all errors. ex: using a core that doesn't support metrics
-            pass
 
         # keep track of if a UI exists
         self._ui_enabled = hasattr(hou, 'ui')
