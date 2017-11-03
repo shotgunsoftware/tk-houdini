@@ -297,6 +297,13 @@ def _session_path():
     Return the path to the current session
     :return:
     """
+
+    # Houdini always returns a file path, even for new sessions. We key off the
+    # houdini standard of "untitled.hip" to indicate that the file has not been
+    # saved.
+    if hou.hipFile.name() == "untitled.hip":
+        return None
+
     return hou.hipFile.path()
 
 
