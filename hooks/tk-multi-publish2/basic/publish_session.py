@@ -1,11 +1,11 @@
 # Copyright (c) 2017 Shotgun Software Inc.
-# 
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
@@ -338,7 +338,23 @@ def _save_session(path):
     """
     Save the current session to the supplied path.
     """
-    hou.hipFile.save(file_name=path)
+    # Normalize the current session path.
+
+    # Compare the current scene file with the path we want to save to. We need to do this to avoid a
+    # bug in Houdini. When saving the scene with the API and passing in a full path, the File ->
+    # Save As dialog breaks and has the full path in the file name box, which needs to be edited
+    # before being able to save the file by stripping out the directory. However, when saving the current
+    # scene in the current file, you can omit the file_name argument and then the Save As dialog work
+    # correctly.
+    current_file = sgtk.util.ShotgunPath.normalize(_session_path())
+    path = sgtk.util.ShotgunPath.normalize(path)
+
+    # So if the destination is the same file as the current scene, omit the file name to avoid the
+    # bug.
+    if path == current_file:
+        hou.hipFile.save()
+    else:
+        hou.hipFile.save(file_name=path)
 
 
 def _session_path():
