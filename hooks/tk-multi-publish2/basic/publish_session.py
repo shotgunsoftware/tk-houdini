@@ -338,23 +338,10 @@ def _save_session(path):
     """
     Save the current session to the supplied path.
     """
-    # Compares the current scene file with the path we want to save to. We need to do this to avoid a
-    # bug in Houdini. When saving the scene with the API and passing in a full path, the File ->
-    # Save As dialog breaks and has the full path in the file name box, which needs to be edited
-    # before being able to save the file by stripping out the directory. However, when saving the current
-    # scene in the current file, you can omit the file_name argument and then the Save As dialog work
-    # correctly.
-
-    # Normalize the current session path.
-    current_file = sgtk.util.ShotgunPath.normalize(_session_path())
-    path = sgtk.util.ShotgunPath.normalize(path)
-
-    # So if the destination is the same file as the current scene, omit the file name to avoid the
-    # bug.
-    if path == current_file:
-        hou.hipFile.save()
-    else:
-        hou.hipFile.save(file_name=path)
+    # We need to flip the slashes on Windows to avoid a bug in Houdini. If we don't
+    # the next Save As dialog will have the filename box populated with the complete
+    # file path.
+    hou.hipFile.save(file_name=path.replace("\\", "/").encode("utf-8"))
 
 
 def _session_path():
