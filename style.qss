@@ -11,6 +11,72 @@ not expressly granted therein are reserved by Shotgun Software Inc.
 
 */
 
+QWidget {
+    background-color:  rgb(68, 68, 68);
+    color: rgb(185, 185, 185);
+    border-radius: 2px;
+    selection-background-color: rgb(167, 167, 167);
+    selection-color: rgb(26, 26, 26);
+    font-size: 11px;
+}
+
+QMenu {
+    color: rgb(75,75,75);
+}
+
+QGroupBox {
+    border: 2px solid rgb(40,40,40);
+    border-radius: 0px;
+    margin: 0em;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    border-radius: 0em;
+    margin-left: 0em;
+    padding: 0px 0px 0px 0px;
+    background-color: rgb(30,30,30);
+}
+
+QGroupBox::title {
+    color: rgb(200,200,200);
+}
+
+QFrame, QLineEdit, QComboBox, QSpinBox {
+    background-color: rgb(68, 68, 68);
+}
+
+QSpinBox {
+    background-color: rgb(68, 68, 68);
+    margin: 5px;
+}
+
+QAbstractItemView {
+    background-color: rgb(75, 75, 75);
+}
+
+QComboBox {
+    padding-top: 1px;
+    padding-left: 5px;
+    margin-left: 3px;
+    margin-right: 0px;
+}
+
+QComboBox::down-arrow {
+    background-color: transparent;
+}
+
+QLineEdit, QTextEdit {
+    margin: 3px;
+    background: rgb(40, 40, 40);
+}
+
+QLabel {
+    background-color: none;
+    border:none;
+}
+
 /*tabwidget*/
 QTabWidget {
     background-color: #323232;
@@ -28,40 +94,100 @@ QTabBar::tab:selected {
     background-color: #323232;
 }
 
-QPushButton {
-    background-color: rgb(50, 50, 50);
-    border-radius: 4px;
-    padding: 5px 10px 5px 10px;
-    min-width: 60px;
-}
-
-QPushButton::pressed {
-    background-color: #272727;
-}
-
-QPushButton:disabled {
-    background-color: rgb(75, 75, 75);
-}
-
-QToolButton {
-    background-color: rgb(50, 50, 50);
-    border-radius: 4px;
-    padding: 5px 10px 5px 10px;
-}
-
-QToolButton::pressed {
-    background-color: #272727;
-}
-
-QToolButton:disabled {
-    background-color: rgb(75, 75, 75);
-}
-
 QTabWidget::pane {
     border: 1px solid #323232;
 }
 
-QLineEdit, QComboBox, QSpinBox, QScrollBar {
-    background-color: #272727;
-    border: 1px solid #323232;
+QTabWidget::tab-bar {
+    alignment: left;
 }
+
+/*radiobuttons+checkboxes*/
+QRadioButton, QCheckBox {
+    background: transparent;
+    border: 0px solid;
+    padding: 0px;
+}
+
+QRadioButton:disabled, QCheckBox:disabled {
+    background: transparent;
+    color: rgb(120, 120, 120);
+}
+
+/*Push Button*/
+
+QPushButton {
+    color: rgb(195, 195, 195);
+    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgb(95,95,95), stop:1 rgb(85,85,85));
+    border-width: 1px;
+    border-color: rgb(40, 40, 40);
+    border-style: solid;
+    border-radius: 3;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+QToolButton {
+    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgb(95,95,95), stop:1 rgb(85,85,85));
+    border-style: solid;
+    border-radius: 3;
+    border-width: 1px;
+    border-color: rgb(40, 40, 40);
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-left: 3px;
+    padding-right: 3px;
+}
+
+QPushButton:pressed, QToolButton:pressed {
+    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #2d2d2d, stop: 0.1 #2b2b2b, stop: 0.5 #292929, stop: 0.9 #282828, stop: 1 #252525);
+}
+
+QPushButton:hover, QToolButton:hover {
+    border: 1px solid {{SG_HIGHLIGHT_COLOR}};
+}
+
+QPushButton[flat=true] {
+    padding-right: 3px;
+    padding-left: 3px;
+    background: transparent;
+    border: none;
+    border-radius: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: rgb(75,75,75);
+    border: 0px solid;
+    border-radius: 3px;
+}
+
+QScrollBar::vertical {
+    background: rgb(50,50,50);
+    padding: 2px;
+    margin: 0px;
+    width: 8px;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: rgb(75,75,75);
+    border: 0px solid;
+    border-radius: 3px;
+}
+
+QScrollBar::horizontal {
+    background: rgb(50,50,50);
+    padding: 2px;
+    margin: 0px;
+}
+
+SearchWidget {
+    padding: 4px;
+}
+
+QDockWidget {
+    border: none;
+}
+
+
