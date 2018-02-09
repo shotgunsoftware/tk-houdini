@@ -579,7 +579,14 @@ class HoudiniEngine(tank.platform.Engine):
             # the style to the dark look and feel in preparation for the
             # re-application below. See the comment about initializing the dark
             # look and feel above.
-            dialog.parent().setStyleSheet("")
+            #
+            # We can only do this in Houdini 15.x or older. With the switch to
+            # Qt5/PySide2 in H16, enough has changed in Houdini's styling that
+            # we break its styling in a few places if we zero out the main window's
+            # stylesheet. We're now compensating for the problems that arise in
+            # the engine's style.qss.
+            if hou.applicationVersion() < (16, 0, 0):
+                dialog.parent().setStyleSheet("")
 
             # This will ensure our dialogs don't fall behind Houdini's main
             # window when they lose focus.
@@ -604,14 +611,31 @@ class HoudiniEngine(tank.platform.Engine):
         # any engine-level styling.
         #
         # TODO: Remove this when we re-enable panel support in H16 on OS X.
-        if bundle.name == "tk-multi-shotgunpanel":
-            self._apply_external_styleshet(bundle, dialog)
+        #
+        # We also have custom styling in the publish2 app, and then on top of that
+        # we fix some houdini-specific styling issues with it in the engine's
+        # style.qss. So we'll treat this similarly to the way we treat the panel
+        # and combine the two into a single, unified stylesheet for the dialog
+        # and widget.
+        if bundle.name in ["tk-multi-shotgunpanel", "tk-multi-publish2"]:
+            if bundle.name == "tk-multi-shotgunpanel":
+                self._apply_external_styleshet(bundle, dialog)
 
             if hou.applicationVersion()[0] >= 16:
+                # We don't apply the engine's style.qss to the dialog for the panel,
+                # but we do for the publisher. This will make sure that the tank
+                # dialog's header and info slide-out widget is properly styled. The
+                # panel app doesn't show that stuff, so we don't need to worry about
+                # it.
+                if bundle.name == "tk-multi-publish2":
+                    self._apply_external_styleshet(self, dialog)
+
                 qss_file = self._get_engine_qss_file()
                 with open(qss_file, "rt") as f:
                     qss_data = f.read()
                     qss_data = self._resolve_sg_stylesheet_tokens(qss_data)
+                    # This basically means that the engine's qss wins out over
+                    # the app's when there's overlap between the two.
                     widget.setStyleSheet(widget.styleSheet() + qss_data)
                     widget.update()
         else:
@@ -680,6 +704,16 @@ class HoudiniEngine(tank.platform.Engine):
 
         # show the dialog:
         dialog.show()
+
+        # I don't have an answer to why this does what it does. We have
+        # a situation in H16 where some aspects of our widgets can't be
+        # styled...the changes just don't have any impact. However, if
+        # we re-apply the parent's stylesheet, unchanged, after we show
+        # our dialog, those styling changes we've applied either as part
+        # of the app's style.qss, or tk-houdini's, everything sticks the
+        # way it should.
+        if hou.applicationVersion() >= (16, 0, 0):
+            dialog.parent().setStyleSheet(dialog.parent().styleSheet())
         
         # lastly, return the instantiated widget
         return widget

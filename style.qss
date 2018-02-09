@@ -12,9 +12,9 @@ not expressly granted therein are reserved by Shotgun Software Inc.
 */
 
 QWidget {
-    background-color:  rgb(68, 68, 68);
+    background-color: rgb(68, 68, 68);
     color: rgb(185, 185, 185);
-    border-radius: 2px;
+    border-radius: 0px;
     selection-background-color: rgb(167, 167, 167);
     selection-color: rgb(26, 26, 26);
     font-size: 11px;
@@ -67,7 +67,7 @@ QComboBox::down-arrow {
     background-color: transparent;
 }
 
-QLineEdit, QTextEdit {
+QLineEdit, QTextEdit, QPlainTextEdit {
     margin: 3px;
     background: rgb(40, 40, 40);
 }
@@ -88,6 +88,8 @@ QTabBar::tab {
     min-width: 50px;
     margin-left: 2px;
     margin-right: 2px;
+    margin-top: -5px;
+    margin-bottom: -5px;
 }
 
 QTabBar::tab:selected {
@@ -186,8 +188,32 @@ SearchWidget {
     padding: 4px;
 }
 
-QDockWidget {
-    border: none;
+/*
+    Styling specific to tk-multi-publish2.
+*/
+
+#items_tree::branch {
+    background-color: transparent;
 }
+
+#items_tree::branch:selected {
+    background-color: {{SG_HIGHLIGHT_COLOR}};
+}
+
+#items_tree::item:selected {
+    border-color: rgb(41,41,41);
+}
+
+#items_tree::item {
+    border-right-color: rgb(41,41,41);
+}
+
+#progress_bar {
+    background-color: rgb(120, 120, 120);
+}
+
+
+
+
 
 
