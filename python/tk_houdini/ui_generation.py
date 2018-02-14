@@ -837,23 +837,41 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
             return False
 
         def apply_stylesheet(self):
-
+            import hou
             self._changing_stylesheet = True
             try:
-                if self.parent():
+                # This is only safe in pre-H16. If we do this in 16 it destroys
+                # some styling in Houdini itself.
+                if self.parent() and hou.applicationVersion() < (16, 0, 0):
                     self.parent().setStyleSheet("")
 
-                    # In Houdini 16, we ended up with panel styling issues
-                    # if the top level parent widget did not yet have its
-                    # qss cleared. The code below is the equivalent to what
-                    # we do when we launch a dialog via the engine, so it
-                    # should be no less safe than that.
-                    import hou
-                    if hou.applicationVersion()[0] >= 16:
-                        import sgtk.platform
-                        sgtk.platform.current_engine()._get_dialog_parent().setStyleSheet("")
-
                 engine._apply_external_styleshet(bundle, self)
+
+                # Styling in H16+ is very different than in earlier versions of
+                # Houdini. The result is that we have to be more careful about
+                # behavior concerning stylesheets, because we might bleed into
+                # Houdini itself if we change qss on parent objects or make use
+                # of QStyles on the QApplication.
+                #
+                # Below, we're combining the engine-level qss with whatever is
+                # already assigned to the widget. This means that the engine
+                # styling is helping patch holes in any app- or framework-level
+                # qss that might have already been applied.
+                if hou.applicationVersion() >= (16, 0, 0):
+                    qss_file = engine._get_engine_qss_file()
+                    with open(qss_file, "rt") as f:
+                        qss_data = f.read()
+                        qss_data = engine._resolve_sg_stylesheet_tokens(qss_data)
+                        self.setStyleSheet(self.styleSheet() + qss_data)
+                        self.update()
+
+                    # We have some funky qss behavior in H16 that requires us to
+                    # kick the parent's stylesheet by reassigning it as is. Not
+                    # sure what causes the problem, but this does resolve it. The
+                    # original symptoms were some widgets not changing after applying
+                    # the engine's stylesheet, while others did.
+                    if self.parent():
+                        self.parent().setStyleSheet(self.parent().styleSheet())
             except Exception, e:
                 engine.logger.warning(
                     "Unable to re-apply stylesheet for panel: %s %s" % (title, e)

@@ -621,6 +621,16 @@ class HoudiniEngine(tank.platform.Engine):
             if bundle.name == "tk-multi-shotgunpanel":
                 self._apply_external_styleshet(bundle, dialog)
 
+            # Styling in H16+ is very different than in earlier versions of
+            # Houdini. The result is that we have to be more careful about
+            # behavior concerning stylesheets, because we might bleed into
+            # Houdini itself if we change qss on parent objects or make use
+            # of QStyles on the QApplication.
+            #
+            # Below, we're combining the engine-level qss with whatever is
+            # already assigned to the widget. This means that the engine
+            # styling is helping patch holes in any app- or framework-level
+            # qss that might have already been applied.
             if hou.applicationVersion()[0] >= 16:
                 # We don't apply the engine's style.qss to the dialog for the panel,
                 # but we do for the publisher. This will make sure that the tank
@@ -634,8 +644,6 @@ class HoudiniEngine(tank.platform.Engine):
                 with open(qss_file, "rt") as f:
                     qss_data = f.read()
                     qss_data = self._resolve_sg_stylesheet_tokens(qss_data)
-                    # This basically means that the engine's qss wins out over
-                    # the app's when there's overlap between the two.
                     widget.setStyleSheet(widget.styleSheet() + qss_data)
                     widget.update()
         else:
