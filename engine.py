@@ -687,6 +687,16 @@ class HoudiniEngine(tank.platform.Engine):
 
         dialog, widget = self._create_dialog_with_widget(title, bundle, widget_class, *args, **kwargs)
 
+        # I don't have an answer to why this does what it does. We have
+        # a situation in H16 where some aspects of our widgets can't be
+        # styled...the changes just don't have any impact. However, if
+        # we re-apply the parent's stylesheet, unchanged, after we show
+        # our dialog, those styling changes we've applied either as part
+        # of the app's style.qss, or tk-houdini's, everything sticks the
+        # way it should.
+        if hou.applicationVersion() >= (16, 0, 0):
+            dialog.parent().setStyleSheet(dialog.parent().styleSheet())
+
         # finally launch it, modal state
         status = dialog.exec_()
         
