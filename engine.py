@@ -194,8 +194,13 @@ class HoudiniEngine(tank.platform.Engine):
         # workarounds when parenting toolkit widgets, allows for the
         # consistent, intended look and feel of the toolkit widgets.
         # Surprisingly, calling this does not seem to have any affect on
-        # houdini itself, despite the global nature of the method. 
-        self._initialize_dark_look_and_feel()
+        # houdini itself, despite the global nature of the method.
+        #
+        # NOTE: Except for 16+. It's no longer safe and causes lots of styling
+        # problems in Houdini's UI globally.
+        if hou.applicationVersion() < (16, 0, 0):
+            self.logger.debug("Houdini < 16 detected: applying dark look and feel.")
+            self._initialize_dark_look_and_feel()
 
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
@@ -543,6 +548,16 @@ class HoudiniEngine(tank.platform.Engine):
     # UI Handling
     ############################################################################
 
+    def _get_engine_qss_file(self):
+        """
+        Returns the engine's style.qss file path.
+        """
+        from sgtk.platform import constants
+        return os.path.join(
+            self.disk_location,
+            constants.BUNDLE_STYLESHEET_FILE,
+        )
+
     def _create_dialog(self, title, bundle, widget, parent):
         """
         Overriden from the base Engine class - create a TankQDialog with the specified widget 
@@ -564,7 +579,14 @@ class HoudiniEngine(tank.platform.Engine):
             # the style to the dark look and feel in preparation for the
             # re-application below. See the comment about initializing the dark
             # look and feel above.
-            dialog.parent().setStyleSheet("")
+            #
+            # We can only do this in Houdini 15.x or older. With the switch to
+            # Qt5/PySide2 in H16, enough has changed in Houdini's styling that
+            # we break its styling in a few places if we zero out the main window's
+            # stylesheet. We're now compensating for the problems that arise in
+            # the engine's style.qss.
+            if hou.applicationVersion() < (16, 0, 0):
+                dialog.parent().setStyleSheet("")
 
             # This will ensure our dialogs don't fall behind Houdini's main
             # window when they lose focus.
@@ -589,8 +611,41 @@ class HoudiniEngine(tank.platform.Engine):
         # any engine-level styling.
         #
         # TODO: Remove this when we re-enable panel support in H16 on OS X.
-        if bundle.name == "tk-multi-shotgunpanel":
-            self._apply_external_styleshet(bundle, dialog)
+        #
+        # We also have custom styling in the publish2 app, and then on top of that
+        # we fix some houdini-specific styling issues with it in the engine's
+        # style.qss. So we'll treat this similarly to the way we treat the panel
+        # and combine the two into a single, unified stylesheet for the dialog
+        # and widget.
+        if bundle.name in ["tk-multi-shotgunpanel", "tk-multi-publish2"]:
+            if bundle.name == "tk-multi-shotgunpanel":
+                self._apply_external_styleshet(bundle, dialog)
+
+            # Styling in H16+ is very different than in earlier versions of
+            # Houdini. The result is that we have to be more careful about
+            # behavior concerning stylesheets, because we might bleed into
+            # Houdini itself if we change qss on parent objects or make use
+            # of QStyles on the QApplication.
+            #
+            # Below, we're combining the engine-level qss with whatever is
+            # already assigned to the widget. This means that the engine
+            # styling is helping patch holes in any app- or framework-level
+            # qss that might have already been applied.
+            if hou.applicationVersion()[0] >= 16:
+                # We don't apply the engine's style.qss to the dialog for the panel,
+                # but we do for the publisher. This will make sure that the tank
+                # dialog's header and info slide-out widget is properly styled. The
+                # panel app doesn't show that stuff, so we don't need to worry about
+                # it.
+                if bundle.name == "tk-multi-publish2":
+                    self._apply_external_styleshet(self, dialog)
+
+                qss_file = self._get_engine_qss_file()
+                with open(qss_file, "rt") as f:
+                    qss_data = f.read()
+                    qss_data = self._resolve_sg_stylesheet_tokens(qss_data)
+                    widget.setStyleSheet(widget.styleSheet() + qss_data)
+                    widget.update()
         else:
             # manually re-apply any bundled stylesheet to the dialog if we are older
             # than H16. In 16 we inherited styling problems and need to rely on the
@@ -632,6 +687,16 @@ class HoudiniEngine(tank.platform.Engine):
 
         dialog, widget = self._create_dialog_with_widget(title, bundle, widget_class, *args, **kwargs)
 
+        # I don't have an answer to why this does what it does. We have
+        # a situation in H16 where some aspects of our widgets can't be
+        # styled...the changes just don't have any impact. However, if
+        # we re-apply the parent's stylesheet, unchanged, after we show
+        # our dialog, those styling changes we've applied either as part
+        # of the app's style.qss, or tk-houdini's, everything sticks the
+        # way it should.
+        if hou.applicationVersion() >= (16, 0, 0):
+            dialog.parent().setStyleSheet(dialog.parent().styleSheet())
+
         # finally launch it, modal state
         status = dialog.exec_()
         
@@ -657,6 +722,16 @@ class HoudiniEngine(tank.platform.Engine):
 
         # show the dialog:
         dialog.show()
+
+        # I don't have an answer to why this does what it does. We have
+        # a situation in H16 where some aspects of our widgets can't be
+        # styled...the changes just don't have any impact. However, if
+        # we re-apply the parent's stylesheet, unchanged, after we show
+        # our dialog, those styling changes we've applied either as part
+        # of the app's style.qss, or tk-houdini's, everything sticks the
+        # way it should.
+        if hou.applicationVersion() >= (16, 0, 0):
+            dialog.parent().setStyleSheet(dialog.parent().styleSheet())
         
         # lastly, return the instantiated widget
         return widget
