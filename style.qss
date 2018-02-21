@@ -21,7 +21,7 @@ QWidget {
 }
 
 QMenu {
-    color: rgb(75,75,75);
+    color: rgb(185,185,185);
 }
 
 QGroupBox {
