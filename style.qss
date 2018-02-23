@@ -159,6 +159,16 @@ QPushButton[flat=true] {
     border-radius: 0px;
 }
 
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+      border: none;
+      background: transparent;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+      border: none;
+      background: transparent;
+}
+
 QScrollBar::handle:vertical {
     background-color: rgb(75,75,75);
     border: 0px solid;
@@ -167,9 +177,9 @@ QScrollBar::handle:vertical {
 
 QScrollBar::vertical {
     background: rgb(50,50,50);
-    padding: 2px;
+    padding: 1px;
     margin: 0px;
-    width: 8px;
+    width: 12px;
 }
 
 QScrollBar::handle:horizontal {
