@@ -1119,11 +1119,8 @@ def createInterface():
     # that it is a python panel 
     if pane_tab and hasattr(pane_tab, 'setLabel'):
         title = panel_info.get('title', None)
-        name = panel_info.get('id', None)
         if title:
             pane_tab.setLabel(title)
-        if name:
-            pane_tab.setName(name)
 
     return panel_widget
 
