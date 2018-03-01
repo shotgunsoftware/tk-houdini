@@ -53,7 +53,7 @@ QSpinBox {
 }
 
 QAbstractItemView {
-    background-color: rgb(75, 75, 75);
+    background-color: rgb(40, 40, 40);
 }
 
 QComboBox {
