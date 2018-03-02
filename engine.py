@@ -27,6 +27,7 @@ class HoudiniEngine(tank.platform.Engine):
     """
     Houdini Engine implementation
     """
+    _pane_cache = dict()
 
     @property
     def host_info(self):
@@ -75,7 +76,6 @@ class HoudiniEngine(tank.platform.Engine):
         """
         Called at startup, but after QT has been initialized.
         """
-
         if not self._ui_enabled:
             return
 
@@ -322,6 +322,15 @@ class HoudiniEngine(tank.platform.Engine):
         # try to locate the pane in the desktop and make it the current tab. 
         for pane_tab in hou.ui.curDesktop().paneTabs():
             if pane_tab.name() == panel_id:
+                pane_tab.setIsCurrentTab()
+                return
+
+            # A secondary check is to look at a cache we hold mapping the title
+            # of the panel to a pane tab that already exists. We use the title
+            # here instead of the panel id because it's the only bit of information
+            # we have reliable access to from all of the various methods of
+            # showing pane tabs in Houdini.
+            if pane_tab.name() == self._pane_cache.get(title):
                 pane_tab.setIsCurrentTab()
                 return
 

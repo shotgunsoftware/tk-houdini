@@ -1118,9 +1118,18 @@ def createInterface():
     # make sure it has the 'setLabel' method available. that at least implies
     # that it is a python panel 
     if pane_tab and hasattr(pane_tab, 'setLabel'):
-        title = panel_info.get('title', None)
+        title = panel_info.get('title')
         if title:
             pane_tab.setLabel(title)
+
+            # We're caching here based on title, because it's the
+            # bit of information we have that's reliably available
+            # from all of the various methods of showing this
+            # pane tab. We cache the pane tab's name so that if a
+            # second invokation of showing this particular panel is
+            # triggered, we just show that panel rather than opening
+            # a second instance.
+            engine._pane_cache[title] = pane_tab.name()
 
     return panel_widget
 
