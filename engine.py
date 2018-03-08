@@ -580,6 +580,10 @@ class HoudiniEngine(tank.platform.Engine):
 
         from tank.platform.qt import QtCore
 
+        # We have a relative path for an image being used in style.qss, so we need
+        # to make sure that cwd is correct for that relative path to work.
+        os.chdir(os.path.dirname(__file__))
+
         # call the base implementation to create the dialog:
         dialog = tank.platform.Engine._create_dialog(self, title, bundle, widget, parent)
 
