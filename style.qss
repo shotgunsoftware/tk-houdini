@@ -116,6 +116,19 @@ QRadioButton:disabled, QCheckBox:disabled {
     color: rgb(120, 120, 120);
 }
 
+QCheckBox::indicator {
+    background: rgb(120, 120, 120);
+    border-radius: 4px;
+    width: 10px;
+    height: 10px;
+    padding: 2px;
+}
+
+/*Note: we call os.chdir in engine.py prior to this being set, so the relative path works.*/
+QCheckBox::indicator:checked {
+    image: url(./resources/check_grey.svg);
+}
+
 /*Push Button*/
 
 QPushButton {
