@@ -626,6 +626,11 @@ class HoudiniEngine(tank.platform.Engine):
         # style.qss. So we'll treat this similarly to the way we treat the panel
         # and combine the two into a single, unified stylesheet for the dialog
         # and widget.
+        #
+        # Handle the Windows situation where __file__ is going to contain backslash
+        # delimiters.
+        engine_root_path = "/".join(os.path.dirname(__file__).split(os.path.sep))
+
         if bundle.name in ["tk-multi-shotgunpanel", "tk-multi-publish2"]:
             if bundle.name == "tk-multi-shotgunpanel":
                 self._apply_external_styleshet(bundle, dialog)
@@ -653,7 +658,7 @@ class HoudiniEngine(tank.platform.Engine):
                 with open(qss_file, "rt") as f:
                     qss_data = f.read()
                     qss_data = self._resolve_sg_stylesheet_tokens(qss_data)
-                    qss_data = qss_data.replace("{{ENGINE_ROOT_PATH}}", os.path.dirname(__file__))
+                    qss_data = qss_data.replace("{{ENGINE_ROOT_PATH}}", engine_root_path)
                     widget.setStyleSheet(widget.styleSheet() + qss_data)
                     widget.update()
         else:
@@ -665,7 +670,7 @@ class HoudiniEngine(tank.platform.Engine):
             if hou.applicationVersion()[0] >= 16:
                 self._apply_external_styleshet(self, dialog)
                 qss = dialog.styleSheet()
-                qss = qss.replace("{{ENGINE_ROOT_PATH}}", os.path.dirname(__file__))
+                qss = qss.replace("{{ENGINE_ROOT_PATH}}", engine_root_path)
                 dialog.setStyleSheet(qss)
                 dialog.update()
 
