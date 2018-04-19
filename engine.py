@@ -653,7 +653,7 @@ class HoudiniEngine(tank.platform.Engine):
                 with open(qss_file, "rt") as f:
                     qss_data = f.read()
                     qss_data = self._resolve_sg_stylesheet_tokens(qss_data)
-                    qss_data.replace("{{ENGINE_ROOT_PATH}}", os.path.dirname(__file__))
+                    qss_data = qss_data.replace("{{ENGINE_ROOT_PATH}}", os.path.dirname(__file__))
                     widget.setStyleSheet(widget.styleSheet() + qss_data)
                     widget.update()
         else:
@@ -664,6 +664,10 @@ class HoudiniEngine(tank.platform.Engine):
             # If we're in 16+, we also need to apply the engine-level qss.
             if hou.applicationVersion()[0] >= 16:
                 self._apply_external_styleshet(self, dialog)
+                qss = dialog.styleSheet()
+                qss = qss.replace("{{ENGINE_ROOT_PATH}}", os.path.dirname(__file__))
+                dialog.setStyleSheet(qss)
+                dialog.update()
 
             if hou.applicationVersion()[0] < 16:
                 self._apply_external_styleshet(bundle, dialog)
