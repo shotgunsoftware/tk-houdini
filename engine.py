@@ -580,10 +580,6 @@ class HoudiniEngine(tank.platform.Engine):
 
         from tank.platform.qt import QtCore
 
-        # We have a relative path for an image being used in style.qss, so we need
-        # to make sure that cwd is correct for that relative path to work.
-        os.chdir(os.path.dirname(__file__))
-
         # call the base implementation to create the dialog:
         dialog = tank.platform.Engine._create_dialog(self, title, bundle, widget, parent)
 
@@ -630,6 +626,11 @@ class HoudiniEngine(tank.platform.Engine):
         # style.qss. So we'll treat this similarly to the way we treat the panel
         # and combine the two into a single, unified stylesheet for the dialog
         # and widget.
+        #
+        # Handle the Windows situation where __file__ is going to contain backslash
+        # delimiters.
+        engine_root_path = "/".join(os.path.dirname(__file__).split(os.path.sep))
+
         if bundle.name in ["tk-multi-shotgunpanel", "tk-multi-publish2"]:
             if bundle.name == "tk-multi-shotgunpanel":
                 self._apply_external_styleshet(bundle, dialog)
@@ -657,6 +658,7 @@ class HoudiniEngine(tank.platform.Engine):
                 with open(qss_file, "rt") as f:
                     qss_data = f.read()
                     qss_data = self._resolve_sg_stylesheet_tokens(qss_data)
+                    qss_data = qss_data.replace("{{ENGINE_ROOT_PATH}}", engine_root_path)
                     widget.setStyleSheet(widget.styleSheet() + qss_data)
                     widget.update()
         else:
@@ -667,6 +669,10 @@ class HoudiniEngine(tank.platform.Engine):
             # If we're in 16+, we also need to apply the engine-level qss.
             if hou.applicationVersion()[0] >= 16:
                 self._apply_external_styleshet(self, dialog)
+                qss = dialog.styleSheet()
+                qss = qss.replace("{{ENGINE_ROOT_PATH}}", engine_root_path)
+                dialog.setStyleSheet(qss)
+                dialog.update()
 
             if hou.applicationVersion()[0] < 16:
                 self._apply_external_styleshet(bundle, dialog)

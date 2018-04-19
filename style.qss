@@ -124,9 +124,13 @@ QCheckBox::indicator {
     padding: 2px;
 }
 
-/*Note: we call os.chdir in engine.py prior to this being set, so the relative path works.*/
+/* Note: the engine will replace the token below to complete the path. */
 QCheckBox::indicator:checked {
-    image: url(./resources/check_grey.svg);
+    image: url({{ENGINE_ROOT_PATH}}/resources/check_grey.svg);
+}
+
+QCheckBox::indicator:unchecked {
+    image: none;
 }
 
 /*Push Button*/
