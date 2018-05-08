@@ -18,12 +18,12 @@ import ctypes
 import shutil
 import time
 
-import tank
+import sgtk
 
 import hou
 
 
-class HoudiniEngine(tank.platform.Engine):
+class HoudiniEngine(sgtk.platform.Engine):
     """
     Houdini Engine implementation
     """
@@ -64,7 +64,7 @@ class HoudiniEngine(tank.platform.Engine):
         self.logger.debug("%s: Initializing..." % self)
 
         if hou.applicationVersion()[0] < 14:
-            raise tank.TankError(
+            raise sgtk.TankError(
                 "Your version of Houdini is not supported. Currently, Toolkit "
                 "only supports version 14+."
             )
@@ -93,7 +93,7 @@ class HoudiniEngine(tank.platform.Engine):
         Init that runs after all apps have been loaded.
         """
 
-        from tank.platform.qt import QtCore
+        from sgtk.platform.qt import QtCore
 
         if not self.has_ui:
             # no UI. everything after this requires the UI!
@@ -142,18 +142,31 @@ class HoudiniEngine(tank.platform.Engine):
                     self._menu.create_menu(menu_file)
 
             if commands and enable_sg_shelf:
+                def _setup_shelf():
+                    # setup houdini shelf
+                    self._shelf = tk_houdini.AppCommandsShelf(self, commands)
 
-                # setup houdini shelf
-                self._shelf = tk_houdini.AppCommandsShelf(self, commands)
+                    # cleans up any old tools on an existing shelf -- just in case.
+                    # we currently can't programmatically add a shelf to an
+                    # existing shelf set, so for now we just leave the shelf and
+                    # add/remove tools.
+                    self._shelf.destroy_tools()
+                    shelf_file = os.path.join(xml_tmp_dir, "sg_shelf.xml")
+                    self._shelf.create_shelf(shelf_file)
 
-                # cleans up any old tools on an existing shelf -- just in case.
-                # we currently can't programmatically add a shelf to an
-                # existing shelf set, so for now we just leave the shelf and
-                # add/remove tools.
-                self._shelf.destroy_tools() 
-
-                shelf_file = os.path.join(xml_tmp_dir, "sg_shelf.xml")
-                self._shelf.create_shelf(shelf_file)
+                # We have a problem specific to Windows where Houdini takes a really
+                # long time to launch when Toolkit is being used. This it related to
+                # the shelf population logic being called here. What's odd is that it's
+                # not this logic that's slow (it runs in less than 1 second), but
+                # running it causes Houdini to pause for some time after it's executed.
+                # Deferring it one event loop cycle via a QTimer gives us the same end
+                # result, but without the hang. It's probably safe to do it this way on
+                # all OSes, but since we don't see the problem on Linux or OS X,
+                # there's no sense in changing the behavior for those operating systems.
+                if sys.platform.startswith("win"):
+                    QtCore.QTimer.singleShot(1, _setup_shelf)
+                else:
+                    _setup_shelf()
 
             if commands and self._panels_supported():
 
@@ -578,10 +591,10 @@ class HoudiniEngine(tank.platform.Engine):
         :param parent: The parent QWidget for the dialog
         """
 
-        from tank.platform.qt import QtCore
+        from sgtk.platform.qt import QtCore
 
         # call the base implementation to create the dialog:
-        dialog = tank.platform.Engine._create_dialog(self, title, bundle, widget, parent)
+        dialog = sgtk.platform.Engine._create_dialog(self, title, bundle, widget, parent)
 
         if dialog.parent():
             # parenting crushes the dialog's style. This seems to work to reset
@@ -694,7 +707,7 @@ class HoudiniEngine(tank.platform.Engine):
         """
         Launches a modal dialog. Overridden from base class.
         """
-        from tank.platform.qt import QtCore, QtGui
+        from sgtk.platform.qt import QtCore, QtGui
         
         # In houdini, the script editor runs in a custom thread. Any commands executed here
         # which are calling UI functionality may cause problems with QT. Check that we are
@@ -726,7 +739,7 @@ class HoudiniEngine(tank.platform.Engine):
         """
         Shows a modeless dialog. Overridden from base class.
         """        
-        from tank.platform.qt import QtCore, QtGui
+        from sgtk.platform.qt import QtCore, QtGui
         
         # In houdini, the script editor runs in a custom thread. Any commands executed here
         # which are calling UI functionality may cause problems with QT. Check that we are
@@ -760,7 +773,7 @@ class HoudiniEngine(tank.platform.Engine):
         Open a file dialog to choose a file path to save the current session to
         """
 
-        from tank.platform.qt import QtGui
+        from sgtk.platform.qt import QtGui
 
         # houdini doesn't appear to have a "save as" dialog accessible via
         # python. so open our own Qt file dialog.
@@ -785,7 +798,7 @@ class HoudiniEngine(tank.platform.Engine):
         show_modal.
         """
 
-        from tank.platform.qt import QtGui
+        from sgtk.platform.qt import QtGui
 
         parent = None
 
