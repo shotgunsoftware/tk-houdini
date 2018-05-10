@@ -191,7 +191,16 @@ class HoudiniEngine(sgtk.platform.Engine):
             oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")
 
             # Setup the OTLs that need to be loaded for the Toolkit apps
-            self._load_otls(oplibrary_path)
+            def _load_otls():
+                self._load_otls(oplibrary_path)
+
+            # We have the same problem here on Windows that we have above with
+            # the population of the shelf. If we defer the execution of the otl
+            # loading by an event loop cycle, Houdini loads up quickly.
+            if sys.platform.startswith("win"):
+                QtCore.QTimer.singleShot(1, _load_otls)
+            else:
+                _load_otls()
 
         # tell QT to interpret C strings as utf-8
         utf8 = QtCore.QTextCodec.codecForName("utf-8")
