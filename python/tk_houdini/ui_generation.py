@@ -473,6 +473,10 @@ class AppCommandsPanelHandler(AppCommandsUI):
         # install the panels
         hou.pypanel.installFile(panels_file)
 
+        # Now we need to add back the SESI pypanel menu commands that will have
+        # been removed by our installFile call.
+        hou.pypanel.setMenuInterfaces([n for n in sorted(hou.pypanel.interfaces().keys())])
+
         # NOTE: at this point, the panel interfaces are installed. In Houdini
         # 15, the 'panetab' menu setting in the xml file will cause the panels
         # to appear like all the other panels in the pane menu. In versions
