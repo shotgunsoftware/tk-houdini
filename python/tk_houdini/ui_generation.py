@@ -416,6 +416,8 @@ class AppCommandsPanelHandler(AppCommandsUI):
         # for the "toolbar" and "panetab" menus.
 
         root = ET.Element("pythonPanelDocument")
+        toolbar_menu = None
+        panetab_menu = None
 
         for panel_cmd in self._panel_commands:
 
@@ -451,20 +453,47 @@ class AppCommandsPanelHandler(AppCommandsUI):
             panel_help.text = desc
 
             # add the panel to the panetab and toolbar menus
-
-            toolbar_menu = ET.SubElement(root, "interfacesMenu")
-            toolbar_menu.set('type', 'toolbar')
+            if toolbar_menu is None:
+                toolbar_menu = ET.SubElement(root, "interfacesMenu")
+                toolbar_menu.set('type', 'toolbar')
 
             toolbar_menu_item = ET.SubElement(toolbar_menu,
                 'interfaceItem')
             toolbar_menu_item.set('name', panel_cmd.name)
 
-            panetab_menu = ET.SubElement(root, "interfacesMenu")
-            panetab_menu.set('type', 'panetab')
+            if panetab_menu is None:
+                panetab_menu = ET.SubElement(root, "interfacesMenu")
+                panetab_menu.set('type', 'panetab')
 
             panetab_menu_item = ET.SubElement(panetab_menu,
                 'interfaceItem')
             panetab_menu_item.set('name', panel_cmd.name)
+
+        for sesi_pane in hou.pypanel.interfaces().values():
+            # The stuff SESI ships with Houdini doesn't need to go into the
+            # toolbar. Unfortunately, this appears to be the only way to know
+            # to not do this.
+            if not sesi_pane.name().startswith("sesi_") or sesi_pane.label() == "Quick Start: Calendar Example":
+                if toolbar_menu is None:
+                    toolbar_menu = ET.SubElement(root, "interfacesMenu")
+                    toolbar_menu.set('type', 'toolbar')
+
+                toolbar_menu_item = ET.SubElement(toolbar_menu,
+                    'interfaceItem')
+                toolbar_menu_item.set('name', sesi_pane.name())
+
+            # When we ask for the list of interfaces, we also are given the example
+            # setup that SESI provides that shouldn't be included in the menu.
+            if sesi_pane.label() == "Quick Start: Calendar Example":
+                continue
+
+            if panetab_menu is None:
+                panetab_menu = ET.SubElement(root, "interfacesMenu")
+                panetab_menu.set('type', 'panetab')
+
+            panetab_menu_item = ET.SubElement(panetab_menu,
+                'interfaceItem')
+            panetab_menu_item.set('name', sesi_pane.name())
 
         xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
         _write_xml(xml, panels_file)
@@ -472,10 +501,6 @@ class AppCommandsPanelHandler(AppCommandsUI):
 
         # install the panels
         hou.pypanel.installFile(panels_file)
-
-        # Now we need to add back the SESI pypanel menu commands that will have
-        # been removed by our installFile call.
-        hou.pypanel.setMenuInterfaces([n for n in sorted(hou.pypanel.interfaces().keys())])
 
         # NOTE: at this point, the panel interfaces are installed. In Houdini
         # 15, the 'panetab' menu setting in the xml file will cause the panels
