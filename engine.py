@@ -589,6 +589,14 @@ class HoudiniEngine(sgtk.platform.Engine):
             constants.BUNDLE_STYLESHEET_FILE,
         )
 
+    def _get_engine_root_path(self):
+        """
+        Returns the path to the directory containing this engine.py.
+        """
+        # Handle the Windows situation where __file__ is going to contain backslash
+        # delimiters.
+        return "/".join(os.path.dirname(__file__).split(os.path.sep))
+
     def _create_dialog(self, title, bundle, widget, parent):
         """
         Overriden from the base Engine class - create a TankQDialog with the specified widget 
@@ -648,10 +656,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         # style.qss. So we'll treat this similarly to the way we treat the panel
         # and combine the two into a single, unified stylesheet for the dialog
         # and widget.
-        #
-        # Handle the Windows situation where __file__ is going to contain backslash
-        # delimiters.
-        engine_root_path = "/".join(os.path.dirname(__file__).split(os.path.sep))
+        engine_root_path = self._get_engine_root_path()
 
         if bundle.name in ["tk-multi-shotgunpanel", "tk-multi-publish2"]:
             if bundle.name == "tk-multi-shotgunpanel":

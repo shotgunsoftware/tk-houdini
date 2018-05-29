@@ -862,6 +862,7 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
                     with open(qss_file, "rt") as f:
                         qss_data = f.read()
                         qss_data = engine._resolve_sg_stylesheet_tokens(qss_data)
+                        qss_data = qss_data.replace("{{ENGINE_ROOT_PATH}}", engine._get_engine_root_path())
                         self.setStyleSheet(self.styleSheet() + qss_data)
                         self.update()
 
