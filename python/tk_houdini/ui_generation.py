@@ -416,11 +416,8 @@ class AppCommandsPanelHandler(AppCommandsUI):
         # for the "toolbar" and "panetab" menus.
 
         root = ET.Element("pythonPanelDocument")
-        toolbar_menu = None
-        panetab_menu = None
 
         for panel_cmd in self._panel_commands:
-
             panel_info = self._engine.get_panel_info(panel_cmd.name)
 
             interface = ET.SubElement(root, "interface")
@@ -453,51 +450,17 @@ class AppCommandsPanelHandler(AppCommandsUI):
             panel_help.text = desc
 
             # add the panel to the panetab and toolbar menus
-            if toolbar_menu is None:
-                toolbar_menu = ET.SubElement(root, "interfacesMenu")
-                toolbar_menu.set('type', 'toolbar')
+            panetab_menu = ET.SubElement(interface, "includeInPaneTabMenu")
+            panetab_menu.set("menu_position", "300")
+            panetab_menu.set("create_separator", "false")
 
-            toolbar_menu_item = ET.SubElement(toolbar_menu,
-                'interfaceItem')
-            toolbar_menu_item.set('name', panel_cmd.name)
-
-            if panetab_menu is None:
-                panetab_menu = ET.SubElement(root, "interfacesMenu")
-                panetab_menu.set('type', 'panetab')
-
-            panetab_menu_item = ET.SubElement(panetab_menu,
-                'interfaceItem')
-            panetab_menu_item.set('name', panel_cmd.name)
-
-        for sesi_pane in hou.pypanel.interfaces().values():
-            # The stuff SESI ships with Houdini doesn't need to go into the
-            # toolbar. Unfortunately, this appears to be the only way to know
-            # to not do this.
-            if not sesi_pane.name().startswith("sesi_") or sesi_pane.label() == "Quick Start: Calendar Example":
-                if toolbar_menu is None:
-                    toolbar_menu = ET.SubElement(root, "interfacesMenu")
-                    toolbar_menu.set('type', 'toolbar')
-
-                toolbar_menu_item = ET.SubElement(toolbar_menu,
-                    'interfaceItem')
-                toolbar_menu_item.set('name', sesi_pane.name())
-
-            # When we ask for the list of interfaces, we also are given the example
-            # setup that SESI provides that shouldn't be included in the menu.
-            if sesi_pane.label() == "Quick Start: Calendar Example":
-                continue
-
-            if panetab_menu is None:
-                panetab_menu = ET.SubElement(root, "interfacesMenu")
-                panetab_menu.set('type', 'panetab')
-
-            panetab_menu_item = ET.SubElement(panetab_menu,
-                'interfaceItem')
-            panetab_menu_item.set('name', sesi_pane.name())
+            toolbar_menu = ET.SubElement(interface, "includeInToolbarMenu")
+            toolbar_menu.set("menu_position", "300")
+            toolbar_menu.set("create_separator", "false")
 
         xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
         _write_xml(xml, panels_file)
-        self._engine.logger.debug("Panels written to: %s" % (panels_file,))
+        self._engine.logger.debug("Panels written to: %s" % panels_file)
 
         # install the panels
         hou.pypanel.installFile(panels_file)
