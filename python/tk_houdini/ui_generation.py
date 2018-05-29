@@ -418,7 +418,6 @@ class AppCommandsPanelHandler(AppCommandsUI):
         root = ET.Element("pythonPanelDocument")
 
         for panel_cmd in self._panel_commands:
-
             panel_info = self._engine.get_panel_info(panel_cmd.name)
 
             interface = ET.SubElement(root, "interface")
@@ -451,24 +450,17 @@ class AppCommandsPanelHandler(AppCommandsUI):
             panel_help.text = desc
 
             # add the panel to the panetab and toolbar menus
+            panetab_menu = ET.SubElement(interface, "includeInPaneTabMenu")
+            panetab_menu.set("menu_position", "300")
+            panetab_menu.set("create_separator", "false")
 
-            toolbar_menu = ET.SubElement(root, "interfacesMenu")
-            toolbar_menu.set('type', 'toolbar')
-
-            toolbar_menu_item = ET.SubElement(toolbar_menu,
-                'interfaceItem')
-            toolbar_menu_item.set('name', panel_cmd.name)
-
-            panetab_menu = ET.SubElement(root, "interfacesMenu")
-            panetab_menu.set('type', 'panetab')
-
-            panetab_menu_item = ET.SubElement(panetab_menu,
-                'interfaceItem')
-            panetab_menu_item.set('name', panel_cmd.name)
+            toolbar_menu = ET.SubElement(interface, "includeInToolbarMenu")
+            toolbar_menu.set("menu_position", "300")
+            toolbar_menu.set("create_separator", "false")
 
         xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
         _write_xml(xml, panels_file)
-        self._engine.logger.debug("Panels written to: %s" % (panels_file,))
+        self._engine.logger.debug("Panels written to: %s" % panels_file)
 
         # install the panels
         hou.pypanel.installFile(panels_file)
