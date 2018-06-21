@@ -710,9 +710,12 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         # special case to get windows to raise the dialog
         if sys.platform == "win32":
-            ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
-            ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
-            hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
+            if hou.applicationVersion() >= (16, 5, 481):
+                hwnd = dialog.winId()
+            else:
+                ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
+                ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
+                hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
             ctypes.windll.user32.SetActiveWindow(hwnd)
 
         return dialog
