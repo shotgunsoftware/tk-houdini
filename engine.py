@@ -710,9 +710,15 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         # special case to get windows to raise the dialog
         if sys.platform == "win32":
-            ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
-            ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
-            hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
+            # Anything beyond 16.5.481 bundles a PySide2 version that gives us
+            # a usable hwnd directly. We also check to make sure this is Qt5,
+            # since SideFX still offers Qt4/PySide builds of modern Houdinis.
+            if hou.applicationVersion() >= (16, 5, 481) and QtCore.__version__.startswith("5."):
+                hwnd = dialog.winId()
+            else:
+                ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
+                ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
+                hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
             ctypes.windll.user32.SetActiveWindow(hwnd)
 
         return dialog
