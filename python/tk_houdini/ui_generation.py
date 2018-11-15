@@ -961,10 +961,15 @@ def _on_file_change_timeout():
     try:
         tk = sgtk.tank_from_path(cur_file)
     except sgtk.TankError, e:
-        # Unable to get tk api instance from the path. won't be able to get a
-        # new context. if there is an engine running, destroy it.
-        if cur_engine:
-            cur_engine.destroy()
+        
+        # Unable to get tk api instance from the path. Try to get a 
+        # new context with pick_environmet. 
+         if cur_engine: 
+            try: 
+                sgtk.platform.engine.get_environment_from_context(cur_engine.sgtk, cur_context) 
+            except sgtk.TankError, e: 
+                # Unable to get anycontext. if there is an engine running, destroy it. 
+                cur_engine.destroy() 
         return
 
     # get the new context from the file
