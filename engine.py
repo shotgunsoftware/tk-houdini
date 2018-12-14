@@ -449,7 +449,9 @@ class HoudiniEngine(sgtk.platform.Engine):
             # to proceed. Until that is sorted out, though, we're going to
             # have to disable panel support on OS X for H16. Our panel apps
             # appear to function just fine in dialog mode.
-            if ver >= (16, 0, 0):
+            #
+            # Update: H17 resolves the panel issues we had in H16.
+            if ver >= (16, 0, 0) and ver <= (17, 0, 0):
                 return False
 
         if ver >= (15, 0, 272):
