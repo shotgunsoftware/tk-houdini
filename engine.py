@@ -127,7 +127,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             if commands and enable_sg_menu:
 
                 # setup houdini menus
-                menu_file = os.path.join(xml_tmp_dir, "MainMenuCommon")
+                menu_file = self._safe_path_join(xml_tmp_dir, "MainMenuCommon")
 
                 # as of houdini 12.5 add .xml
                 if hou.applicationVersion() > (12, 5, 0):
@@ -151,7 +151,7 @@ class HoudiniEngine(sgtk.platform.Engine):
                     # existing shelf set, so for now we just leave the shelf and
                     # add/remove tools.
                     self._shelf.destroy_tools()
-                    shelf_file = os.path.join(xml_tmp_dir, "sg_shelf.xml")
+                    shelf_file = self._safe_path_join(xml_tmp_dir, "sg_shelf.xml")
                     self._shelf.create_shelf(shelf_file)
 
                 # We have a problem specific to Windows where Houdini takes a really
@@ -181,7 +181,7 @@ class HoudiniEngine(sgtk.platform.Engine):
                     tk_houdini.get_wrapped_panel_widget
     
                 if panel_commands:
-                    self._panels_file = os.path.join(xml_tmp_dir,
+                    self._panels_file = self._safe_path_join(xml_tmp_dir,
                         "sg_panels.pypanel")
                     panels = tk_houdini.AppCommandsPanelHandler(self, commands,
                         panel_commands)
@@ -417,6 +417,18 @@ class HoudiniEngine(sgtk.platform.Engine):
             return
         callback()
 
+    def _safe_path_join(self, *args):
+        """
+        Joins elements into a path. On OSX or Linux, this will be the same as using
+        os.path.join directly. On Windows, backslash separators will be replaced by
+        forward slashes. Earlier releases of H17 will crash if given backslash
+        delimited paths on Windows.
+
+        :returns: A forward-slash-delimited path.
+        :rtype: str
+        """
+        return os.path.join(*args).replace(os.path.sep, "/")
+
     def _load_otls(self, oplibrary_path):
         """
         Load any OTLs provided by applications.
@@ -425,13 +437,13 @@ class HoudiniEngine(sgtk.platform.Engine):
         file from there.
         """
         for app in self.apps.values():
-            otl_path = os.path.join(app.disk_location, 'otls')
+            otl_path = self._safe_path_join(app.disk_location, 'otls')
             if not os.path.exists(otl_path):
                 continue
 
             for filename in os.listdir(otl_path):
                 if os.path.splitext(filename)[-1] == '.otl':
-                    path = os.path.join(otl_path, filename).replace("\\", "/")
+                    path = self._safe_path_join(otl_path, filename).replace(os.path.sep, "/")
                     hou.hda.installFile(path, oplibrary_path, True)
 
     def _panels_supported(self):
@@ -450,8 +462,10 @@ class HoudiniEngine(sgtk.platform.Engine):
             # have to disable panel support on OS X for H16. Our panel apps
             # appear to function just fine in dialog mode.
             #
-            # Update: H17 resolves the panel issues we had in H16.
-            if ver >= (16, 0, 0) and ver <= (17, 0, 0):
+            # Update: H17 resolves some of the issues, but we still have problems
+            # with item delegates not rendering consistently in the Shotgun Panel's
+            # entity views.
+            if ver >= (16, 0, 0):
                 return False
 
         if ver >= (15, 0, 272):
@@ -586,7 +600,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         Returns the engine's style.qss file path.
         """
         from sgtk.platform import constants
-        return os.path.join(
+        return self._safe_path_join(
             self.disk_location,
             constants.BUNDLE_STYLESHEET_FILE,
         )

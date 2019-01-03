@@ -96,6 +96,11 @@ QTabBar::tab:selected {
     background-color: #323232;
 }
 
+QTabBar::tab:disabled {
+    background-color: transparent;
+    border: none;
+}
+
 QTabWidget::pane {
     border: 1px solid #323232;
 }

@@ -13,7 +13,13 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 
-g_menu_item_script = os.path.join(os.path.dirname(__file__), "menu_action.py")
+# Make sure we always give Houdini forward-slash-delimited paths. There is
+# a crash bug in early releases of H17 on Windows when it's given backslash
+# paths to read.
+g_menu_item_script = os.path.join(
+    os.path.dirname(__file__),
+    "menu_action.py"
+).replace(os.path.sep, "/")
 
 # #3716 Fixes UNC problems with menus. Prefix '\' are otherwise concatenated to a single character, therefore using '/' instead.
 g_menu_item_script = g_menu_item_script.replace("\\", "/")
@@ -708,7 +714,7 @@ def get_registered_commands(engine):
 
     commands = []
 
-    sg_icon = os.path.join(engine.disk_location, "resources",
+    sg_icon = engine._safe_path_join(engine.disk_location, "resources",
         "shotgun_logo.png")
 
     jump_to_sg_cmd = AppCommand(
@@ -728,7 +734,7 @@ def get_registered_commands(engine):
     if engine.context.filesystem_locations:
         # Only show the jump to fs command if there are folders on disk.
 
-        fs_icon = os.path.join(engine.disk_location, "resources",
+        fs_icon = engine._safe_path_join(engine.disk_location, "resources",
             "shotgun_folder.png")
 
         jump_to_fs_cmd = AppCommand(
