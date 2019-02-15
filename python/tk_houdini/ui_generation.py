@@ -544,19 +544,22 @@ class AppCommandsShelf(AppCommandsUI):
 
         # add the context menu tools first
         for cmd in context_cmds:
-            tool = self.create_tool(shelf_file, cmd)
+            tool = self.create_tool(shelf_file, cmd, "/Current Context")
             shelf_tools.append(tool)
 
         # now add the favourites
         for cmd in favourite_cmds:
-            tool = self.create_tool(shelf_file, cmd)
+            tool = self.create_tool(shelf_file, cmd, "/Favourites")
             shelf_tools.append(tool)
 
         # create tools for the remaining commands
         for app_name in sorted(cmds_by_app.keys()):
             for cmd in cmds_by_app[app_name]:
                 if not cmd.favourite:
-                    tool = self.create_tool(shelf_file, cmd)
+                    submenu = ""
+                    if (len(cmds_by_app[app_name])) > 1:
+                        submenu = "/" + app_name
+                    tool = self.create_tool(shelf_file, cmd, submenu)
                     shelf_tools.append(tool)
 
         shelf.setTools(shelf_tools)
@@ -566,7 +569,7 @@ class AppCommandsShelf(AppCommandsUI):
         # sesi to see what they recommend. If there is a way, this is probably
         # where the shelf would need to be added.
 
-    def create_tool(self, shelf_file, cmd):
+    def create_tool(self, shelf_file, cmd, submenu=""):
         """Create a new shelf tool.
 
             cmd:
@@ -586,7 +589,11 @@ class AppCommandsShelf(AppCommandsUI):
             script=_g_launch_script % cmd.get_id(),
             #help=cmd.get_description(),
             #help_url=cmd.get_documentation_url_str(),
-            icon=cmd.get_icon()
+            icon=cmd.get_icon(),
+            viewer_categories=[hou.nodeTypeCategories()["Object"],
+                               hou.nodeTypeCategories()["Sop"],
+                               hou.nodeTypeCategories()["Dop"]],
+            locations=["Shotgun%s" % submenu]
         )
         # NOTE: there seems to be a bug in houdini where the 'help' does
         # not display in the tool's tooltip even though the tool's help
