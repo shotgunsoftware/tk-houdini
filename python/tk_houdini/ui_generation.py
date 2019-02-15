@@ -541,27 +541,27 @@ class AppCommandsShelf(AppCommandsUI):
         cmds_by_app = {}
 
         (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
-
         # add the context menu tools first
         for cmd in context_cmds:
-            tool = self.create_tool(shelf_file, cmd, "/Current Context")
+            tool = self.create_tool(shelf_file, cmd, ["/Current Context"])
             shelf_tools.append(tool)
 
         # now add the favourites
         for cmd in favourite_cmds:
-            tool = self.create_tool(shelf_file, cmd, "/Favourites")
+            app_name = cmd.properties["app"].display_name
+            tool = self.create_tool(shelf_file, cmd, ["/Favourites", "/" + app_name])
             shelf_tools.append(tool)
 
         # create tools for the remaining commands
         for app_name in sorted(cmds_by_app.keys()):
             for cmd in cmds_by_app[app_name]:
+                submenu = ""
+                if (len(cmds_by_app[app_name])) > 1:
+                    submenu = "/" + app_name
                 if not cmd.favourite:
-                    submenu = ""
-                    if (len(cmds_by_app[app_name])) > 1:
-                        submenu = "/" + app_name
-                    tool = self.create_tool(shelf_file, cmd, submenu)
+                    tool = self.create_tool(shelf_file, cmd, [submenu])
                     shelf_tools.append(tool)
-
+                
         shelf.setTools(shelf_tools)
 
         # TODO: Currently there doesn't appear to be a way to add the sg shelf
@@ -569,7 +569,7 @@ class AppCommandsShelf(AppCommandsUI):
         # sesi to see what they recommend. If there is a way, this is probably
         # where the shelf would need to be added.
 
-    def create_tool(self, shelf_file, cmd, submenu=""):
+    def create_tool(self, shelf_file, cmd, submenu=[]):
         """Create a new shelf tool.
 
             cmd:
@@ -578,8 +578,11 @@ class AppCommandsShelf(AppCommandsUI):
             shelf_file:
                 The shelf file to write the tool definition to.
         """
-
+        
         import hou
+
+        viewer_categories = ["Object", "Sop", "Chop"]
+        network_categories = ["Object", "Sop", "Chop", "Driver", "Shop", "Cop2", "Vop", "VopNet", "Dop"]
 
         self._engine.logger.debug("Creating tool: %s" % cmd.name)
         tool = hou.shelves.newTool(
@@ -590,10 +593,11 @@ class AppCommandsShelf(AppCommandsUI):
             #help=cmd.get_description(),
             #help_url=cmd.get_documentation_url_str(),
             icon=cmd.get_icon(),
-            viewer_categories=[hou.nodeTypeCategories()["Object"],
-                               hou.nodeTypeCategories()["Sop"],
-                               hou.nodeTypeCategories()["Dop"]],
-            locations=["Shotgun%s" % submenu]
+            viewer_categories=[hou.nodeTypeCategories()[cat] for cat in hou.nodeTypeCategories().keys()
+                               if cat in viewer_categories],
+            network_categories=[hou.nodeTypeCategories()[cat] for cat in hou.nodeTypeCategories().keys()
+                                if cat in network_categories],
+            locations=map(lambda x : "Shotgun" + x, submenu)
         )
         # NOTE: there seems to be a bug in houdini where the 'help' does
         # not display in the tool's tooltip even though the tool's help
