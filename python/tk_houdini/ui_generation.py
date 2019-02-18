@@ -69,6 +69,7 @@ class AppCommandsUI(object):
             favourite_cmds = []
             context_cmds = []
             cmds_by_app = {}
+            cmds_by_grp = {}
 
             # favourites
             for fav in self._engine.get_setting("menu_favourites"):
@@ -96,8 +97,13 @@ class AppCommandsUI(object):
                         app_name = "Other Items"
                     cmds_by_app.setdefault(app_name, []).append(cmd)
 
+                    grp_name = cmd.get_app_grp()
+                    if grp_name:
+                        cmd.grouped = True
+                        cmds_by_grp.setdefault(grp_name, []).append(cmd)
+
             self._engine.logger.debug("Grouped registered commands.")
-            self._grouped_commands = (context_cmds, cmds_by_app, favourite_cmds)
+            self._grouped_commands = (context_cmds, cmds_by_app, favourite_cmds, cmds_by_grp)
 
         return self._grouped_commands
 
@@ -540,7 +546,7 @@ class AppCommandsShelf(AppCommandsUI):
         shelf_tools = []
         cmds_by_app = {}
 
-        (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
+        (context_cmds, cmds_by_app, favourite_cmds, cmds_by_grp) = self._group_commands()
         # add the context menu tools first
         for cmd in context_cmds:
             tool = self.create_tool(shelf_file, cmd, ["/Current Context"])
@@ -548,17 +554,25 @@ class AppCommandsShelf(AppCommandsUI):
 
         # now add the favourites
         for cmd in favourite_cmds:
-            app_name = cmd.properties["app"].display_name
+            app_name = cmd.get_app_name()
             tool = self.create_tool(shelf_file, cmd, ["/Favourites", "/" + app_name])
             shelf_tools.append(tool)
 
+        # create tools for grouped apps
+        for grp_name in sorted(cmds_by_grp.keys()):
+            for cmd in cmds_by_grp[grp_name]:
+                grp_name = cmd.get_app_grp()
+                tool = self.create_tool(shelf_file, cmd, ["/" + grp_name])
+                shelf_tools.append(tool)
+
         # create tools for the remaining commands
         for app_name in sorted(cmds_by_app.keys()):
+            # if the app register several commands, group them in the tab menu
+            submenu = ""
+            if (len(cmds_by_app[app_name])) > 1:
+                submenu = "/" + app_name
             for cmd in cmds_by_app[app_name]:
-                submenu = ""
-                if (len(cmds_by_app[app_name])) > 1:
-                    submenu = "/" + app_name
-                if not cmd.favourite:
+                if not cmd.favourite and not cmd.grouped:
                     tool = self.create_tool(shelf_file, cmd, [submenu])
                     shelf_tools.append(tool)
                 
@@ -651,6 +665,7 @@ class AppCommand(object):
         self.properties = command_dict["properties"]
         self.callback = command_dict["callback"]
         self.favourite = False
+        self.grouped = False
 
     def get_app_name(self):
         if "app" in self.properties:
@@ -668,6 +683,11 @@ class AppCommand(object):
             if app_instance_obj == app_instance:
                 return app_instance_name
 
+        return None
+
+    def get_app_grp(self):
+        if "group" in self.properties:
+            return self.properties["group"]
         return None
 
     def get_description(self):
