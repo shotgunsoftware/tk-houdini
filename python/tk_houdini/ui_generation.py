@@ -575,7 +575,7 @@ class AppCommandsShelf(AppCommandsUI):
                 if not cmd.favourite and not cmd.grouped:
                     tool = self.create_tool(shelf_file, cmd, [submenu])
                     shelf_tools.append(tool)
-                
+
         shelf.setTools(shelf_tools)
 
         # TODO: Currently there doesn't appear to be a way to add the sg shelf
@@ -592,7 +592,7 @@ class AppCommandsShelf(AppCommandsUI):
             shelf_file:
                 The shelf file to write the tool definition to.
         """
-        
+
         import hou
 
         viewer_categories = ["Object", "Sop", "Chop"]
