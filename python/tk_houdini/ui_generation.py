@@ -611,7 +611,7 @@ class AppCommandsShelf(AppCommandsUI):
                                if cat in viewer_categories],
             network_categories=[hou.nodeTypeCategories()[cat] for cat in hou.nodeTypeCategories().keys()
                                 if cat in network_categories],
-            locations=map(lambda x : "Shotgun" + x, submenu)
+            locations=map(lambda x: "Shotgun" + x, submenu)
         )
         # NOTE: there seems to be a bug in houdini where the 'help' does
         # not display in the tool's tooltip even though the tool's help
