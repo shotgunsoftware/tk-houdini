@@ -152,7 +152,7 @@ class AppCommandsMenu(AppCommandsUI):
         if not hasattr(self, '_context_commands'):
 
             # get the registered commands, grouped in the usual way.
-            (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
+            (context_cmds, cmds_by_app, favourite_cmds, cmds_by_grp) = self._group_commands()
 
             # ideally we'd mimic the static menu and have a context item 
             # that contained a submenu with context-specific commands. this
@@ -200,7 +200,7 @@ class AppCommandsMenu(AppCommandsUI):
         # the dynamic menu is rebuilt on each click.
         if not hasattr(self, '_commands_by_app'):
 
-            (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
+            (context_cmds, cmds_by_app, favourite_cmds, cmds_by_grp) = self._group_commands()
 
             cmds = favourite_cmds
 
@@ -320,7 +320,7 @@ class AppCommandsMenu(AppCommandsUI):
         ctx_menu = self._menuNode(shotgun_menu, ctx_name, "tk.context")
         ET.SubElement(ctx_menu, "separatorItem")
 
-        (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
+        (context_cmds, cmds_by_app, favourite_cmds, cmds_by_grp) = self._group_commands()
 
         # favourites
         ET.SubElement(shotgun_menu, "separatorItem")
