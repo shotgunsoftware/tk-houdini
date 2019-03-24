@@ -142,7 +142,11 @@ class HoudiniEngine(sgtk.platform.Engine):
                     self._menu.create_menu(menu_file)
 
             if commands and enable_sg_shelf:
+                
                 def _setup_shelf():
+                    """
+                    Run shelf setup
+                    """                    
                     # setup houdini shelf
                     self._shelf = tk_houdini.AppCommandsShelf(self, commands)
 
@@ -154,17 +158,39 @@ class HoudiniEngine(sgtk.platform.Engine):
                     shelf_file = self._safe_path_join(xml_tmp_dir, "sg_shelf.xml")
                     self._shelf.create_shelf(shelf_file)
 
+                def _poll_for_ui_available_then_setup_shelves():
+                    """
+                    Poll to see if the houdini UI is available, 
+                    and once it is, execute shelf setup. 
+                    Registers a call to itself via a QTimer.
+                    """
+                    try:
+                        hou.ui.curDesktop()
+                    except hou.NotAvailable, e:
+                        # No UI yet. Try again shortly.
+                        self.logger.debug(
+                            "Waiting for UI to become available before setting up shelves..."
+                        )
+                        QtCore.QTimer.singleShot(100, _poll_for_ui_available_then_setup_shelves)
+                    else:
+                        _setup_shelf()
+
                 # We have a problem specific to Windows where Houdini takes a really
                 # long time to launch when Toolkit is being used. This it related to
                 # the shelf population logic being called here. What's odd is that it's
                 # not this logic that's slow (it runs in less than 1 second), but
                 # running it causes Houdini to pause for some time after it's executed.
-                # Deferring it one event loop cycle via a QTimer gives us the same end
+                #
+                # May 2018: Deferring it one event loop cycle via a QTimer gives us the same end
                 # result, but without the hang. It's probably safe to do it this way on
                 # all OSes, but since we don't see the problem on Linux or OS X,
                 # there's no sense in changing the behavior for those operating systems.
+                #
+                # March 2019: The fix above is no longer working in houdini 17.0.506.
+                # Instead, wait for the UI to be created before attempting to create 
+                # shelves.
                 if sys.platform.startswith("win"):
-                    QtCore.QTimer.singleShot(1, _setup_shelf)
+                    QtCore.QTimer.singleShot(100, _poll_for_ui_available_then_setup_shelves)
                 else:
                     _setup_shelf()
 
