@@ -543,23 +543,28 @@ class AppCommandsShelf(AppCommandsUI):
         (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
 
         # add the context menu tools first
+        self._engine.logger.debug("Creating context menu...")
         for cmd in context_cmds:
             tool = self.create_tool(shelf_file, cmd)
             shelf_tools.append(tool)
 
         # now add the favourites
+        self._engine.logger.debug("Creating favourites...")
         for cmd in favourite_cmds:
             tool = self.create_tool(shelf_file, cmd)
             shelf_tools.append(tool)
 
         # create tools for the remaining commands
+        self._engine.logger.debug("Creating app menu items...")
         for app_name in sorted(cmds_by_app.keys()):
             for cmd in cmds_by_app[app_name]:
                 if not cmd.favourite:
                     tool = self.create_tool(shelf_file, cmd)
                     shelf_tools.append(tool)
 
+        self._engine.logger.debug("Assigning tools to shelf %r..." % shelf)
         shelf.setTools(shelf_tools)
+        self._engine.logger.debug("...done!")
 
         # TODO: Currently there doesn't appear to be a way to add the sg shelf
         # to an existing shelf set programmatiaclly. Will be following up with
