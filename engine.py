@@ -95,14 +95,32 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         from sgtk.platform.qt import QtCore
 
-        if not self.has_ui:
-            # no UI. everything after this requires the UI!
-            return
-        
         tk_houdini = self.import_module("tk_houdini")
         bootstrap = tk_houdini.bootstrap
+        
+        if not self.has_ui:
+            bootstrap.bootstrap(self.sgtk, self.context)
 
         if bootstrap.g_temp_env in os.environ:
+
+            # Figure out the tmp OP Library path for this session
+            oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")
+            
+            def _load_otls():
+                self._load_otls(oplibrary_path)
+
+            if not self.has_ui:
+                _load_otls()
+                # no UI. everything after this requires the UI!
+                return
+            else:
+                # We have the same problem here on Windows that we have above with
+                # the population of the shelf. If we defer the execution of the otl
+                # loading by an event loop cycle, Houdini loads up quickly.
+                if sys.platform.startswith("win"):
+                    QtCore.QTimer.singleShot(1, _load_otls)
+                else:
+                    _load_otls()
 
             commands = None
             enable_sg_menu = self.get_setting("enable_sg_menu", True)
@@ -213,42 +231,28 @@ class HoudiniEngine(sgtk.platform.Engine):
                         panel_commands)
                     panels.create_panels(self._panels_file)
 
-            # Figure out the tmp OP Library path for this session
-            oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")
+        if self.has_ui:
+            # tell QT to interpret C strings as utf-8
+            utf8 = QtCore.QTextCodec.codecForName("utf-8")
+            QtCore.QTextCodec.setCodecForCStrings(utf8)
+            self.logger.debug("set utf-8 codec for widget text")
 
-            # Setup the OTLs that need to be loaded for the Toolkit apps
-            def _load_otls():
-                self._load_otls(oplibrary_path)
-
-            # We have the same problem here on Windows that we have above with
-            # the population of the shelf. If we defer the execution of the otl
-            # loading by an event loop cycle, Houdini loads up quickly.
-            if sys.platform.startswith("win"):
-                QtCore.QTimer.singleShot(1, _load_otls)
-            else:
-                _load_otls()
-
-        # tell QT to interpret C strings as utf-8
-        utf8 = QtCore.QTextCodec.codecForName("utf-8")
-        QtCore.QTextCodec.setCodecForCStrings(utf8)
-        self.logger.debug("set utf-8 codec for widget text")
-
-        # Typically we only call this method for engines which don't have a
-        # well defined styling. Houdini appears to use stylesheets to handle
-        # its styling which it conflicts with the toolkit strategy of using a
-        # dark QStyle underneath with additional stylesheets on top, allowing
-        # the qss to be minimized. Calling this method applies a global style,
-        # palette, and default stylesheet which, in addition to some
-        # workarounds when parenting toolkit widgets, allows for the
-        # consistent, intended look and feel of the toolkit widgets.
-        # Surprisingly, calling this does not seem to have any affect on
-        # houdini itself, despite the global nature of the method.
-        #
-        # NOTE: Except for 16+. It's no longer safe and causes lots of styling
-        # problems in Houdini's UI globally.
-        if hou.applicationVersion() < (16, 0, 0):
-            self.logger.debug("Houdini < 16 detected: applying dark look and feel.")
-            self._initialize_dark_look_and_feel()
+            # Typically we only call this method for engines which don't have a
+            # well defined styling. Houdini appears to use stylesheets to handle
+            # its styling which it conflicts with the toolkit strategy of using a
+            # dark QStyle underneath with additional stylesheets on top, allowing
+            # the qss to be minimized. Calling this method applies a global style,
+            # palette, and default stylesheet which, in addition to some
+            # workarounds when parenting toolkit widgets, allows for the
+            # consistent, intended look and feel of the toolkit widgets.
+            # Surprisingly, calling this does not seem to have any affect on
+            # houdini itself, despite the global nature of the method.
+            #
+            # NOTE: Except for 16+. It's no longer safe and causes lots of styling
+            # problems in Houdini's UI globally.
+            if hou.applicationVersion() < (16, 0, 0):
+                self.logger.debug("Houdini < 16 detected: applying dark look and feel.")
+                self._initialize_dark_look_and_feel()
 
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
