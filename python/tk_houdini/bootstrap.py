@@ -29,9 +29,6 @@ g_sgtk_context_env = "TANK_CONTEXT"
 # classic toolkit bootstrap
 g_sgtk_engine_env = "TANK_ENGINE"
 
-# Name of the file to open after bootstrap
-g_sgtk_file_to_open_env = "TANK_FILE_TO_OPEN"
-
 ################################################################################
 # methods for bootstrapping toolkit within houdini
 
@@ -96,16 +93,9 @@ def bootstrap_classic():
         )
         return
 
-    # see if the environment includes a file to be opened after bootstrap
-    file_to_open = os.environ.get(g_sgtk_file_to_open_env)
-    if file_to_open:
-        # importing here since we don't need hou unless loading a file
-        import hou
-        hou.hipFile.load(file_to_open)
-
     # clean env vars. note, we don't clean the temp dir env variable since it is
     # used by the engine to know where to write the shelf/menu .xml files
-    for env_var in [g_sgtk_context_env, g_sgtk_engine_env, g_sgtk_file_to_open_env]:
+    for env_var in [g_sgtk_context_env, g_sgtk_engine_env]:
         if env_var in os.environ:
             del os.environ[env_var]
 
