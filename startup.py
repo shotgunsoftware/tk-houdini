@@ -124,11 +124,9 @@ class HoudiniLauncher(SoftwareLauncher):
             required_env[engine_env] = self.engine_name
             required_env[context_env] = sgtk.context.serialize(self.context)
 
-        # populate the file to open env. Note this env variable name existed
-        # pre software launch setup.
         if file_to_open:
-            file_to_open_env = bootstrap.g_sgtk_file_to_open_env
-            required_env[file_to_open_env] = file_to_open
+            # If we have a file to open, add it to the end of the args so Houdini opens the file.
+            args = " ".join([args, file_to_open])
 
         self.logger.debug("Launch environment: %s" % (required_env,))
 
