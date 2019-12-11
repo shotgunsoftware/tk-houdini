@@ -69,6 +69,7 @@ class AppCommandsUI(object):
             favourite_cmds = []
             context_cmds = []
             cmds_by_app = {}
+            cmds_by_grp = {}
 
             # favourites
             for fav in self._engine.get_setting("menu_favourites"):
@@ -96,8 +97,13 @@ class AppCommandsUI(object):
                         app_name = "Other Items"
                     cmds_by_app.setdefault(app_name, []).append(cmd)
 
+                    grp_name = cmd.get_app_grp()
+                    if grp_name:
+                        cmd.grouped = True
+                        cmds_by_grp.setdefault(grp_name, []).append(cmd)
+
             self._engine.logger.debug("Grouped registered commands.")
-            self._grouped_commands = (context_cmds, cmds_by_app, favourite_cmds)
+            self._grouped_commands = (context_cmds, cmds_by_app, favourite_cmds, cmds_by_grp)
 
         return self._grouped_commands
 
@@ -146,7 +152,7 @@ class AppCommandsMenu(AppCommandsUI):
         if not hasattr(self, '_context_commands'):
 
             # get the registered commands, grouped in the usual way.
-            (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
+            (context_cmds, cmds_by_app, favourite_cmds, cmds_by_grp) = self._group_commands()
 
             # ideally we'd mimic the static menu and have a context item 
             # that contained a submenu with context-specific commands. this
@@ -194,7 +200,7 @@ class AppCommandsMenu(AppCommandsUI):
         # the dynamic menu is rebuilt on each click.
         if not hasattr(self, '_commands_by_app'):
 
-            (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
+            (context_cmds, cmds_by_app, favourite_cmds, cmds_by_grp) = self._group_commands()
 
             cmds = favourite_cmds
 
@@ -314,7 +320,7 @@ class AppCommandsMenu(AppCommandsUI):
         ctx_menu = self._menuNode(shotgun_menu, ctx_name, "tk.context")
         ET.SubElement(ctx_menu, "separatorItem")
 
-        (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
+        (context_cmds, cmds_by_app, favourite_cmds, cmds_by_grp) = self._group_commands()
 
         # favourites
         ET.SubElement(shotgun_menu, "separatorItem")
@@ -540,26 +546,37 @@ class AppCommandsShelf(AppCommandsUI):
         shelf_tools = []
         cmds_by_app = {}
 
-        (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
-
+        (context_cmds, cmds_by_app, favourite_cmds, cmds_by_grp) = self._group_commands()
         # add the context menu tools first
         self._engine.logger.debug("Creating context menu...")
         for cmd in context_cmds:
-            tool = self.create_tool(shelf_file, cmd)
+            tool = self.create_tool(shelf_file, cmd, ["/Current Context"])
             shelf_tools.append(tool)
 
         # now add the favourites
         self._engine.logger.debug("Creating favourites...")
         for cmd in favourite_cmds:
-            tool = self.create_tool(shelf_file, cmd)
+            app_name = cmd.get_app_name()
+            tool = self.create_tool(shelf_file, cmd, ["/Favourites", "/" + app_name])
             shelf_tools.append(tool)
+
+        # create tools for grouped apps
+        for grp_name in sorted(cmds_by_grp.keys()):
+            for cmd in cmds_by_grp[grp_name]:
+                grp_name = cmd.get_app_grp()
+                tool = self.create_tool(shelf_file, cmd, ["/" + grp_name])
+                shelf_tools.append(tool)
 
         # create tools for the remaining commands
         self._engine.logger.debug("Creating app menu items...")
         for app_name in sorted(cmds_by_app.keys()):
+            # if the app register several commands, group them in the tab menu
+            submenu = ""
+            if (len(cmds_by_app[app_name])) > 1:
+                submenu = "/" + app_name
             for cmd in cmds_by_app[app_name]:
-                if not cmd.favourite:
-                    tool = self.create_tool(shelf_file, cmd)
+                if not cmd.favourite and not cmd.grouped:
+                    tool = self.create_tool(shelf_file, cmd, [submenu])
                     shelf_tools.append(tool)
 
         self._engine.logger.debug("Assigning tools to shelf %r..." % shelf)
@@ -571,7 +588,7 @@ class AppCommandsShelf(AppCommandsUI):
         # sesi to see what they recommend. If there is a way, this is probably
         # where the shelf would need to be added.
 
-    def create_tool(self, shelf_file, cmd):
+    def create_tool(self, shelf_file, cmd, submenu=[]):
         """Create a new shelf tool.
 
             cmd:
@@ -583,6 +600,9 @@ class AppCommandsShelf(AppCommandsUI):
 
         import hou
 
+        viewer_categories = ["Object", "Sop", "Chop"]
+        network_categories = ["Object", "Sop", "Chop", "Driver", "Shop", "Cop2", "Vop", "VopNet", "Dop"]
+
         self._engine.logger.debug("Creating tool: %s" % cmd.name)
         tool = hou.shelves.newTool(
             file_path=shelf_file,
@@ -591,7 +611,12 @@ class AppCommandsShelf(AppCommandsUI):
             script=_g_launch_script % cmd.get_id(),
             #help=cmd.get_description(),
             #help_url=cmd.get_documentation_url_str(),
-            icon=cmd.get_icon()
+            icon=cmd.get_icon(),
+            viewer_categories=[hou.nodeTypeCategories()[cat] for cat in hou.nodeTypeCategories().keys()
+                               if cat in viewer_categories],
+            network_categories=[hou.nodeTypeCategories()[cat] for cat in hou.nodeTypeCategories().keys()
+                                if cat in network_categories],
+            locations=map(lambda x: "Shotgun" + x, submenu)
         )
         # NOTE: there seems to be a bug in houdini where the 'help' does
         # not display in the tool's tooltip even though the tool's help
@@ -645,6 +670,7 @@ class AppCommand(object):
         self.properties = command_dict["properties"]
         self.callback = command_dict["callback"]
         self.favourite = False
+        self.grouped = False
 
     def get_app_name(self):
         if "app" in self.properties:
@@ -662,6 +688,11 @@ class AppCommand(object):
             if app_instance_obj == app_instance:
                 return app_instance_name
 
+        return None
+
+    def get_app_grp(self):
+        if "group" in self.properties:
+            return self.properties["group"]
         return None
 
     def get_description(self):
