@@ -671,9 +671,13 @@ class HoudiniEngine(sgtk.platform.Engine):
 
             # This will ensure our dialogs don't fall behind Houdini's main
             # window when they lose focus.
-            if sys.platform.startswith("darwin"):
-                dialog.setWindowFlags(
-                    dialog.windowFlags() | QtCore.Qt.Tool)
+            #
+            # NOTE: Setting the window flags in H18 on OSX causes a crash. Once
+            # that bug is resolved we can re-enable this. The result is that
+            # on H18 without the window flags set per the below, our dialogs
+            # will fall behind Houdini if they lose focus.
+            if sys.platform.startswith("darwin") and hou.applicationVersion()[0] < 18:
+                dialog.setWindowFlags(dialog.windowFlags() | QtCore.Qt.Tool)
         else:
             # no parent found, so style should be ok. this is probably,
             # hopefully, a rare case, but since our logic for identifying the
@@ -681,8 +685,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             # assumptions, we should account for this case. set window flag to
             # be on top so that it doesn't duck under the houdini window when
             # shown (typicaly for windows)
-            dialog.setWindowFlags(
-                dialog.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+            dialog.setWindowFlags(dialog.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
 
         # A bit of a hack here, which goes along with the disabling of panel support
         # for H16 on OS X. Because of that, we are also having to treat the panel
@@ -699,6 +702,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         # and combine the two into a single, unified stylesheet for the dialog
         # and widget.
         engine_root_path = self._get_engine_root_path()
+        h_major_ver = hou.applicationVersion()[0]
 
         if bundle.name in ["tk-multi-shotgunpanel", "tk-multi-publish2"]:
             if bundle.name == "tk-multi-shotgunpanel":
@@ -714,7 +718,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             # already assigned to the widget. This means that the engine
             # styling is helping patch holes in any app- or framework-level
             # qss that might have already been applied.
-            if hou.applicationVersion()[0] >= 16:
+            if h_major_ver >= 16:
                 # We don't apply the engine's style.qss to the dialog for the panel,
                 # but we do for the publisher. This will make sure that the tank
                 # dialog's header and info slide-out widget is properly styled. The
@@ -736,7 +740,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             # engine level qss only.
             #
             # If we're in 16+, we also need to apply the engine-level qss.
-            if hou.applicationVersion()[0] >= 16:
+            if h_major_ver >= 16:
                 self._apply_external_styleshet(self, dialog)
                 qss = dialog.styleSheet()
                 qss = qss.replace("{{ENGINE_ROOT_PATH}}", engine_root_path)
