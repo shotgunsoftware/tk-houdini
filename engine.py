@@ -655,6 +655,8 @@ class HoudiniEngine(sgtk.platform.Engine):
         # call the base implementation to create the dialog:
         dialog = sgtk.platform.Engine._create_dialog(self, title, bundle, widget, parent)
 
+        h_ver = hou.applicationVersion()
+
         if dialog.parent():
             # parenting crushes the dialog's style. This seems to work to reset
             # the style to the dark look and feel in preparation for the
@@ -666,7 +668,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             # we break its styling in a few places if we zero out the main window's
             # stylesheet. We're now compensating for the problems that arise in
             # the engine's style.qss.
-            if hou.applicationVersion() < (16, 0, 0):
+            if h_ver < (16, 0, 0):
                 dialog.parent().setStyleSheet("")
 
             # This will ensure our dialogs don't fall behind Houdini's main
@@ -675,8 +677,9 @@ class HoudiniEngine(sgtk.platform.Engine):
             # NOTE: Setting the window flags in H18 on OSX causes a crash. Once
             # that bug is resolved we can re-enable this. The result is that
             # on H18 without the window flags set per the below, our dialogs
-            # will fall behind Houdini if they lose focus.
-            if sys.platform.startswith("darwin") and hou.applicationVersion()[0] < 18:
+            # will fall behind Houdini if they lose focus. This is only an issue
+            # for versions of H18 older than 18.0.348.
+            if sys.platform.startswith("darwin") and (h_ver[0] == 18 and h_ver >= (18, 0, 348)):
                 dialog.setWindowFlags(dialog.windowFlags() | QtCore.Qt.Tool)
         else:
             # no parent found, so style should be ok. this is probably,
