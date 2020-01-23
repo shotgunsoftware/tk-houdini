@@ -270,9 +270,9 @@ class HoudiniEngine(sgtk.platform.Engine):
             def run_when_idle():
                 hou.ui.displayMessage(
                     text="Houdini 18 versions older than 18.0.348 are unstable when using Shotgun "
-                        "Toolkit. Be aware that Houdini crashes may occur if attempting to use "
-                        "Toolkit apps from your current Houdini session. Shotgun recommends updating "
-                        "Houdini to 18.0.348 or newer.",
+                         "Toolkit. Be aware that Houdini crashes may occur if attempting to use "
+                         "Toolkit apps from your current Houdini session. Shotgun recommends updating "
+                         "Houdini to 18.0.348 or newer.",
                     title="Shotgun Toolkit",
                     severity=hou.severityType.Warning,
                 )
