@@ -233,6 +233,8 @@ class HoudiniEngine(sgtk.platform.Engine):
         QtCore.QTextCodec.setCodecForCStrings(utf8)
         self.logger.debug("set utf-8 codec for widget text")
 
+        hou_app_ver = hou.applicationVersion()
+
         # Typically we only call this method for engines which don't have a
         # well defined styling. Houdini appears to use stylesheets to handle
         # its styling which it conflicts with the toolkit strategy of using a
@@ -246,12 +248,49 @@ class HoudiniEngine(sgtk.platform.Engine):
         #
         # NOTE: Except for 16+. It's no longer safe and causes lots of styling
         # problems in Houdini's UI globally.
-        if hou.applicationVersion() < (16, 0, 0):
+        if hou_app_ver < (16, 0, 0):
             self.logger.debug("Houdini < 16 detected: applying dark look and feel.")
             self._initialize_dark_look_and_feel()
 
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
+
+        # In Houdini 18, we see substantial stability problems related to Qt in
+        # builds older than 18.0.348, which is the point when SideFx moved to a
+        # newer version of Qt and PySide2. We've reproduced problems on OSX and
+        # Linux, and we have reports of crashes on Windows, as well. All of these
+        # issues are no longer a problem in 348+, so we'll warn users on builds
+        # of H18 older than that.
+        if hou_app_ver[0] == 18 and hou_app_ver[-1] < 348:
+            # We need to wait until Houdini idles before showing the message.
+            # If we show it right now, it will pop up behind Houdini's splash
+            # screen, and since the dialog is modal you end up in a situation
+            # where Houdini does not continue to launch, and you can't see or
+            # dismiss the dialog to unblock it.
+            def run_when_idle():
+                hou.ui.displayMessage(
+                    text="Houdini 18 versions older than 18.0.348 are unstable when using Shotgun "
+                        "Toolkit. Be aware that Houdini crashes may occur if attempting to use "
+                        "Toolkit apps from your current Houdini session. Shotgun recommends updating "
+                        "Houdini to 18.0.348 or newer.",
+                    title="Shotgun Toolkit",
+                    severity=hou.severityType.Warning,
+                )
+
+                # Have the function unregister itself. It does this by looping over
+                # all the registered callbacks and finding itself by looking for a
+                # special attribute that is added below (just before registering it
+                # as an event loop callback).
+                for callback in hou.ui.eventLoopCallbacks():
+                    if hasattr(callback, "tk_houdini_stability_msg"):
+                        hou.ui.removeEventLoopCallback(callback)
+
+            # Add the special attribute that the function will look use to find
+            # and unregister itself when executed.
+            run_when_idle.tk_houdini_stability_msg = True
+
+            # Add the function as an event loop callback.
+            hou.ui.addEventLoopCallback(run_when_idle)        
 
     def destroy_engine(self):
         """
