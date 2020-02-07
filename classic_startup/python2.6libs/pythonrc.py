@@ -47,7 +47,7 @@ def classic_startup():
     try:
         from tk_houdini import bootstrap
         bootstrap.bootstrap_classic()
-    except Exception, e:
+    except Exception as e:
         import traceback
         stack_trace = traceback.format_exc()
 
@@ -58,8 +58,8 @@ def classic_startup():
         if hou.isUIAvailable():
             hou.ui.displayMessage(message, details=details)
         else:
-            print message
-            print details
+            print(message)
+            print(details)
 
 
 classic_startup()

@@ -77,7 +77,7 @@ def bootstrap_classic():
     engine_name = os.environ.get(g_sgtk_engine_env)
     try:
         context = sgtk.context.deserialize(os.environ.get(g_sgtk_context_env))
-    except Exception, e:
+    except Exception as e:
         bootstrap_exception(
             "Toolkit bootstrap failed to extract the current context from the "
             "environment! The Shotgun integration will be disabled. Details: "
@@ -87,7 +87,7 @@ def bootstrap_classic():
     # now do the classic engine startup
     try:
         engine = sgtk.platform.start_engine(engine_name, context.sgtk, context)
-    except Exception, e:
+    except Exception as e:
         bootstrap_exception(
             "Toolkit bootstrap failed to start the engine: %s" % (e,)
         )
@@ -117,8 +117,8 @@ def bootstrap_exception(error_msg):
         hou.ui.displayMessage(error_msg, details=details)
     else:
         # no UI, just print to stdout
-        print error_msg
-        print details
+        print(error_msg)
+        print(details)
 
 
 ################################################################################

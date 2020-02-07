@@ -133,5 +133,5 @@ def bootstrap_progress_callback(progress_value, message):
         reported in incremental order and always in the range 0.0 to 1.0
     :param str message: Progress message string
     """
-    print "Bootstrap progress %s%%: %s" % (int(progress_value * 100), message)
+    print("Bootstrap progress %s%%: %s" % (int(progress_value * 100), message))
 

@@ -78,7 +78,7 @@ def plugin_startup():
     try:
         from tk_houdini_basic import plugin_bootstrap
         plugin_bootstrap.bootstrap(plugin_root_path)
-    except Exception, e:
+    except Exception as e:
         import traceback
         stack_trace = traceback.format_exc()
 
@@ -89,8 +89,8 @@ def plugin_startup():
         if hou.isUIAvailable():
             hou.ui.displayMessage(message, details=details)
         else:
-            print message
-            print details
+            print(message)
+            print(details)
 
 plugin_startup()
 

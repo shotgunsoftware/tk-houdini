@@ -166,7 +166,7 @@ class HoudiniEngine(sgtk.platform.Engine):
                     """
                     try:
                         hou.ui.curDesktop()
-                    except hou.NotAvailable, e:
+                    except hou.NotAvailable as e:
                         # No UI yet. Try again shortly.
                         self.logger.debug(
                             "Waiting for UI to become available before setting up shelves..."
@@ -330,7 +330,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         msg_str = handler.format(record)
 
         # display message
-        print msg_str
+        print(msg_str)
 
     ############################################################################
     # panel interfaces

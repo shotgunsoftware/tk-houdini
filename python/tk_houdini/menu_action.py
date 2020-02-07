@@ -19,7 +19,7 @@ def error(msg):
     if hou.isUIAvailable():
         hou.ui.displayMessage(msg)
     else:
-        print msg
+        print(msg)
 
 
 cmd_id = sys.argv[1]

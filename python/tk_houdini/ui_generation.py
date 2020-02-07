@@ -876,7 +876,7 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
                     # the engine's stylesheet, while others did.
                     if self.parent():
                         self.parent().setStyleSheet(self.parent().styleSheet())
-            except Exception, e:
+            except Exception as e:
                 engine.logger.warning(
                     "Unable to re-apply stylesheet for panel: %s %s" % (title, e)
                 )
@@ -965,13 +965,13 @@ def _on_file_change_timeout():
         cur_engine = sgtk.platform.current_engine()
         cur_context = cur_engine.context
         engine_name = cur_engine.name
-    except Exception, e:
+    except Exception as e:
         engine_name = "tk-houdini"
         cur_context = None
 
     try:
         tk = sgtk.tank_from_path(cur_file)
-    except sgtk.TankError, e:
+    except sgtk.TankError as e:
         # Unable to get tk api instance from the path. won't be able to get a
         # new context. if there is an engine running, destroy it.
         if cur_engine:
@@ -992,7 +992,7 @@ def _on_file_change_timeout():
             sgtk.platform.change_context(new_context)
         else:
             sgtk.platform.start_engine(engine_name, tk, new_context)
-    except sgtk.TankEngineInitError, e:
+    except sgtk.TankEngineInitError as e:
         msg = (
             "There was a problem starting a new instance of the '%s' engine "
             "for context '%s'\n"
