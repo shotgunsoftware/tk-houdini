@@ -222,7 +222,7 @@ class HoudiniSessionCollector(HookBaseClass):
 
         try:
             tk_alembic_nodes = alembicnode_app.get_nodes()
-        except AttributeError as e:
+        except AttributeError:
             self.logger.warning(
                 "Unable to query the session for tk-houdini-alembicnode "
                 "instances. It looks like perhaps an older version of the "
@@ -282,7 +282,7 @@ class HoudiniSessionCollector(HookBaseClass):
 
         try:
             tk_mantra_nodes = mantranode_app.get_nodes()
-        except AttributeError as e:
+        except AttributeError:
             self.logger.warning(
                 "Unable to query the session for tk-houdini-mantranode "
                 "instances. It looks like perhaps an older version of the "

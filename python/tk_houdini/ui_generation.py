@@ -567,7 +567,7 @@ class AppCommandsShelf(AppCommandsUI):
         self._engine.logger.debug("...done!")
 
         # TODO: Currently there doesn't appear to be a way to add the sg shelf
-        # to an existing shelf set programmatiaclly. Will be following up with
+        # to an existing shelf set programmatically. Will be following up with
         # sesi to see what they recommend. If there is a way, this is probably
         # where the shelf would need to be added.
 
@@ -981,13 +981,13 @@ def _on_file_change_timeout():
         cur_engine = sgtk.platform.current_engine()
         cur_context = cur_engine.context
         engine_name = cur_engine.name
-    except Exception as e:
+    except Exception:
         engine_name = "tk-houdini"
         cur_context = None
 
     try:
         tk = sgtk.tank_from_path(cur_file)
-    except sgtk.TankError as e:
+    except sgtk.TankError:
         # Unable to get tk api instance from the path. won't be able to get a
         # new context. if there is an engine running, destroy it.
         if cur_engine:
@@ -1207,7 +1207,7 @@ try:
     # special id if there is no shotgun context/engine
     if command_id == "tk.houdini.menu.no.shotgun":
         msg = (
-            "It appears as though you are not currenly working in a Shotgun "
+            "It appears as though you are not currently working in a Shotgun "
             "context. There is no Shotgun for Houdini Engine running so no "
             "menu or shelf items are available. In order to restart the Shotgun "
             "integration, please close and reopen Houdini or choose a file "
@@ -1215,7 +1215,7 @@ try:
             "believe this to be an error, please contact your support team."
         )
         hou.ui.displayMessage(msg, severity=hou.severityType.Warning)
-    # special id if errors occured and they clicked for more info
+    # special id if errors occurred and they clicked for more info
     if command_id == "tk.houdini.menu.error":
         # try to locate the exception on the menu object and raise it
         if engine._menu._menu_error:
@@ -1233,7 +1233,7 @@ try:
         engine.launch_command(command_id)
 except Exception as e:
     # handle any exceptions raised during menu building
-    msg = "An error occured building the Shotgun menu...\\n\\n%s" % (e,)
+    msg = "An error occurred building the Shotgun menu...\\n\\n%s" % (e,)
     if engine:
         hou.ui.displayMessage(msg, severity=hou.severityType.Error)
     else:
