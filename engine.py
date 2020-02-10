@@ -193,7 +193,7 @@ class HoudiniEngine(sgtk.platform.Engine):
                 # March 2019: The fix above is no longer working in houdini 17.0.506.
                 # Instead, wait for the UI to be created before attempting to create
                 # shelves.
-                if sys.platform.startswith("win"):
+                if sgtk.util.is_windows():
                     QtCore.QTimer.singleShot(
                         100, _poll_for_ui_available_then_setup_shelves
                     )
@@ -230,7 +230,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             # We have the same problem here on Windows that we have above with
             # the population of the shelf. If we defer the execution of the otl
             # loading by an event loop cycle, Houdini loads up quickly.
-            if sys.platform.startswith("win"):
+            if sgtk.util.is_windows():
                 QtCore.QTimer.singleShot(1, _load_otls)
             else:
                 _load_otls()
@@ -528,7 +528,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         ver = hou.applicationVersion()
 
         # first version where saving python panel in desktop was fixed
-        if sys.platform.startswith("darwin"):
+        if sgtk.util.is_macos():
             # We have some serious painting problems with Python panes in
             # H16 that are specific to OS X. We have word out to SESI, and
             # are waiting to hear back from them as to how we might be able
@@ -560,7 +560,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         # Build a dictionary mapping app instance names to dictionaries of
         # commands they registered with the engine.
         app_instance_commands = {}
-        for (cmd_name, value) in self.commands.iteritems():
+        for (cmd_name, value) in self.commands.items():
             app_instance = value["properties"].get("app")
             if app_instance:
                 # Add entry 'command name: command function' to the command
@@ -595,7 +595,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             else:
                 if not setting_cmd_name:
                     # add commands to the list for the given app instance.
-                    for (cmd_name, cmd_function) in cmd_dict.iteritems():
+                    for (cmd_name, cmd_function) in cmd_dict.items():
                         self.log_debug(
                             "%s startup running app '%s' command '%s'."
                             % (self.name, app_instance_name, cmd_name)
@@ -730,9 +730,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             # on H18 without the window flags set per the below, our dialogs
             # will fall behind Houdini if they lose focus. This is only an issue
             # for versions of H18 older than 18.0.348.
-            if sys.platform.startswith("darwin") and (
-                h_ver[0] == 18 and h_ver >= (18, 0, 348)
-            ):
+            if sgtk.util.is_macos() and (h_ver[0] == 18 and h_ver >= (18, 0, 348)):
                 dialog.setWindowFlags(dialog.windowFlags() | QtCore.Qt.Tool)
         else:
             # no parent found, so style should be ok. this is probably,
@@ -813,7 +811,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         dialog.activateWindow()
 
         # special case to get windows to raise the dialog
-        if sys.platform == "win32":
+        if sgtk.util.is_windows():
             # Anything beyond 16.5.481 bundles a PySide2 version that gives us
             # a usable hwnd directly. We also check to make sure this is Qt5,
             # since SideFX still offers Qt4/PySide builds of modern Houdinis.
