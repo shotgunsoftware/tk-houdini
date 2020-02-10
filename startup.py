@@ -30,7 +30,6 @@ class HoudiniLauncher(SoftwareLauncher):
         "houdinicore": "Houdini Core",
         "houdinifx": "Houdini FX",
         "hindie": "Houdini Indie",
-
     }
 
     # Named regex strings to insert into the executable template paths when
@@ -54,7 +53,6 @@ class HoudiniLauncher(SoftwareLauncher):
         "darwin": [
             # /Applications/Houdini 15.5.565/Houdini.app
             "/Applications/Houdini {version}/{product}.app",
-
             # /Applications/Houdini/Houdini16.0.504.20/Houdini Core 16.0.504.20.app
             "/Applications/Houdini/Houdini{version}/{product} {version_back}.app",
         ],
@@ -65,7 +63,7 @@ class HoudiniLauncher(SoftwareLauncher):
         "linux2": [
             # example path: /opt/hfs14.0.444/bin/houdinifx
             "/opt/hfs{version}/bin/{executable}",
-        ]
+        ],
     }
 
     @property
@@ -91,10 +89,7 @@ class HoudiniLauncher(SoftwareLauncher):
         # path. this provides us access to the bootstrap module which contains
         # helper methods for constructing the proper environment based on the
         # bootstrap scanario.
-        tk_houdini_python_path = os.path.join(
-            self.disk_location,
-            "python",
-        )
+        tk_houdini_python_path = os.path.join(self.disk_location, "python",)
         sys.path.insert(0, tk_houdini_python_path)
 
         from tk_houdini import bootstrap
@@ -148,8 +143,7 @@ class HoudiniLauncher(SoftwareLauncher):
                 supported_sw_versions.append(sw_version)
             else:
                 self.logger.debug(
-                    "SoftwareVersion %s is not supported: %s" %
-                    (sw_version, reason)
+                    "SoftwareVersion %s is not supported: %s" % (sw_version, reason)
                 )
 
         return supported_sw_versions
@@ -157,10 +151,7 @@ class HoudiniLauncher(SoftwareLauncher):
     def _find_software(self):
 
         # use the bundled engine icon
-        icon_path = os.path.join(
-            self.disk_location,
-            "icon_256.png"
-        )
+        icon_path = os.path.join(self.disk_location, "icon_256.png")
         self.logger.debug("Using icon path: %s" % (icon_path,))
 
         # all the executable templates for the current OS
@@ -174,8 +165,7 @@ class HoudiniLauncher(SoftwareLauncher):
             self.logger.debug("Processing template %s.", executable_template)
 
             executable_matches = self._glob_and_match(
-                executable_template,
-                self.COMPONENT_REGEX_LOOKUP
+                executable_template, self.COMPONENT_REGEX_LOOKUP
             )
 
             # Extract all products from that executable.
@@ -191,14 +181,16 @@ class HoudiniLauncher(SoftwareLauncher):
                 # then an executable name should be available. We can map that
                 # to the proper product.
                 if not executable_product:
-                    executable_product = \
-                        self.EXECUTABLE_TO_PRODUCT.get(executable_name)
+                    executable_product = self.EXECUTABLE_TO_PRODUCT.get(executable_name)
 
                 # only include the products that are covered in the EXECUTABLE_TO_PRODUCT dict
-                if executable_product is None or executable_product not in self.EXECUTABLE_TO_PRODUCT.values():
+                if (
+                    executable_product is None
+                    or executable_product not in self.EXECUTABLE_TO_PRODUCT.values()
+                ):
                     self.logger.debug(
-                        "Product '%s' is unrecognized. Skipping." %
-                        (executable_product,)
+                        "Product '%s' is unrecognized. Skipping."
+                        % (executable_product,)
                     )
                     continue
 
@@ -207,7 +199,7 @@ class HoudiniLauncher(SoftwareLauncher):
                         executable_version,
                         executable_product,
                         executable_path,
-                        icon_path
+                        icon_path,
                     )
                 )
 

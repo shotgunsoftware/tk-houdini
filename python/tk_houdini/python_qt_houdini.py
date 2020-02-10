@@ -18,6 +18,7 @@ class IntegratedEventLoop(object):
     Houdini's event loop on the main thread.  You probably just want to
     call exec_() below instead of using this class directly.
     """
+
     def __init__(self, application):
         # We need the application to send posted events.  We hold a reference
         # to any dialogs to ensure that they don't get garbage collected

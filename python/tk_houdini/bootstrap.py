@@ -1,11 +1,11 @@
 # Copyright (c) 2013 Shotgun Software Inc.
-# 
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
@@ -31,6 +31,7 @@ g_sgtk_engine_env = "TANK_ENGINE"
 
 ################################################################################
 # methods for bootstrapping toolkit within houdini
+
 
 def bootstrap(tank, context):
     """
@@ -68,8 +69,7 @@ def bootstrap_classic():
     for env_var in [g_sgtk_context_env, g_sgtk_engine_env]:
         if env_var not in os.environ:
             bootstrap_exception(
-                "Toolkit bootstrap is missing a required env variable: %s" %
-                (env_var)
+                "Toolkit bootstrap is missing a required env variable: %s" % (env_var)
             )
             return
 
@@ -81,16 +81,15 @@ def bootstrap_classic():
         bootstrap_exception(
             "Toolkit bootstrap failed to extract the current context from the "
             "environment! The Shotgun integration will be disabled. Details: "
-            "%s" % (e,))
+            "%s" % (e,)
+        )
         return
 
     # now do the classic engine startup
     try:
         engine = sgtk.platform.start_engine(engine_name, context.sgtk, context)
     except Exception as e:
-        bootstrap_exception(
-            "Toolkit bootstrap failed to start the engine: %s" % (e,)
-        )
+        bootstrap_exception("Toolkit bootstrap failed to start the engine: %s" % (e,))
         return
 
     # clean env vars. note, we don't clean the temp dir env variable since it is
@@ -124,6 +123,7 @@ def bootstrap_exception(error_msg):
 ################################################################################
 # utility methods for populating the environment prior to bootstrap
 
+
 def get_classic_startup_env():
     """
     Returns a dict of key/value pairs representing the environment variables
@@ -135,10 +135,7 @@ def get_classic_startup_env():
     # within python2.6libs and python2.7libs directories once on HOUDINI_PATH,
     # houdini will execute the appropriate file at startup
     startup_path = os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "..",
-        "classic_startup"
+        os.path.dirname(__file__), "..", "..", "classic_startup"
     )
     startup_path = os.path.normpath(startup_path)
 
@@ -161,11 +158,7 @@ def get_plugin_startup_env(plugin_names):
         # Each plugin should have the standard pythonX.Xlibs/pythonrc.py folders
         # at the top-level which houdini will execute at startup time.
         plugin_startup_path = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "..",
-            "plugins",
-            plugin_name,
+            os.path.dirname(__file__), "..", "..", "plugins", plugin_name,
         )
         plugin_startup_path = os.path.normpath(plugin_startup_path)
 
@@ -179,6 +172,7 @@ def get_plugin_startup_env(plugin_names):
 ################################################################################
 # helper methods for the methods above
 
+
 def _get_env(startup_paths):
     """
     This method represents the common behavior for preparing an environment for
@@ -190,13 +184,13 @@ def _get_env(startup_paths):
     env = {}
 
     # setup a path for the engine to write out its menu file
-    tk_houdini_temp_dir = tempfile.mkdtemp(prefix='tk-houdini')
+    tk_houdini_temp_dir = tempfile.mkdtemp(prefix="tk-houdini")
 
     # set env var to point engine at temp path
     env[g_temp_env] = tk_houdini_temp_dir
 
     # This allows Qt to load, but I think it makes Houdini unstable...
-    env['OBJC_DISABLE_GC'] = 'YES'
+    env["OBJC_DISABLE_GC"] = "YES"
 
     # construct the houdini path. this isn't as simple as prepending these paths
     # since we have to account for some legacy behavior and houdini weirdness
@@ -205,9 +199,7 @@ def _get_env(startup_paths):
     try:
         # supply a single list of startup paths which is the temp directory plus
         # the supplied startup paths
-        env["HOUDINI_PATH"] = _build_houdini_path(
-            [tk_houdini_temp_dir] + startup_paths
-        )
+        env["HOUDINI_PATH"] = _build_houdini_path([tk_houdini_temp_dir] + startup_paths)
     except:
         # had an error, clean up the tmp dir
         shutil.rmtree(tk_houdini_temp_dir)

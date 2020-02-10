@@ -27,6 +27,7 @@ class HoudiniEngine(sgtk.platform.Engine):
     """
     Houdini Engine implementation
     """
+
     _pane_cache = dict()
 
     @property
@@ -55,11 +56,11 @@ class HoudiniEngine(sgtk.platform.Engine):
     ############################################################################
     # init and basic properties
     ############################################################################
-        
+
     def init_engine(self):
         """
         Main initialization entry point.
-        """        
+        """
 
         self.logger.debug("%s: Initializing..." % self)
 
@@ -70,7 +71,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             )
 
         # keep track of if a UI exists
-        self._ui_enabled = hasattr(hou, 'ui')
+        self._ui_enabled = hasattr(hou, "ui")
 
     def pre_app_init(self):
         """
@@ -98,7 +99,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         if not self.has_ui:
             # no UI. everything after this requires the UI!
             return
-        
+
         tk_houdini = self.import_module("tk_houdini")
         bootstrap = tk_houdini.bootstrap
 
@@ -120,9 +121,10 @@ class HoudiniEngine(sgtk.platform.Engine):
 
                 # populate a callback map. this is a map of command ids to a
                 # corresponding callback. these are used by the menu and shelf
-                # for executing installed app commands. 
-                self._callback_map = \
-                    dict((cmd.get_id(), cmd.callback) for cmd in commands)
+                # for executing installed app commands.
+                self._callback_map = dict(
+                    (cmd.get_id(), cmd.callback) for cmd in commands
+                )
 
             if commands and enable_sg_menu:
 
@@ -142,11 +144,11 @@ class HoudiniEngine(sgtk.platform.Engine):
                     self._menu.create_menu(menu_file)
 
             if commands and enable_sg_shelf:
-                
+
                 def _setup_shelf():
                     """
                     Run shelf setup
-                    """                    
+                    """
                     # setup houdini shelf
                     self._shelf = tk_houdini.AppCommandsShelf(self, commands)
 
@@ -160,8 +162,8 @@ class HoudiniEngine(sgtk.platform.Engine):
 
                 def _poll_for_ui_available_then_setup_shelves():
                     """
-                    Poll to see if the houdini UI is available, 
-                    and once it is, execute shelf setup. 
+                    Poll to see if the houdini UI is available,
+                    and once it is, execute shelf setup.
                     Registers a call to itself via a QTimer.
                     """
                     try:
@@ -171,7 +173,9 @@ class HoudiniEngine(sgtk.platform.Engine):
                         self.logger.debug(
                             "Waiting for UI to become available before setting up shelves..."
                         )
-                        QtCore.QTimer.singleShot(100, _poll_for_ui_available_then_setup_shelves)
+                        QtCore.QTimer.singleShot(
+                            100, _poll_for_ui_available_then_setup_shelves
+                        )
                     else:
                         _setup_shelf()
 
@@ -187,10 +191,12 @@ class HoudiniEngine(sgtk.platform.Engine):
                 # there's no sense in changing the behavior for those operating systems.
                 #
                 # March 2019: The fix above is no longer working in houdini 17.0.506.
-                # Instead, wait for the UI to be created before attempting to create 
+                # Instead, wait for the UI to be created before attempting to create
                 # shelves.
                 if sys.platform.startswith("win"):
-                    QtCore.QTimer.singleShot(100, _poll_for_ui_available_then_setup_shelves)
+                    QtCore.QTimer.singleShot(
+                        100, _poll_for_ui_available_then_setup_shelves
+                    )
                 else:
                     _setup_shelf()
 
@@ -201,16 +207,17 @@ class HoudiniEngine(sgtk.platform.Engine):
                 # tk_houdini.ui_generation
                 panel_commands = tk_houdini.get_registered_panels(self)
 
-                # expose the wrapped panel method on the engine so that the 
+                # expose the wrapped panel method on the engine so that the
                 # panels can call it directly
-                self.get_wrapped_panel_widget = \
-                    tk_houdini.get_wrapped_panel_widget
-    
+                self.get_wrapped_panel_widget = tk_houdini.get_wrapped_panel_widget
+
                 if panel_commands:
-                    self._panels_file = self._safe_path_join(xml_tmp_dir,
-                        "sg_panels.pypanel")
-                    panels = tk_houdini.AppCommandsPanelHandler(self, commands,
-                        panel_commands)
+                    self._panels_file = self._safe_path_join(
+                        xml_tmp_dir, "sg_panels.pypanel"
+                    )
+                    panels = tk_houdini.AppCommandsPanelHandler(
+                        self, commands, panel_commands
+                    )
                     panels.create_panels(self._panels_file)
 
             # Figure out the tmp OP Library path for this session
@@ -270,9 +277,9 @@ class HoudiniEngine(sgtk.platform.Engine):
             def run_when_idle():
                 hou.ui.displayMessage(
                     text="Houdini 18 versions older than 18.0.348 are unstable when using Shotgun "
-                         "Toolkit. Be aware that Houdini crashes may occur if attempting to use "
-                         "Toolkit apps from your current Houdini session. Shotgun recommends updating "
-                         "Houdini to 18.0.348 or newer.",
+                    "Toolkit. Be aware that Houdini crashes may occur if attempting to use "
+                    "Toolkit apps from your current Houdini session. Shotgun recommends updating "
+                    "Houdini to 18.0.348 or newer.",
                     title="Shotgun Toolkit",
                     severity=hou.severityType.Warning,
                 )
@@ -290,13 +297,13 @@ class HoudiniEngine(sgtk.platform.Engine):
             run_when_idle.tk_houdini_stability_msg = True
 
             # Add the function as an event loop callback.
-            hou.ui.addEventLoopCallback(run_when_idle)        
+            hou.ui.addEventLoopCallback(run_when_idle)
 
     def destroy_engine(self):
         """
         Engine shutdown.
         """
-        
+
         self.logger.debug("%s: Destroying..." % self)
 
         if hasattr(self, "_shelf") and self._shelf:
@@ -338,11 +345,11 @@ class HoudiniEngine(sgtk.platform.Engine):
 
     def get_panel_info(self, requested_panel_id):
         """Get info dict for the panel with the supplied id.
-        
+
         :param int requested_panel_id: The id of the panel to get info for
         :return: A dictionary of information about the panel
         :rtype: dict
-        
+
         The dictionary returned will include keys: 'id', 'title', 'bundle',
         widget_class', 'args', and 'kwargs'. The values of those keys
         will be the values supplied to the `show_panel` method by the panel's
@@ -364,31 +371,30 @@ class HoudiniEngine(sgtk.platform.Engine):
             # use to short-circuit and return the info needed.
             self._panel_info_request = True
             self.logger.debug("Retrieving panel widget for %s" % panel_id)
-            panel_info = panel_dict['callback']()
+            panel_info = panel_dict["callback"]()
             del self._panel_info_request
             return panel_info
 
         return None
 
-    def show_panel(self, panel_id, title, bundle, widget_class, *args,
-        **kwargs):
-        """Show the panel matching the supplied args. 
+    def show_panel(self, panel_id, title, bundle, widget_class, *args, **kwargs):
+        """Show the panel matching the supplied args.
 
-        Will first try to locate an existing instance of the panel. If it 
+        Will first try to locate an existing instance of the panel. If it
         exists, it will make it current. If it can't find an existing panel,
         it will create a new one.
 
-        If the panel can't be created for some reason, the widget will be 
+        If the panel can't be created for some reason, the widget will be
         displayed as a dialog.
-        
+
         :param panel_id: Unique id to associate with the panel - normally this
             is a string obtained via the register_panel() call.
         :param title: The title of the window
         :param bundle: The app, engine or framework object that is associated
-            with this window 
+            with this window
         :param widget_class: The class of the UI to be
         constructed. This must derive from QWidget.
-        
+
         Additional parameters specified will be passed through to the
         widget_class constructor.
         """
@@ -396,17 +402,17 @@ class HoudiniEngine(sgtk.platform.Engine):
         # check to see if we just need to return the widget itself. Since we
         # don't really have information about the panel outside of this call,
         # we use a special flag to know when the info is needed and return it.
-        if hasattr(self, '_panel_info_request') and self._panel_info_request:
+        if hasattr(self, "_panel_info_request") and self._panel_info_request:
             return {
-                'id': panel_id,
-                'title': title,
-                'bundle': bundle,
-                'widget_class': widget_class,
-                'args': args,
-                'kwargs': kwargs,
+                "id": panel_id,
+                "title": title,
+                "bundle": bundle,
+                "widget_class": widget_class,
+                "args": args,
+                "kwargs": kwargs,
             }
 
-        # try to locate the pane in the desktop and make it the current tab. 
+        # try to locate the pane in the desktop and make it the current tab.
         for pane_tab in hou.ui.curDesktop().paneTabs():
             if pane_tab.name() == panel_id:
                 pane_tab.setIsCurrentTab()
@@ -421,7 +427,7 @@ class HoudiniEngine(sgtk.platform.Engine):
                 pane_tab.setIsCurrentTab()
                 return
 
-        # panel support differs between 14/15. 
+        # panel support differs between 14/15.
         if self._panels_supported():
 
             # if it can't be located, try to create a new tab and set the
@@ -433,11 +439,12 @@ class HoudiniEngine(sgtk.platform.Engine):
                         panel_interface = interface
                         break
             except hou.OperationFailed:
-                # likely due to panels file not being a valid file, missing, etc. 
+                # likely due to panels file not being a valid file, missing, etc.
                 # hopefully not the case, but try to continue gracefully.
                 self.logger.warning(
-                    "Unable to find interface for panel '%s' in file: %s" % 
-                    (panel_id, self._panels_file))
+                    "Unable to find interface for panel '%s' in file: %s"
+                    % (panel_id, self._panels_file)
+                )
 
             if panel_interface:
                 # the options to create a named panel on the far right of the
@@ -454,8 +461,8 @@ class HoudiniEngine(sgtk.platform.Engine):
                 else:
                     # if SESI puts in a fix for setInterface, then panels
                     # will work for houini 14. will just need to update
-                    # _panels_supported() to add the proper version. and 
-                    # remove this comment. 
+                    # _panels_supported() to add the proper version. and
+                    # remove this comment.
                     panel.setInterface(panel_interface)
 
                 # turn off the python panel toolbar to make the tk panels look
@@ -475,7 +482,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         """
         Internal helper used by the engine to execute a command from the menu.
         This method is for internal use only and not meant to be called from external applications!
-        """        
+        """
         callback = self._callback_map.get(cmd_id)
         if callback is None:
             self.logger.error("No callback found for id: %s" % cmd_id)
@@ -502,22 +509,24 @@ class HoudiniEngine(sgtk.platform.Engine):
         file from there.
         """
         for app in self.apps.values():
-            otl_path = self._safe_path_join(app.disk_location, 'otls')
+            otl_path = self._safe_path_join(app.disk_location, "otls")
             if not os.path.exists(otl_path):
                 continue
 
             for filename in os.listdir(otl_path):
-                if os.path.splitext(filename)[-1] == '.otl':
-                    path = self._safe_path_join(otl_path, filename).replace(os.path.sep, "/")
+                if os.path.splitext(filename)[-1] == ".otl":
+                    path = self._safe_path_join(otl_path, filename).replace(
+                        os.path.sep, "/"
+                    )
                     hou.hda.installFile(path, oplibrary_path, True)
 
     def _panels_supported(self):
         """
         Returns True if panels are supported for current Houdini version.
         """
-        
+
         ver = hou.applicationVersion()
-    
+
         # first version where saving python panel in desktop was fixed
         if sys.platform.startswith("darwin"):
             # We have some serious painting problems with Python panes in
@@ -557,7 +566,8 @@ class HoudiniEngine(sgtk.platform.Engine):
                 # Add entry 'command name: command function' to the command
                 # dictionary of this app instance.
                 cmd_dict = app_instance_commands.setdefault(
-                    app_instance.instance_name, {})
+                    app_instance.instance_name, {}
+                )
                 cmd_dict[cmd_name] = value["callback"]
 
         # build a list of commands to run and then execute them all at once
@@ -580,15 +590,15 @@ class HoudiniEngine(sgtk.platform.Engine):
             if cmd_dict is None:
                 self.log_warning(
                     "%s configuration setting 'run_at_startup' requests app "
-                    "'%s' that is not installed." %
-                    (self.name, app_instance_name))
+                    "'%s' that is not installed." % (self.name, app_instance_name)
+                )
             else:
                 if not setting_cmd_name:
                     # add commands to the list for the given app instance.
                     for (cmd_name, cmd_function) in cmd_dict.iteritems():
                         self.log_debug(
-                            "%s startup running app '%s' command '%s'." %
-                            (self.name, app_instance_name, cmd_name)
+                            "%s startup running app '%s' command '%s'."
+                            % (self.name, app_instance_name, cmd_name)
                         )
                         commands_to_run.append((cmd_name, cmd_function))
                 else:
@@ -597,21 +607,21 @@ class HoudiniEngine(sgtk.platform.Engine):
                     cmd_function = cmd_dict.get(setting_cmd_name)
                     if cmd_function:
                         self.log_debug(
-                            "%s startup running app '%s' command '%s'." %
-                            (self.name, app_instance_name, setting_cmd_name)
+                            "%s startup running app '%s' command '%s'."
+                            % (self.name, app_instance_name, setting_cmd_name)
                         )
                         commands_to_run.append((setting_cmd_name, cmd_function))
                     else:
-                        known_commands = ", ".join(
-                            "'%s'" % name for name in cmd_dict)
+                        known_commands = ", ".join("'%s'" % name for name in cmd_dict)
                         self.log_warning(
                             "%s configuration setting 'run_at_startup' "
                             "requests app '%s' unknown command '%s'. Known "
-                            "commands: %s" % (
+                            "commands: %s"
+                            % (
                                 self.name,
                                 app_instance_name,
                                 setting_cmd_name,
-                                known_commands
+                                known_commands,
                             )
                         )
 
@@ -665,9 +675,9 @@ class HoudiniEngine(sgtk.platform.Engine):
         Returns the engine's style.qss file path.
         """
         from sgtk.platform import constants
+
         return self._safe_path_join(
-            self.disk_location,
-            constants.BUNDLE_STYLESHEET_FILE,
+            self.disk_location, constants.BUNDLE_STYLESHEET_FILE,
         )
 
     def _get_engine_root_path(self):
@@ -680,9 +690,9 @@ class HoudiniEngine(sgtk.platform.Engine):
 
     def _create_dialog(self, title, bundle, widget, parent):
         """
-        Overriden from the base Engine class - create a TankQDialog with the specified widget 
+        Overriden from the base Engine class - create a TankQDialog with the specified widget
         embedded.
-        
+
         :param title: The title of the window
         :param bundle: The app, engine or framework object that is associated with this window
         :param widget: A QWidget instance to be embedded in the newly created dialog.
@@ -692,7 +702,9 @@ class HoudiniEngine(sgtk.platform.Engine):
         from sgtk.platform.qt import QtCore
 
         # call the base implementation to create the dialog:
-        dialog = sgtk.platform.Engine._create_dialog(self, title, bundle, widget, parent)
+        dialog = sgtk.platform.Engine._create_dialog(
+            self, title, bundle, widget, parent
+        )
 
         h_ver = hou.applicationVersion()
 
@@ -718,7 +730,9 @@ class HoudiniEngine(sgtk.platform.Engine):
             # on H18 without the window flags set per the below, our dialogs
             # will fall behind Houdini if they lose focus. This is only an issue
             # for versions of H18 older than 18.0.348.
-            if sys.platform.startswith("darwin") and (h_ver[0] == 18 and h_ver >= (18, 0, 348)):
+            if sys.platform.startswith("darwin") and (
+                h_ver[0] == 18 and h_ver >= (18, 0, 348)
+            ):
                 dialog.setWindowFlags(dialog.windowFlags() | QtCore.Qt.Tool)
         else:
             # no parent found, so style should be ok. this is probably,
@@ -773,7 +787,9 @@ class HoudiniEngine(sgtk.platform.Engine):
                 with open(qss_file, "rt") as f:
                     qss_data = f.read()
                     qss_data = self._resolve_sg_stylesheet_tokens(qss_data)
-                    qss_data = qss_data.replace("{{ENGINE_ROOT_PATH}}", engine_root_path)
+                    qss_data = qss_data.replace(
+                        "{{ENGINE_ROOT_PATH}}", engine_root_path
+                    )
                     widget.setStyleSheet(widget.styleSheet() + qss_data)
                     widget.update()
         else:
@@ -801,7 +817,11 @@ class HoudiniEngine(sgtk.platform.Engine):
             # Anything beyond 16.5.481 bundles a PySide2 version that gives us
             # a usable hwnd directly. We also check to make sure this is Qt5,
             # since SideFX still offers Qt4/PySide builds of modern Houdinis.
-            if hou.applicationVersion() >= (16, 5, 481) and QtCore.__version__.startswith("5."):
+            if hou.applicationVersion() >= (
+                16,
+                5,
+                481,
+            ) and QtCore.__version__.startswith("5."):
                 hwnd = dialog.winId()
             else:
                 ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
@@ -816,16 +836,21 @@ class HoudiniEngine(sgtk.platform.Engine):
         Launches a modal dialog. Overridden from base class.
         """
         from sgtk.platform.qt import QtCore, QtGui
-        
+
         # In houdini, the script editor runs in a custom thread. Any commands executed here
         # which are calling UI functionality may cause problems with QT. Check that we are
         # running in the main thread
         if QtCore.QThread.currentThread() != QtGui.QApplication.instance().thread():
-            self.execute_in_main_thread(self.logger.error, "Error creating dialog: You can only launch UIs "
-                                        "in the main thread. Try using the execute_in_main_thread() method.")
-            return        
+            self.execute_in_main_thread(
+                self.logger.error,
+                "Error creating dialog: You can only launch UIs "
+                "in the main thread. Try using the execute_in_main_thread() method.",
+            )
+            return
 
-        dialog, widget = self._create_dialog_with_widget(title, bundle, widget_class, *args, **kwargs)
+        dialog, widget = self._create_dialog_with_widget(
+            title, bundle, widget_class, *args, **kwargs
+        )
 
         # I don't have an answer to why this does what it does. We have
         # a situation in H16 where some aspects of our widgets can't be
@@ -839,26 +864,31 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         # finally launch it, modal state
         status = dialog.exec_()
-        
+
         # lastly, return the instantiated widget
         return (status, widget)
 
     def show_dialog(self, title, bundle, widget_class, *args, **kwargs):
         """
         Shows a modeless dialog. Overridden from base class.
-        """        
+        """
         from sgtk.platform.qt import QtCore, QtGui
-        
+
         # In houdini, the script editor runs in a custom thread. Any commands executed here
         # which are calling UI functionality may cause problems with QT. Check that we are
         # running in the main thread
         if QtCore.QThread.currentThread() != QtGui.QApplication.instance().thread():
-            self.execute_in_main_thread(self.logger.error, "Error creating dialog: You can only launch UIs "
-                                        "in the main thread. Try using the execute_in_main_thread() method.")
+            self.execute_in_main_thread(
+                self.logger.error,
+                "Error creating dialog: You can only launch UIs "
+                "in the main thread. Try using the execute_in_main_thread() method.",
+            )
             return
 
         # create the dialog:
-        dialog, widget = self._create_dialog_with_widget(title, bundle, widget_class, *args, **kwargs)
+        dialog, widget = self._create_dialog_with_widget(
+            title, bundle, widget_class, *args, **kwargs
+        )
 
         # show the dialog:
         dialog.show()
@@ -872,7 +902,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         # way it should.
         if hou.applicationVersion() >= (16, 0, 0):
             dialog.parent().setStyleSheet(dialog.parent().styleSheet())
-        
+
         # lastly, return the instantiated widget
         return widget
 
@@ -889,7 +919,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             parent=self._get_dialog_parent(),
             caption="Save As",
             directory=hou.hipFile.path(),
-            filter="Houdini Files (*.hip, *.hipnc)"
+            filter="Houdini Files (*.hip, *.hipnc)",
         )
         file_dialog.setLabelText(QtGui.QFileDialog.Accept, "Save")
         file_dialog.setLabelText(QtGui.QFileDialog.Reject, "Cancel")
@@ -928,12 +958,12 @@ class HoudiniEngine(sgtk.platform.Engine):
                 # try to get a hold of the main window. it seems to be the only
                 # one with windowIconText set. There should be a better way to
                 # do this.
-                if (widget.isWindow() and
-                        not isinstance(widget, QtGui.QDialog) and
-                        widget.windowIconText()):
+                if (
+                    widget.isWindow()
+                    and not isinstance(widget, QtGui.QDialog)
+                    and widget.windowIconText()
+                ):
                     parent = widget
 
-        self.logger.debug(
-            "Found top level widget %s for dialog parenting" % (parent,))
+        self.logger.debug("Found top level widget %s for dialog parenting" % (parent,))
         return parent
-
