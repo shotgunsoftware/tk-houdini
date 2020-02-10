@@ -89,9 +89,10 @@ f = urllib2.urlopen('http://www.python.org/')
 # complex proxies  XXX not sure what exactly was meant by this
 # abstract factory for opener
 
+from __future__ import absolute_import
 import base64
 import hashlib
-import httplib
+from python.packages import httplib
 import mimetools
 import os
 import posixpath
@@ -100,9 +101,12 @@ import re
 import socket
 import sys
 import time
-import urlparse
+import six.moves.urllib.parse
 import bisect
 import warnings
+import six
+from six.moves import map
+from six.moves import range
 
 try:
     from cStringIO import StringIO
@@ -114,20 +118,16 @@ from urllib import (
     unquote,
     splittype,
     splithost,
-    quote,
     addinfourl,
     splitport,
     splittag,
-    toBytes,
     splitattr,
     ftpwrapper,
     splituser,
     splitpasswd,
     splitvalue,
 )
-
-# support for FileHandler, proxies via environment variables
-from urllib import localhost, url2pathname, getproxies, proxy_bypass
+from six.moves.urllib.request import url2pathname
 
 # used in User-Agent header sent
 __version__ = sys.version[:3]
@@ -209,7 +209,7 @@ def request_host(request):
 
     """
     url = request.get_full_url()
-    host = urlparse.urlparse(url)[1]
+    host = six.moves.urllib.parse.urlparse(url)[1]
     if host == "":
         host = request.get_header("Host", "")
 
@@ -250,7 +250,7 @@ class Request:
             if hasattr(Request, "get_" + name):
                 getattr(self, "get_" + name)()
                 return getattr(self, attr)
-        raise AttributeError, attr
+        raise AttributeError(attr)
 
     def get_method(self):
         if self.has_data():
@@ -279,7 +279,7 @@ class Request:
         if self.type is None:
             self.type, self.__r_type = splittype(self.__original)
             if self.type is None:
-                raise ValueError, "unknown url type: %s" % self.__original
+                raise ValueError("unknown url type: %s" % self.__original)
         return self.type
 
     def get_host(self):
@@ -329,7 +329,7 @@ class Request:
     def header_items(self):
         hdrs = self.unredirected_hdrs.copy()
         hdrs.update(self.headers)
-        return hdrs.items()
+        return list(hdrs.items())
 
 
 class OpenerDirector:
@@ -408,7 +408,7 @@ class OpenerDirector:
 
     def open(self, fullurl, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
         # accept a URL or a Request object
-        if isinstance(fullurl, basestring):
+        if isinstance(fullurl, six.string_types):
             req = Request(fullurl, data)
         else:
             req = fullurl
@@ -482,10 +482,9 @@ def build_opener(*handlers):
     If any of the handlers passed as arguments are subclasses of the
     default handlers, the default handlers will not be used.
     """
-    import types
 
     def isclass(obj):
-        return isinstance(obj, (types.ClassType, type))
+        return isinstance(obj, (type, type))
 
     opener = OpenerDirector()
     default_classes = [
@@ -624,13 +623,13 @@ class HTTPRedirectHandler(BaseHandler):
             return
 
         # fix a possible malformed URL
-        urlparts = urlparse.urlparse(newurl)
+        urlparts = six.moves.urllib.parse.urlparse(newurl)
         if not urlparts.path:
             urlparts = list(urlparts)
             urlparts[2] = "/"
-        newurl = urlparse.urlunparse(urlparts)
+        newurl = six.moves.urllib.parse.urlunparse(urlparts)
 
-        newurl = urlparse.urljoin(req.get_full_url(), newurl)
+        newurl = six.moves.urllib.parse.urljoin(req.get_full_url(), newurl)
 
         # For security reasons we do not allow redirects to protocols
         # other than HTTP, HTTPS or FTP.
@@ -813,7 +812,7 @@ class HTTPPasswordMgr:
 
     def add_password(self, realm, uri, user, passwd):
         # uri could be a single URI or a sequence
-        if isinstance(uri, basestring):
+        if isinstance(uri, six.string_types):
             uri = [uri]
         if not realm in self.passwd:
             self.passwd[realm] = {}
@@ -825,7 +824,7 @@ class HTTPPasswordMgr:
         domains = self.passwd.get(realm, {})
         for default_port in True, False:
             reduced_authuri = self.reduce_uri(authuri, default_port)
-            for uris, authinfo in domains.iteritems():
+            for uris, authinfo in six.iteritems(domains):
                 for uri in uris:
                     if self.is_suburi(uri, reduced_authuri):
                         return authinfo
@@ -834,7 +833,7 @@ class HTTPPasswordMgr:
     def reduce_uri(self, uri, default_port=True):
         """Accept authority or URI and extract only the authority and path."""
         # note HTTP URLs do not have a userinfo component
-        parts = urlparse.urlsplit(uri)
+        parts = six.moves.urllib.parse.urlsplit(uri)
         if parts[1]:
             # URI
             scheme = parts[0]
@@ -1137,7 +1136,7 @@ class HTTPDigestAuthHandler(BaseHandler, AbstractDigestAuthHandler):
     handler_order = 490  # before Basic auth
 
     def http_error_401(self, req, fp, code, msg, headers):
-        host = urlparse.urlparse(req.get_full_url())[1]
+        host = six.moves.urllib.parse.urlparse(req.get_full_url())[1]
         retry = self.http_error_auth_reqed("www-authenticate", host, req, headers)
         self.reset_retry_count()
         return retry
@@ -1278,10 +1277,10 @@ if hasattr(httplib, "HTTPS"):
 
 class HTTPCookieProcessor(BaseHandler):
     def __init__(self, cookiejar=None):
-        import cookielib
+        import six.moves.http_cookiejar
 
         if cookiejar is None:
-            cookiejar = cookielib.CookieJar()
+            cookiejar = six.moves.http_cookiejar.CookieJar()
         self.cookiejar = cookiejar
 
     def http_request(self, request):
@@ -1455,7 +1454,7 @@ class FTPHandler(BaseHandler):
             raise URLError(msg)
         path, attrs = splitattr(req.get_selector())
         dirs = path.split("/")
-        dirs = map(unquote, dirs)
+        dirs = list(map(unquote, dirs))
         dirs, file = dirs[:-1], dirs[-1]
         if dirs and not dirs[0]:
             dirs = dirs[1:]
@@ -1477,7 +1476,7 @@ class FTPHandler(BaseHandler):
             headers = mimetools.Message(sf)
             return addinfourl(fp, headers, req.get_full_url())
         except ftplib.all_errors as msg:
-            raise URLError, ("ftp error: %s" % msg), sys.exc_info()[2]
+            six.reraise(URLError, ("ftp error: %s" % msg), sys.exc_info()[2])
 
     def connect_ftp(self, user, passwd, host, port, dirs, timeout):
         fw = ftpwrapper(user, passwd, host, port, dirs, timeout, persistent=False)
