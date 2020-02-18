@@ -1,11 +1,11 @@
 # Copyright (c) 2017 Shotgun Software Inc.
-# 
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
@@ -18,11 +18,11 @@ HookBaseClass = sgtk.get_hook_baseclass()
 _HOUDINI_OUTPUTS = {
     # rops
     hou.ropNodeTypeCategory(): {
-        "alembic": "filename",    # alembic cache
-        "comp": "copoutput",      # composite
-        "ifd": "vm_picture",      # mantra render node
-        "opengl": "picture",      # opengl render
-        "wren": "wr_picture",     # wren wireframe
+        "alembic": "filename",  # alembic cache
+        "comp": "copoutput",  # composite
+        "ifd": "vm_picture",  # mantra render node
+        "opengl": "picture",  # opengl render
+        "wren": "wr_picture",  # wren wireframe
     },
 }
 
@@ -62,10 +62,10 @@ class HoudiniSessionCollector(HookBaseClass):
                 "type": "template",
                 "default": None,
                 "description": "Template path for artist work files. Should "
-                               "correspond to a template defined in "
-                               "templates.yml. If configured, is made available"
-                               "to publish plugins via the collected item's "
-                               "properties. ",
+                "correspond to a template defined in "
+                "templates.yml. If configured, is made available"
+                "to publish plugins via the collected item's "
+                "properties. ",
             },
         }
 
@@ -120,18 +120,11 @@ class HoudiniSessionCollector(HookBaseClass):
 
         # create the session item for the publish hierarchy
         session_item = parent_item.create_item(
-            "houdini.session",
-            "Houdini File",
-            display_name
+            "houdini.session", "Houdini File", display_name
         )
 
         # get the icon path to display for this item
-        icon_path = os.path.join(
-            self.disk_location,
-            os.pardir,
-            "icons",
-            "houdini.png"
-        )
+        icon_path = os.path.join(self.disk_location, os.pardir, "icons", "houdini.png")
         session_item.set_icon_from_path(icon_path)
 
         # if a work template is defined, add it to the item properties so that
@@ -139,7 +132,8 @@ class HoudiniSessionCollector(HookBaseClass):
         work_template_setting = settings.get("Work Template")
         if work_template_setting:
             work_template = publisher.engine.get_template_by_name(
-                work_template_setting.value)
+                work_template_setting.value
+            )
 
             # store the template on the item for use by publish plugins. we
             # can't evaluate the fields here because there's no guarantee the
@@ -147,8 +141,7 @@ class HoudiniSessionCollector(HookBaseClass):
             # the attached publish plugins will need to resolve the fields at
             # execution time.
             session_item.properties["work_template"] = work_template
-            self.logger.debug(
-                "Work template defined for Houdini collection.")
+            self.logger.debug("Work template defined for Houdini collection.")
 
         self.logger.info("Collected current Houdini session")
         return session_item
@@ -193,14 +186,13 @@ class HoudiniSessionCollector(HookBaseClass):
                         continue
 
                     self.logger.info(
-                        "Processing %s node: %s" % (node_type, node.path()))
+                        "Processing %s node: %s" % (node_type, node.path())
+                    )
 
                     # allow the base class to collect and create the item. it
                     # should know how to handle the output path
                     item = super(HoudiniSessionCollector, self)._collect_file(
-                        parent_item,
-                        path,
-                        frame_sequence=True
+                        parent_item, path, frame_sequence=True
                     )
 
                     # the item has been created. update the display name to
@@ -230,7 +222,7 @@ class HoudiniSessionCollector(HookBaseClass):
 
         try:
             tk_alembic_nodes = alembicnode_app.get_nodes()
-        except AttributeError, e:
+        except AttributeError:
             self.logger.warning(
                 "Unable to query the session for tk-houdini-alembicnode "
                 "instances. It looks like perhaps an older version of the "
@@ -250,13 +242,13 @@ class HoudiniSessionCollector(HookBaseClass):
             if not os.path.exists(out_path):
                 continue
 
-            self.logger.info(
-                "Processing sgtk_alembic node: %s" % (node.path(),))
+            self.logger.info("Processing sgtk_alembic node: %s" % (node.path(),))
 
             # allow the base class to collect and create the item. it
             # should know how to handle the output path
             item = super(HoudiniSessionCollector, self)._collect_file(
-                parent_item, out_path)
+                parent_item, out_path
+            )
 
             # the item has been created. update the display name to
             # include the node path to make it clear to the user how it
@@ -290,7 +282,7 @@ class HoudiniSessionCollector(HookBaseClass):
 
         try:
             tk_mantra_nodes = mantranode_app.get_nodes()
-        except AttributeError, e:
+        except AttributeError:
             self.logger.warning(
                 "Unable to query the session for tk-houdini-mantranode "
                 "instances. It looks like perhaps an older version of the "
@@ -310,15 +302,12 @@ class HoudiniSessionCollector(HookBaseClass):
             if not os.path.exists(out_path):
                 continue
 
-            self.logger.info(
-                "Processing sgtk_mantra node: %s" % (node.path(),))
+            self.logger.info("Processing sgtk_mantra node: %s" % (node.path(),))
 
             # allow the base class to collect and create the item. it
             # should know how to handle the output path
             item = super(HoudiniSessionCollector, self)._collect_file(
-                parent_item,
-                out_path,
-                frame_sequence=True
+                parent_item, out_path, frame_sequence=True
             )
 
             # the item has been created. update the display name to

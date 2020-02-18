@@ -23,5 +23,3 @@ the plugin's `python` folder to keep the code duplication to a minimum.
 
 For more information on these standard Houdini files,
 [http://www.sidefx.com/docs/houdini/hom/locations](see the official documentation).
-
-

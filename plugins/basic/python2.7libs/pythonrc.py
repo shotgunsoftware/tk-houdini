@@ -16,6 +16,7 @@ import inspect
 import os
 import sys
 
+
 def plugin_startup():
 
     # construct the path to the plugin root's folder.
@@ -25,9 +26,7 @@ def plugin_startup():
 
     # use inspect to get the current file path since attempts to access
     # __file__ result in a NameError.
-    current_file_path = os.path.abspath(
-        inspect.getsourcefile(lambda: 0)
-    )
+    current_file_path = os.path.abspath(inspect.getsourcefile(lambda: 0))
 
     current_dir_path = os.path.dirname(current_file_path)
     plugin_root_path = os.path.dirname(current_dir_path)
@@ -50,15 +49,14 @@ def plugin_startup():
         # by shotgun_api3. The end result is that shotgun_api3 fails on
         # connect when the address is https with an AttributeError.
         import ssl
+
         if not hasattr(ssl, "_create_default_https_context"):
             # Add the submodule containing httplib to sys.path so that
             # the next time it's imported it'll come from there instead
             # of the system Python install.
             plugins_path = os.path.dirname(plugin_root_path)
             packages_path = os.path.join(
-                os.path.dirname(plugins_path),
-                "python",
-                "packages",
+                os.path.dirname(plugins_path), "python", "packages",
             )
 
             sys.path.insert(0, packages_path)
@@ -77,20 +75,24 @@ def plugin_startup():
     # now that the path is there, we can import the plugin bootstrap logic
     try:
         from tk_houdini_basic import plugin_bootstrap
+
         plugin_bootstrap.bootstrap(plugin_root_path)
-    except Exception, e:
+    except Exception as e:
         import traceback
+
         stack_trace = traceback.format_exc()
 
         message = "Shotgun Toolkit Error: %s" % (e,)
         details = "Error stack trace:\n\n%s" % (stack_trace)
 
         import hou
+
         if hou.isUIAvailable():
             hou.ui.displayMessage(message, details=details)
         else:
-            print message
-            print details
+            print(message)
+            print(details)
+
 
 plugin_startup()
 
@@ -100,4 +102,3 @@ plugin_startup()
 # manipulated sys.path.
 import httplib
 import urllib2
-

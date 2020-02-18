@@ -23,5 +23,5 @@ details = "Current engine: %s" % (sgtk.platform.current_engine(),)
 if hou.isUIAvailable():
     hou.ui.displayMessage(message, details=details)
 else:
-    print message
-    print details
+    print(message)
+    print(details)
