@@ -17,8 +17,8 @@ repos:
     rev: v2.4.0
     hooks:
     # Ensures the code is syntaxically correct
-#    - id: check-ast
-#      language_version: python3
+    - id: check-ast
+      language_version: python3
     # Ensures a file name will resolve on all platform
     - id: check-case-conflict
     # Checks files with the execute bit set have shebangs
