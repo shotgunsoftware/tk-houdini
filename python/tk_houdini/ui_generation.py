@@ -402,6 +402,7 @@ class AppCommandsPanelHandler(AppCommandsUI):
         """Create the registered panels."""
 
         import hou
+        from tank_vendor import six
 
         # this code builds an xml file that defines panel interfaces to be
         # read by houdini. The xml should look something like this:
@@ -467,7 +468,7 @@ class AppCommandsPanelHandler(AppCommandsUI):
             toolbar_menu.set("menu_position", "300")
             toolbar_menu.set("create_separator", "false")
 
-        xml = _format_xml(ET.tostring(root))
+        xml = _format_xml(six.ensure_str(ET.tostring(root)))
         _write_xml(xml, panels_file)
         self._engine.logger.debug("Panels written to: %s" % panels_file)
 
