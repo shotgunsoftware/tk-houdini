@@ -1,0 +1,56 @@
+# Copyright (c) 2019 Shotgun Software Inc.
+#
+# CONFIDENTIAL AND PROPRIETARY
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
+# Source Code License included in this distribution package. See LICENSE.
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
+# not expressly granted therein are reserved by Shotgun Software Inc.
+
+engines:
+  tk-houdini:
+    automatic_context_switch: False
+    location:
+      type: dev
+      path: $SHOTGUN_CURRENT_REPO_ROOT
+
+    apps:
+      tk-multi-workfiles2.asset_step:
+        template_publish: publish_path
+        template_publish_area: publish_area
+        template_work: work_path
+        template_work_area: work_area
+        entities:
+          - caption: Assets
+            entity_type: Asset
+            hierarchy: [sg_asset_type, code]
+            filters:
+            sub_hierarchy:
+              entity_type: Task
+              filters:
+              link_field: entity
+              hierarchy: [step]
+          - caption: Shots
+            entity_type: Shot
+            filters:
+            hierarchy: [sg_sequence, code]
+            sub_hierarchy:
+              entity_type: Task
+              filters:
+              link_field: entity
+              hierarchy: [step]
+        location:
+          path: $SHOTGUN_REPOS_ROOT/tk-multi-workfiles2
+          type: path
+
+frameworks:
+  # We're enumerating all the frameworks here because it's easier to assume everything
+  # is required even if it might not be than doing introspection of what the actual
+  # dependencies are and generating the appropriate config on the fly.
+  tk-framework-shotgunutils_v5.x.x:
+    location: {type: path, path: '$SHOTGUN_REPOS_ROOT/tk-framework-shotgunutils'}
+  tk-framework-qtwidgets_v2.x.x:
+    location: {type: path, path: '$SHOTGUN_REPOS_ROOT/tk-framework-qtwidgets'}
+  tk-framework-shotgunutils_v0.2.x:
+    location: {type: path, path: '$SHOTGUN_REPOS_ROOT/tk-framework-widget'}
