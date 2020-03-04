@@ -82,7 +82,7 @@ class TestHooks(TankTestBase):
         """
         Reset the current scene without prompting the user.
         """
-        hou.hipFile.clear()
+        hou.hipFile.clear(suppress_save_prompt=True)
 
     def _dump_logs(self):
         """

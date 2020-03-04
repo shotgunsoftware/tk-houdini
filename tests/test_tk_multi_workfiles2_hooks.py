@@ -8,15 +8,12 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-import os
 import hou
 
 # Required so that the SHOTGUN_HOME env var will be set
 from tank_test.tank_test_base import setUpModule  # noqa
 
 from test_hooks_base import TestHooks
-
-import sgtk
 
 
 class TestWorkfiles2Hooks(TestHooks):
@@ -32,9 +29,6 @@ class TestWorkfiles2Hooks(TestHooks):
         self.scene_operation = self.app.import_module(
             "tk_multi_workfiles"
         ).scene_operation
-
-    # def test_reset(self):
-    #     sgtk.platform.change_context(self._asset_task_ctx)
 
     def test_reset(self):
 
@@ -52,7 +46,7 @@ class TestWorkfiles2Hooks(TestHooks):
 
     def test_get_current_path(self):
 
-        # Create a temporary scene file, so we can test the reset works.
+        # Create a temporary scene file, so we can test that we can get the current path to it.
         created_file = self._create_file("temp.hip")
         # Make sure the scene file we created matches what Houdini believes to be the scene file.
         self.assertEqual(hou.hipFile.name(), created_file)
@@ -74,16 +68,32 @@ class TestWorkfiles2Hooks(TestHooks):
         save_path = self._get_new_file_path("cat.hip")
 
         # test saving a new file.
-        result = self.scene_operation.save_file(
+        self.scene_operation.save_file(
             self.app,
             self.scene_operation.NEW_FILE_ACTION,
             self.engine.context,
             path=save_path,
         )
-        self.assertEqual(result, save_path)
-        self.assertEqual(result, hou.hipFile.name())
+        self.assertEqual(save_path, hou.hipFile.name())
 
         # Now test saving over the same file.
         self.scene_operation.save_file(
             self.app, self.scene_operation.NEW_FILE_ACTION, self.engine.context
         )
+
+    def test_open_file(self):
+        # Create a temporary scene file, which will reopen after a reset.
+        created_file = self._create_file("dog.v001.hip")
+
+        # Reset the scene so it is empty in preparation for opening the file we just saved.
+        self._reset_scene()
+
+        self.scene_operation.open_file(
+            self.app,
+            self.scene_operation.NEW_FILE_ACTION,
+            self.engine.context,
+            created_file,
+            1,
+            False,
+        )
+        self.assertEqual(created_file, hou.hipFile.name())

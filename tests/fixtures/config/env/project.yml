@@ -18,6 +18,17 @@ engines:
     apps:
       tk-multi-workfiles2:
         location: {'type': 'dev', 'path': '$SHOTGUN_REPOS_ROOT/tk-multi-workfiles2'}
+      tk-multi-loader2:
+        action_mappings:
+          Alembic Cache: [import]
+          Houdini Scene: [merge]
+          Image: [file_cop]
+          Photoshop Image: [file_cop]
+          Rendered Image: [file_cop]
+          Texture: [file_cop]
+        location:
+          type: 'dev'
+          path: '$SHOTGUN_REPOS_ROOT/tk-multi-loader2'
 
 frameworks:
   tk-framework-shotgunutils_v5.x.x:
