@@ -33,7 +33,7 @@ class TestWorkfiles2Hooks(TestHooks):
     def test_reset(self):
 
         # Create a temporary scene file, so we can test the reset works.
-        created_file = self._create_file("temp.hip")
+        created_file = self._create_file("temp")
         # Make sure the scene file we created matches what Houdini believes to be the scene file.
         self.assertEqual(hou.hipFile.name(), created_file)
 
@@ -47,7 +47,7 @@ class TestWorkfiles2Hooks(TestHooks):
     def test_get_current_path(self):
 
         # Create a temporary scene file, so we can test that we can get the current path to it.
-        created_file = self._create_file("temp.hip")
+        created_file = self._create_file("temp")
         # Make sure the scene file we created matches what Houdini believes to be the scene file.
         self.assertEqual(hou.hipFile.name(), created_file)
 
@@ -65,7 +65,7 @@ class TestWorkfiles2Hooks(TestHooks):
         self.assertEqual(result, None)
 
     def test_save_file(self):
-        save_path = self._get_new_file_path("cat.hip")
+        save_path = self._get_new_file_path("work_path", "cat")
 
         # test saving a new file.
         self.scene_operation.save_file(
@@ -83,7 +83,7 @@ class TestWorkfiles2Hooks(TestHooks):
 
     def test_open_file(self):
         # Create a temporary scene file, which will reopen after a reset.
-        created_file = self._create_file("dog.v001.hip")
+        created_file = self._create_file("dog")
 
         # Reset the scene so it is empty in preparation for opening the file we just saved.
         self._reset_scene()

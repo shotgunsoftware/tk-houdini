@@ -39,6 +39,8 @@ keys:
         type: str
         shotgun_entity_type: HumanUser
         shotgun_field_name: login
+    timestamp:
+        type: str
 
 
 paths:
@@ -52,7 +54,7 @@ paths:
         definition: '@asset_root/work'
 
     work_path:
-        definition: '@work_area/{Task}/{name}.v{version}.ma'
+        definition: '@work_area/{Task}/{name}.v{version}.hip'
 
     # define the location of a publish area
     publish_area:
@@ -60,9 +62,12 @@ paths:
 
     # The location of published maya files
     publish_path:
-        definition: '@publish_area/{name}.v{version}.ma'
+        definition: '@publish_area/{name}.v{version}.hip'
+
+    snapshot:
+        definition: '@asset_root/{Task}/snapshots/{name}.v{version}.{timestamp}.hip'
 
     sandbox_path:
-        definition: '@work_area/{user}/{name}.v{version}.ma'
+        definition: '@work_area/{user}/{name}.v{version}.hip'
 
 strings: []

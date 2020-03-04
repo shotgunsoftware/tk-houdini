@@ -40,19 +40,6 @@ class TestHooks(TankTestBase):
 
         self.project_dir = os.path.join(self.tank_temp, self.short_test_name)
 
-        # Start the engine and ensure it is destroyed
-        self.context = self.tk.context_from_entity("Project", self.project["id"])
-        self.engine = sgtk.platform.start_engine("tk-houdini", self.tk, self.context)
-        self.addCleanup(self.engine.destroy)
-
-        # Capture all logs emitted by the engine!
-        self._logs = []
-        patcher = mock.patch.object(
-            self.engine, "_emit_log_message", side_effect=self._emit_log
-        )
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
         # Create an asset with a concept task.
         self._asset = self.mockgun.create(
             "Asset",
@@ -71,6 +58,20 @@ class TestHooks(TankTestBase):
             },
         )
         self._asset_task_ctx = self.create_context(self._task)
+
+        # Start the engine and ensure it is destroyed
+        self.engine = sgtk.platform.start_engine(
+            "tk-houdini", self.tk, self._asset_task_ctx
+        )
+        self.addCleanup(self.engine.destroy)
+
+        # Capture all logs emitted by the engine!
+        self._logs = []
+        patcher = mock.patch.object(
+            self.engine, "_emit_log_message", side_effect=self._emit_log
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def _emit_log(self, handler, record):
         """
@@ -114,20 +115,30 @@ class TestHooks(TankTestBase):
         self.tk.create_filesystem_structure(entity["type"], entity["id"])
         return context
 
-    def _get_new_file_path(self, filename):
+    def _get_new_file_path(self, template, filename, version=1):
         """
         Returns a temporary path with the filename added on the end.
         :param filename:
         :return: str
         """
-        return os.path.join(self.project_dir, filename)
+        template = self.tk.templates[template]
 
-    def _create_file(self, filename):
+        # now use the context to resolve as many of the template fields as possible
+        fields = self.engine.context.as_template_fields(template)
+
+        # now manually resolve the remaining fields that can't be figured out automatically from context
+        fields["name"] = filename
+        fields["version"] = version
+
+        # now resolve the template path using the field values.
+        return template.apply_fields(fields)
+
+    def _create_file(self, filename, template="work_path"):
         """
         Create a file in the given project folder.
         """
 
-        file_path = self._get_new_file_path(filename)
+        file_path = self._get_new_file_path(template, filename)
         hou.hipFile.save(file_name=file_path, save_to_recent_files=True)
 
         self.assertTrue(os.path.exists(file_path))

@@ -18,7 +18,4 @@ from tank import get_hook_baseclass
 
 class PickEnvironment(get_hook_baseclass()):
     def execute(self, context, **kwargs):
-        if context.task is None:
-            return "project"
-        else:
-            return "task"
+        return "task"

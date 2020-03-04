@@ -8,15 +8,12 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-import os
 import hou
 
 # Required so that the SHOTGUN_HOME env var will be set
 from tank_test.tank_test_base import setUpModule  # noqa
 
 from test_hooks_base import TestHooks
-
-import sgtk
 
 
 class TestLoader2Hooks(TestHooks):
@@ -50,7 +47,7 @@ class TestLoader2Hooks(TestHooks):
                 "link_type": "local",
             },
         }
-        return [{"sg_publish_data": sg_data, "name": action, "params": None,}]
+        return [{"sg_publish_data": sg_data, "name": action, "params": None}]
 
     def _publish_type_actions(self, publish_type):
         publish = {
@@ -83,7 +80,7 @@ class TestLoader2Hooks(TestHooks):
         # Make sure the node was created.
         self.assertNotEqual(hou.node("/obj/sphere_1"), None)
         # Now save the scene in a file we can later merge in
-        file_path = self._create_file("robot.hip")
+        file_path = self._create_file("robot")
 
         # Reset the scene so that we won't get a pop up asking if we want to save changes, when we merge.
         self._reset_scene()
