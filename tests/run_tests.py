@@ -8,11 +8,6 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-
-# import sys
-# sys.path.append("/Users/philips1/source_code/tk-houdini/tests")
-# import run_tests
-
 import os
 import sys
 
@@ -34,7 +29,6 @@ with open(activate_this_py, "rt") as f:
 
 
 import pytest
-import mock
 
 # We need to patch a couple of things to make pytest and argparse happy.
 # argparse doesn't like it when argv is empty.
