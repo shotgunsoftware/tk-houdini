@@ -18,7 +18,7 @@ from test_hooks_base import TestHooks
 
 class TestLoader2Hooks(TestHooks):
     """
-    Tests the workfiles2 hooks.
+    Tests the loader2 hooks.
     """
 
     def setUp(self):
@@ -33,6 +33,9 @@ class TestLoader2Hooks(TestHooks):
         self.action_manager = action_manager_module.LoaderActionManager()
 
     def _generate_actions_for_execution(self, file_path, publish_type, action):
+        """
+        Generates a list containing one action, in a format that the Loader would usually create internally.
+        """
         sg_data = {
             "id": 1,
             "published_file_type": {"type": "PublishedFileType", "name": publish_type},
@@ -50,6 +53,9 @@ class TestLoader2Hooks(TestHooks):
         return [{"sg_publish_data": sg_data, "name": action, "params": None}]
 
     def _publish_type_actions(self, publish_type):
+        """
+        Runs the Loader's get actions hook, generating actions for the passed PublishedFileType.
+        """
         publish = {
             "published_file_type": {"type": "PublishedFileType", "name": publish_type}
         }
@@ -58,12 +64,19 @@ class TestLoader2Hooks(TestHooks):
         )
 
     def _generate_actions(self, publish_type, action):
-        # Test that given an Alembic PublishedFile it will generate a single action for import
+        """
+        Checks that given a PublishedFileType, it will generate an action that matches the passed action.
+        """
+        # Test that given a PublishedFileType it will generate a single action for import
         actions = self._publish_type_actions(publish_type)
         self.assertTrue(len(actions) == 1)
         self.assertTrue(actions[0]["name"] == action)
 
     def test_generate_actions(self):
+        """
+        Tests that the various default Houdini Loader actions a generated when passed a PublishedFile with the
+        appropriate PublishedFileType.
+        """
         tests = [
             ("Alembic Cache", "import"),
             ("Houdini Scene", "merge"),
@@ -74,6 +87,9 @@ class TestLoader2Hooks(TestHooks):
             self._generate_actions(pub_type, action)
 
     def test_execute_merge_action(self):
+        """
+        Tests merging in a Houdini file action.
+        """
         # Create a node in the current scene.
         hou.node("/obj").createNode("geo", "sphere_1")
 

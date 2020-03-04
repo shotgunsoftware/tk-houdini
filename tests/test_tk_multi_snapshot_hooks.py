@@ -19,7 +19,7 @@ from test_hooks_base import TestHooks
 
 class TestSnapShotHooks(TestHooks):
     """
-    Tests the workfiles2 hooks.
+    Tests the tk-multi-snapshot hooks.
     """
 
     def setUp(self):
@@ -29,6 +29,9 @@ class TestSnapShotHooks(TestHooks):
         self.app = self.engine.apps["tk-multi-snapshot"]
 
     def test_create_snapshot(self):
+        """
+        Tests getting the current work path and saving a snapshot, using the snapshot app's API.
+        """
         # This tests both the saving an getting of the current work path operations in the scene operations hook.
         self._create_file("ufo")
 
@@ -42,6 +45,9 @@ class TestSnapShotHooks(TestHooks):
         self.assertTrue(os.path.exists(snapshot_path))
 
     def test_load_snapshot(self):
+        """
+        Tests loading a snapshot, there is no API method for this, so we are calling internal app functions.
+        """
         # Create a file for the test to load.
         file_path = self._create_file("banana")
         # Reset the scene so it won't prompt the test to save.

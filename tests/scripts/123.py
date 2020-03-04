@@ -20,6 +20,8 @@ current_file_path = os.path.abspath(inspect.getsourcefile(lambda: 0))
 
 sys.path.append(os.path.join(os.path.dirname(current_file_path), ".."))
 
+# Importing this will run the tests.
 import run_tests  # noqa
 
+# Shut Houdini down after the tests have run.
 hou.exit(exit_code=0, suppress_save_prompt=True)

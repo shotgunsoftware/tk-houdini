@@ -18,7 +18,7 @@ from test_hooks_base import TestHooks
 
 class TestFrameRangeHooks(TestHooks):
     """
-    Tests the workfiles2 hooks.
+    Tests the tk-multi-setframerange hooks.
     """
 
     def setUp(self):
@@ -27,6 +27,10 @@ class TestFrameRangeHooks(TestHooks):
         self.app = self.engine.apps["tk-multi-setframerange"]
 
     def test_get_frame_range(self):
+        """
+        Ensures that the frame range can be gathered correctly from Houdini by the hook.
+        We can use the app's API for this.
+        """
         # Set the frame range so that we can test that we get the same range back, let not rely on the default range
         # in case it differs from setup to setup.
         start = 10
@@ -39,6 +43,9 @@ class TestFrameRangeHooks(TestHooks):
         self.assertEqual(end, cur_end)
 
     def test_set_frame_range(self):
+        """
+        Ensures that the frame range is set correctly by the hook. We can use the app's API for this.
+        """
         # Set the frame range so that we can test that we get the same range back, let not rely on the default range
         # in case it differs from setup to setup.
         start = 20

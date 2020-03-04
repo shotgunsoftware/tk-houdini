@@ -31,6 +31,9 @@ class TestWorkfiles2Hooks(TestHooks):
         ).scene_operation
 
     def test_reset(self):
+        """
+        Tests the scene operation hooks reset operation.
+        """
 
         # Create a temporary scene file, so we can test the reset works.
         created_file = self._create_file("temp")
@@ -45,6 +48,9 @@ class TestWorkfiles2Hooks(TestHooks):
         self.assertEqual(hou.hipFile.name(), "untitled.hip")
 
     def test_get_current_path(self):
+        """
+        Tests the scene operation hooks current_path operation.
+        """
 
         # Create a temporary scene file, so we can test that we can get the current path to it.
         created_file = self._create_file("temp")
@@ -57,14 +63,20 @@ class TestWorkfiles2Hooks(TestHooks):
         self.assertEqual(hou.hipFile.name(), result)
 
     def test_prepare_new_scene(self):
-        # The Houdini hook doesn't implement any code for the prepare_new_scene operation, so
-        # it should just return None and not fail.
+        """
+        Tests the scene operation hooks prepare_new operation.
+        The Houdini hook doesn't implement any code for the prepare_new_scene operation, so
+        it should just return None and not fail.
+        """
         result = self.scene_operation.prepare_new_scene(
             self.app, self.scene_operation.NEW_FILE_ACTION, self.engine.context
         )
         self.assertEqual(result, None)
 
     def test_save_file(self):
+        """
+        Tests the scene operation hooks save operation.
+        """
         save_path = self._get_new_file_path("work_path", "cat")
 
         # test saving a new file.
@@ -82,7 +94,9 @@ class TestWorkfiles2Hooks(TestHooks):
         )
 
     def test_open_file(self):
-        # Create a temporary scene file, which will reopen after a reset.
+        """
+        Tests the scene operation hooks open operation.
+        """
         created_file = self._create_file("dog")
 
         # Reset the scene so it is empty in preparation for opening the file we just saved.

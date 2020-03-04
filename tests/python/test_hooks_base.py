@@ -9,10 +9,7 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
-import pprint
 import hou
-
-import mock
 
 import sgtk
 
@@ -32,13 +29,11 @@ class TestHooks(TankTestBase):
         super(TestHooks, self).setUp()
         self.setup_fixtures()
 
-        # Cleanup the scene before the test run so we don't get poluted with
+        # Cleanup the scene before the test run so we don't get polluted with
         # the current scene content.
         self._reset_scene()
         # Always cleanup the scene after tests have run to have a clean slate.
         self.addCleanup(self._reset_scene)
-
-        self.project_dir = os.path.join(self.tank_temp, self.short_test_name)
 
         # Create an asset with a concept task.
         self._asset = self.mockgun.create(
@@ -65,44 +60,11 @@ class TestHooks(TankTestBase):
         )
         self.addCleanup(self.engine.destroy)
 
-        # Capture all logs emitted by the engine!
-        self._logs = []
-        patcher = mock.patch.object(
-            self.engine, "_emit_log_message", side_effect=self._emit_log
-        )
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
-    def _emit_log(self, handler, record):
-        """
-        Accumulate logs.
-        """
-        self._logs.append(record)
-
     def _reset_scene(self):
         """
         Reset the current scene without prompting the user.
         """
         hou.hipFile.clear(suppress_save_prompt=True)
-
-    def _dump_logs(self):
-        """
-        Prints all the logs. Used for debugging.
-        """
-        pprint.pprint([l.msg for l in self._logs])
-
-    def _find_log_action(self, msg):
-        """
-        Retrieve the log action attached to a message matching the passed in substring.
-
-        :param str msg: Substring to match.
-
-        :returns: The dictionary of the action.
-        """
-        for record in self._logs:
-            if msg in record.msg:
-                return record.action_button
-        raise RuntimeError("Could not find message '{0}'".format(msg))
 
     def create_context(self, entity):
         """
@@ -117,25 +79,24 @@ class TestHooks(TankTestBase):
 
     def _get_new_file_path(self, template, filename, version=1):
         """
-        Returns a temporary path with the filename added on the end.
-        :param filename:
-        :return: str
+        Returns a path generated from a template.
         """
         template = self.tk.templates[template]
 
-        # now use the context to resolve as many of the template fields as possible
+        # Use the context to resolve as many of the template fields as possible.
         fields = self.engine.context.as_template_fields(template)
 
-        # now manually resolve the remaining fields that can't be figured out automatically from context
+        # Manually resolve the remaining fields that can't be figured out automatically from context.
         fields["name"] = filename
         fields["version"] = version
 
-        # now resolve the template path using the field values.
+        # Resolve the template path using the field values.
         return template.apply_fields(fields)
 
     def _create_file(self, filename, template="work_path"):
         """
-        Create a file in the given project folder.
+        Create a file in the project folder. By default it will create file matching the `work_path`
+        template unless a template is specified.
         """
 
         file_path = self._get_new_file_path(template, filename)

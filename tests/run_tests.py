@@ -21,13 +21,13 @@ __file__ = os.path.abspath(__file__)
 tests_folder = os.path.abspath(os.path.dirname(__file__))
 repo_root = os.path.dirname(tests_folder)
 
-
+# Load the right environment based on the Python version.
 if sys.version_info.major == 2:
     venv_folder = "venv_py2"
 else:
     venv_folder = "venv_py3"
 
-# Activate the virtual environment required to run test tests in 3dsmax.
+# Activate the virtual environment required to run test tests in Houdini.
 activate_this_py = os.path.join(tests_folder, venv_folder, "bin", "activate_this.py")
 with open(activate_this_py, "rt") as f:
     exec(f.read(), {"__file__": activate_this_py})
@@ -37,10 +37,8 @@ import pytest
 import mock
 
 # We need to patch a couple of things to make pytest and argparse happy.
-# argparse doesn't like it when argv is empty, which is what happens when
-# running a script in Max, so create a believable argv and set it.
-argv = [
-    "pytest",
+# argparse doesn't like it when argv is empty.
+args = [
     "--capture",
     "no",
     "--cov",
@@ -51,13 +49,12 @@ argv = [
     "--ignore=tests/venv_py2/*",
     "--ignore=tests/venv_py3/*",
 ]
-# Patch argv
-with mock.patch.object(sys, "argv", argv, create=True):
-    current_dir = os.getcwd()
-    # It appears the path specified inside coveragerc is relative
-    # to the current working directly and not the test root,
-    # so we're going to change the current directory.
-    os.chdir(repo_root)
-    # pytest expects the arguments and not the name of the executable
-    # to be passed in.
-    pytest.main(argv[1:])
+
+current_dir = os.getcwd()
+# It appears the path specified inside coveragerc is relative
+# to the current working directly and not the test root,
+# so we're going to change the current directory.
+os.chdir(repo_root)
+# pytest expects the arguments and not the name of the executable
+# to be passed in.
+pytest.main(args)
