@@ -8,4 +8,4 @@ To run these tests, you need to do the following (tested on Mac)
 3. Install all dependencies needed for the test: `pip install -r requirements.txt`.
 
 4. In the command line, set the `HOUDINI_PATH` env var to point to this test folder: `export HOUDINI_PATH="/Users/philips1/source_code/tk-houdini/tests;&"` (make sure you include the `;&` at the end and wrap the value in quotes.)
-5. Launch Houdini via the same terminal you set the env var in, eg: `/Applications/Houdini/Houdini18.0.392/Houdini\ FX\ 18.0.392.app/Contents/MacOS/houdini`. It should then run thee tests and dump the output to the shell and then close Houdini automatically.
+5. Launch Houdini via the same terminal you set the env var in, eg: `/Applications/Houdini/Houdini18.0.392/Houdini\ FX\ 18.0.392.app/Contents/MacOS/houdini`. It should then run the tests and dump the output to the shell and then close Houdini automatically.
