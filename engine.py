@@ -13,7 +13,7 @@ A Houdini engine for Tank.
 """
 
 import os
-import sys
+import re
 import ctypes
 import shutil
 import time
@@ -225,7 +225,7 @@ class HoudiniEngine(sgtk.platform.Engine):
 
             # Setup the OTLs that need to be loaded for the Toolkit apps
             def _load_otls():
-                self._load_otls(oplibrary_path)
+                self._load_app_otls(oplibrary_path)
 
             # We have the same problem here on Windows that we have above with
             # the population of the shelf. If we defer the execution of the otl
@@ -501,24 +501,105 @@ class HoudiniEngine(sgtk.platform.Engine):
         """
         return os.path.join(*args).replace(os.path.sep, "/")
 
-    def _load_otls(self, oplibrary_path):
+    @staticmethod
+    def _is_version_less_or_equal(check_version, base_version):
+        """
+        Checks if the folder version is less than or equal to the current Houdini session version.
+        :param check_version:
+        :param base_version:
+        :return:
+        """
+
+        def version_less_or_equal(v1, v2):
+            # A recursive function that everytime it need to check a lower level in the version tuples
+            # it calls itself again with a sliced the version tuple excluding the first number in the tuple.
+            if v1[0] != "x" and v2[0] != "x":
+                if int(v1[0]) > int(v2[0]):
+                    # We have two numbers and the check number is greater than the base so
+                    # no match, and no need to check lower levels.
+                    return False
+                if int(v1[0]) < int(v2[0]):
+                    # We have two numbers and the check number is less than the base so
+                    # this is a match no need to check deeper
+                    return True
+
+            # Either one of the numbers is "x" or the numbers are the same
+            if len(v1) > 1:
+                # We have more levels so, check another level deeper.
+                # slice off this level so that it will check the next level.
+                return version_less_or_equal(v1[1:], v2[1:])
+            else:
+                # No more levels to check this must be a match since x means any version number.
+                # or the numbers are the same (though this is unlikely as this would mean two identical folders.)
+                return True
+
+        return version_less_or_equal(check_version, base_version)
+
+    def _load_app_otls(self, oplibrary_path):
         """
         Load any OTLs provided by applications.
 
         Look in any application folder for a otls subdirectory and load any .otl
         file from there.
+        :param oplibrary_path: A temporary path that can be used to install otls to
         """
+        houdini_version = hou.applicationVersion()
         for app in self.apps.values():
             otl_path = self._safe_path_join(app.disk_location, "otls")
-            if not os.path.exists(otl_path):
-                continue
+            self._load_otls(otl_path, houdini_version, oplibrary_path)
 
-            for filename in os.listdir(otl_path):
+    def _load_otls(self, otl_path, houdini_version, oplibrary_path):
+        """
+        For a given app otl folder, load any otls files within it.
+        It will also check to see if there are any Houdini version folder inside
+        following the format of "v18.0.0". "x" characters can be used instead of
+        a number to represent any number.
+        """
+        if not os.path.exists(otl_path):
+            return
+
+        def install_otls_from_dir(root_path):
+            for filename in os.listdir(root_path):
+                full_path = self._safe_path_join(root_path, filename)
                 if os.path.splitext(filename)[-1] == ".otl":
-                    path = self._safe_path_join(otl_path, filename).replace(
-                        os.path.sep, "/"
-                    )
+                    path = full_path.replace(os.path.sep, "/")
                     hou.hda.installFile(path, oplibrary_path, True)
+
+        # Check for Houdini version folder containing version specific otl files.
+        version_folder = None
+        for filename in os.listdir(otl_path):
+            full_path = self._safe_path_join(otl_path, filename)
+            if os.path.isdir(full_path):
+                # https://regex101.com/r/3ujhFJ/2
+                # matches folder in the following format vx.x.x where "x" is either
+                # actually an x character or a number.
+                # x means any value.
+                matches = re.search(r"^v(\d+|x).(\d+|x).(\d+|x)$", filename)
+                if matches:
+                    # Now we have a version folder, check to see if the folder version
+                    # is less than or equal to the current Houdini session version,
+                    # as we don't want to use otls for versions higher than our current version,
+                    if self._is_version_less_or_equal(
+                        matches.groups(), houdini_version
+                    ):
+                        # The folder version could be used so we should now check if it is more suitable
+                        # than any folder versions we have previously found. Ultimately we want to
+                        # find a version number folder that as closely matches our current Houdini version.
+                        if version_folder is None or self._is_version_less_or_equal(
+                            version_folder[0], matches.groups()
+                        ):
+                            # Either there is no previous match, in which case set this match
+                            # as the current one to import, or the current match is less than the
+                            # new match, so we should use the new match.
+                            # Don't import yet, wait for all matches to be compared.
+                            version_folder = (matches.groups(), full_path)
+
+        if version_folder:
+            # We found a version specific otl folder install any otls in that.
+            install_otls_from_dir(version_folder[1])
+
+        # Load any otl file directly in the otl folder
+        install_otls_from_dir(otl_path)
 
     def _panels_supported(self):
         """
