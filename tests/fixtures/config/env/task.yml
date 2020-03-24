@@ -1,0 +1,49 @@
+# Copyright (c) 2020 Shotgun Software Inc.
+#
+# CONFIDENTIAL AND PROPRIETARY
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
+# Source Code License included in this distribution package. See LICENSE.
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
+# not expressly granted therein are reserved by Shotgun Software Inc.
+
+engines:
+  tk-houdini:
+    automatic_context_switch: False
+    location:
+      type: 'dev'
+      path: '$SHOTGUN_CURRENT_REPO_ROOT'
+
+    apps:
+      tk-multi-workfiles2:
+        location: {'type': 'dev', 'path': '$SHOTGUN_REPOS_ROOT/tk-multi-workfiles2'}
+      tk-multi-loader2:
+        action_mappings:
+          Alembic Cache: [import]
+          Houdini Scene: [merge]
+          Image: [file_cop]
+          Photoshop Image: [file_cop]
+          Rendered Image: [file_cop]
+          Texture: [file_cop]
+        location:
+          type: 'dev'
+          path: '$SHOTGUN_REPOS_ROOT/tk-multi-loader2'
+      tk-multi-setframerange:
+        location:
+          type: 'dev'
+          path: '$SHOTGUN_REPOS_ROOT/tk-multi-setframerange'
+      tk-multi-snapshot:
+        template_work: work_path
+        template_snapshot: snapshot
+        location:
+          type: 'dev'
+          path: '$SHOTGUN_REPOS_ROOT/tk-multi-snapshot'
+
+frameworks:
+  tk-framework-shotgunutils_v5.x.x:
+    location: {type: path, path: '$SHOTGUN_REPOS_ROOT/tk-framework-shotgunutils'}
+  tk-framework-qtwidgets_v2.x.x:
+    location: {type: path, path: '$SHOTGUN_REPOS_ROOT/tk-framework-qtwidgets'}
+  tk-framework-widget_v0.2.x:
+    location: {type: path, path: '$SHOTGUN_REPOS_ROOT/tk-framework-widget'}

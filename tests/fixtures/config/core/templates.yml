@@ -1,0 +1,73 @@
+# Copyright (c) 2020 Shotgun Software Inc.
+#
+# CONFIDENTIAL AND PROPRIETARY
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
+# Source Code License included in this distribution package. See LICENSE.
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
+# not expressly granted therein are reserved by Shotgun Software Inc.
+
+#
+# This file is one of the central points in the Tank configuration and a counterpart to
+# the folder configuration structure.
+#
+# the folder structure underneath the project folder is used to create folders on disk -
+# templates.yml (this file) refers to those folders. Therefore, the two files need to be
+# in sync. This file contains an overview of all locations that are used in Tank.
+#
+#
+# Whenever an app or an engine refers to a location on disk, it is using a entry defined in
+# this file. For more information, see the Tank Documentation.
+
+keys:
+    Step:
+        type: str
+    name:
+        type: str
+    version:
+        type: int
+        format_spec: "03"
+    Task:
+        type: str
+    sg_asset_type:
+        type: str
+    Asset:
+        type: str
+        exclusions: [Seq, Shot]
+    user:
+        type: str
+        shotgun_entity_type: HumanUser
+        shotgun_field_name: login
+    timestamp:
+        type: str
+
+
+paths:
+
+    # ------------------------------------------------------------------------------------
+    # Asset pipeline
+
+    asset_root: assets/{sg_asset_type}/{Asset}/{Step}
+
+    work_area:
+        definition: '@asset_root/work'
+
+    work_path:
+        definition: '@work_area/{Task}/{name}.v{version}.hip'
+
+    # define the location of a publish area
+    publish_area:
+        definition: '@asset_root/publish'
+
+    # The location of published maya files
+    publish_path:
+        definition: '@publish_area/{name}.v{version}.hip'
+
+    snapshot:
+        definition: '@asset_root/{Task}/snapshots/{name}.v{version}.{timestamp}.hip'
+
+    sandbox_path:
+        definition: '@work_area/{user}/{name}.v{version}.hip'
+
+strings: []

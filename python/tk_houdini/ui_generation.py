@@ -238,6 +238,7 @@ class AppCommandsMenu(AppCommandsUI):
         :param xml_path: The path to the xml file to store the menu definitions
 
         """
+        from tank_vendor import six
 
         # documentation on the dynamic menu xml tags can be found here:
         # http://www.sidefx.com/docs/houdini15.0/basics/config_menus
@@ -296,7 +297,7 @@ class AppCommandsMenu(AppCommandsUI):
         )
 
         # format the xml and write it to disk
-        xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
+        xml = _format_xml(six.ensure_str(ET.tostring(root)))
         _write_xml(xml, xml_path)
         self._engine.logger.debug("Dynamic menu written to: %s" % (xml_path,))
 
@@ -401,6 +402,7 @@ class AppCommandsPanelHandler(AppCommandsUI):
         """Create the registered panels."""
 
         import hou
+        from tank_vendor import six
 
         # this code builds an xml file that defines panel interfaces to be
         # read by houdini. The xml should look something like this:
@@ -466,7 +468,7 @@ class AppCommandsPanelHandler(AppCommandsUI):
             toolbar_menu.set("menu_position", "300")
             toolbar_menu.set("create_separator", "false")
 
-        xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
+        xml = _format_xml(six.ensure_str(ET.tostring(root)))
         _write_xml(xml, panels_file)
         self._engine.logger.debug("Panels written to: %s" % panels_file)
 
@@ -914,21 +916,21 @@ def _jump_to_fs(engine):
     """
     Jump from context to Fs
     """
+    import sgtk
+
     paths = engine.context.filesystem_locations
     for disk_location in paths:
-        # get the setting
-        system = sys.platform
-
-        # run the app
-        if system == "linux2":
+        # build the correct command for the OS
+        if sgtk.util.is_linux():
             cmd = 'xdg-open "%s"' % disk_location
-        elif system == "darwin":
+        elif sgtk.util.is_macos():
             cmd = 'open "%s"' % disk_location
-        elif system == "win32":
+        elif sgtk.util.is_windows():
             cmd = 'cmd.exe /C start "Folder" "%s"' % disk_location
         else:
-            raise Exception("Platform '%s' is not supported." % system)
+            raise Exception("Platform '%s' is not supported." % sys.platform)
 
+        # run the command
         exit_code = os.system(cmd)
         if exit_code != 0:
             engine.logger.error("Failed to launch '%s'!" % cmd)
@@ -1054,7 +1056,7 @@ if engine is None or not hasattr(engine, 'launch_command'):
     if hou.isUIAvailable():
         hou.ui.displayMessage(msg)
     else:
-        print msg
+        print(msg)
 else:
     engine.launch_command('%s')
 """
@@ -1237,5 +1239,5 @@ except Exception as e:
     if engine:
         hou.ui.displayMessage(msg, severity=hou.severityType.Error)
     else:
-        print msg
+        print(msg)
 """

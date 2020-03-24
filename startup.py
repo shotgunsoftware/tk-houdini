@@ -155,7 +155,15 @@ class HoudiniLauncher(SoftwareLauncher):
         self.logger.debug("Using icon path: %s" % (icon_path,))
 
         # all the executable templates for the current OS
-        executable_templates = self.EXECUTABLE_TEMPLATES.get(sys.platform, [])
+        executable_templates = self.EXECUTABLE_TEMPLATES.get(
+            "darwin"
+            if sgtk.util.is_macos()
+            else "win32"
+            if sgtk.util.is_windows()
+            else "linux2"
+            if sgtk.util.is_linux()
+            else []
+        )
 
         # all the discovered executables
         sw_versions = []
