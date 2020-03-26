@@ -577,8 +577,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             if os.path.isdir(full_path):
                 # https://regex101.com/r/3ujhFJ/2
                 # matches folder in the following format vx.x.x where "x" is either
-                # actually an x character or a number.
-                # x means any value.
+                # actually an x character or any number.
                 matches = re.search(r"^v(\d+|x).(\d+|x).(\d+|x)$", filename)
                 if matches:
                     # Now we have a version folder, check to see if the folder version
@@ -589,7 +588,8 @@ class HoudiniEngine(sgtk.platform.Engine):
                     ):
                         # The folder version could be used so we should now check if it is more suitable
                         # than any folder versions we have previously found. Ultimately we want to
-                        # find a version number folder that as closely matches our current Houdini version.
+                        # find a version number folder that is lower but as closely matches
+                        # our current Houdini version.
                         if version_folder is None or self._is_version_less_or_equal(
                             version_folder[0], matches.groups()
                         ):
