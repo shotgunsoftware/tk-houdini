@@ -64,6 +64,9 @@ paths:
     publish_path:
         definition: '@publish_area/{name}.v{version}.hip'
 
+    alembic_cache:
+        definition: '@publish_area/{name}.v{version}.abc'
+
     snapshot:
         definition: '@asset_root/{Task}/snapshots/{name}.v{version}.{timestamp}.hip'
 

@@ -46,7 +46,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             host_info["version"] = hou.applicationVersionString()
         else:
             # Fallback to older way
-            host_info["version"] = ".".join([str(v) for v in hou.applicationVersion()])
+            host_info["version"] = ".".join([str(v) for v in self._houdini_version])
 
         if hasattr(hou, "applicationName"):
             host_info["name"] = hou.applicationName()
@@ -62,9 +62,11 @@ class HoudiniEngine(sgtk.platform.Engine):
         Main initialization entry point.
         """
 
+        self._houdini_version = hou.applicationVersion()
+
         self.logger.debug("%s: Initializing..." % self)
 
-        if hou.applicationVersion()[0] < 14:
+        if self._houdini_version[0] < 14:
             raise sgtk.TankError(
                 "Your version of Houdini is not supported. Currently, Toolkit "
                 "only supports version 14+."
@@ -80,7 +82,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         if not self._ui_enabled:
             return
 
-        if hou.applicationVersion()[0] >= 15:
+        if self._houdini_version[0] >= 15:
             # In houdini 15+, we can use the dynamic menus and shelf api to
             # properly handle cases where a file is loaded outside of a SG
             # context. Make sure the timer that looks for current file changes
@@ -132,7 +134,7 @@ class HoudiniEngine(sgtk.platform.Engine):
                 menu_file = self._safe_path_join(xml_tmp_dir, "MainMenuCommon")
 
                 # as of houdini 12.5 add .xml
-                if hou.applicationVersion() > (12, 5, 0):
+                if self._houdini_version > (12, 5, 0):
                     menu_file = menu_file + ".xml"
 
                 # keep the reference to the menu handler for convenience so
@@ -240,8 +242,6 @@ class HoudiniEngine(sgtk.platform.Engine):
         QtCore.QTextCodec.setCodecForCStrings(utf8)
         self.logger.debug("set utf-8 codec for widget text")
 
-        hou_app_ver = hou.applicationVersion()
-
         # Typically we only call this method for engines which don't have a
         # well defined styling. Houdini appears to use stylesheets to handle
         # its styling which it conflicts with the toolkit strategy of using a
@@ -255,7 +255,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         #
         # NOTE: Except for 16+. It's no longer safe and causes lots of styling
         # problems in Houdini's UI globally.
-        if hou_app_ver < (16, 0, 0):
+        if self._houdini_version < (16, 0, 0):
             self.logger.debug("Houdini < 16 detected: applying dark look and feel.")
             self._initialize_dark_look_and_feel()
 
@@ -268,7 +268,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         # Linux, and we have reports of crashes on Windows, as well. All of these
         # issues are no longer a problem in 348+, so we'll warn users on builds
         # of H18 older than that.
-        if hou_app_ver[0] == 18 and hou_app_ver[-1] < 348:
+        if self._houdini_version[0] == 18 and self._houdini_version[-1] < 348:
             # We need to wait until Houdini idles before showing the message.
             # If we show it right now, it will pop up behind Houdini's splash
             # screen, and since the dialog is modal you end up in a situation
@@ -456,7 +456,7 @@ class HoudiniEngine(sgtk.platform.Engine):
 
                 # different calls to set the python panel interface in Houdini
                 # 14/15
-                if hou.applicationVersion()[0] >= 15:
+                if self._houdini_version[0] >= 15:
                     panel.setActiveInterface(panel_interface)
                 else:
                     # if SESI puts in a fix for setInterface, then panels
@@ -543,20 +543,6 @@ class HoudiniEngine(sgtk.platform.Engine):
         file from there.
         :param oplibrary_path: A temporary path that can be used to install otls to
         """
-        houdini_version = hou.applicationVersion()
-        for app in self.apps.values():
-            otl_path = self._safe_path_join(app.disk_location, "otls")
-            self._load_otls(otl_path, houdini_version, oplibrary_path)
-
-    def _load_otls(self, otl_path, houdini_version, oplibrary_path):
-        """
-        For a given app otl folder, load any otls files within it.
-        It will also check to see if there are any Houdini version folder inside
-        following the format of "v18.0.0". "x" characters can be used instead of
-        a number to represent any number.
-        """
-        if not os.path.exists(otl_path):
-            return
 
         def install_otls_from_dir(root_path):
             for filename in os.listdir(root_path):
@@ -564,6 +550,25 @@ class HoudiniEngine(sgtk.platform.Engine):
                 if os.path.splitext(filename)[-1] == ".otl":
                     path = full_path.replace(os.path.sep, "/")
                     hou.hda.installFile(path, oplibrary_path, True)
+
+        for app in self.apps.values():
+            otl_path = self._safe_path_join(app.disk_location, "otls")
+            for a_path in self._get_otl_paths(otl_path):
+                install_otls_from_dir(a_path)
+
+    def _get_otl_paths(self, otl_path):
+        """
+        For a given app otl folder, return a list of otl folders.
+        The list will always contain the root otl_path, but also may contain a sub
+        version folder if found.
+        It will also check to see if there are any Houdini version folder inside
+        following the format of "v18.0.0". "x" characters can be used instead of
+        a number to represent any number.
+        """
+        if not os.path.exists(otl_path):
+            return []
+
+        otl_paths = [otl_path]
 
         # Check for Houdini version folder containing version specific otl files.
         version_folder = None
@@ -580,7 +585,7 @@ class HoudiniEngine(sgtk.platform.Engine):
                     # is less than or equal to the current Houdini session version,
                     # as we don't want to use otls for versions higher than our current version,
                     if self._is_version_less_or_equal(
-                        matches.groups(), houdini_version
+                        matches.groups(), self._houdini_version
                     ):
                         # The folder version could be used so we should now check if it is more suitable
                         # than any folder versions we have previously found. Ultimately we want to
@@ -596,10 +601,9 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         if version_folder:
             # We found a version specific otl folder install any otls in that.
-            install_otls_from_dir(version_folder[1])
+            otl_paths.append(version_folder[1])
 
-        # Load any otl file directly in the otl folder
-        install_otls_from_dir(otl_path)
+        return otl_paths
 
     def _panels_supported(self):
         """
