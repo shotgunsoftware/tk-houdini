@@ -49,6 +49,7 @@ class TestLoadingOtls(TestHooks):
         part of the process.
         :return:
         """
+
         # First test that when no version folders exist it only gathers the otls folder.
         self.app_otl_folder = os.path.join(self.tank_temp, "test_app", "otls")
         os.makedirs(self.app_otl_folder)

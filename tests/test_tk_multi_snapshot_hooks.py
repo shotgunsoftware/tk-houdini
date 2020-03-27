@@ -10,6 +10,7 @@
 
 import os
 import hou
+import pytest
 
 # Required so that the SHOTGUN_HOME env var will be set
 from tank_test.tank_test_base import setUpModule  # noqa
@@ -33,12 +34,16 @@ class TestSnapShotHooks(TestHooks):
         Tests getting the current work path and saving a snapshot, using the snapshot app's API.
         """
         # This tests both the saving an getting of the current work path operations in the scene operations hook.
+
         self._create_file("ufo")
 
         from sgtk.platform.qt import QtGui
 
-        thumbnail = QtGui.QPixmap(100, 100)
-        thumbnail.fill(QtGui.QColor("red"))
+        if self.engine.has_ui:
+            thumbnail = QtGui.QPixmap(100, 100)
+            thumbnail.fill(QtGui.QColor("red"))
+        else:
+            thumbnail = None
 
         # This will trigger the scene operations hook to be called twice, for a current_path, and save operation.
         snapshot_path = self.app.snapshot("my comment", thumbnail)
