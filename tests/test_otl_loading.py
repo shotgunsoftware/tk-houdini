@@ -11,6 +11,8 @@
 import os
 import hou
 
+import sgtk
+
 # Required so that the SHOTGUN_HOME env var will be set
 from tank_test.tank_test_base import setUpModule  # noqa
 
@@ -60,7 +62,9 @@ class TestLoadingOtls(TestHooks):
         :param folder_name:
         :return:
         """
-        os.makedirs(os.path.join(self.app_otl_folder, folder_name))
+        sgtk.util.filesystem.ensure_folder_exists(
+            os.path.join(self.app_otl_folder, folder_name)
+        )
 
     def test_otl_paths(self):
         """
