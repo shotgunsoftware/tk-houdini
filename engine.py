@@ -568,6 +568,8 @@ class HoudiniEngine(sgtk.platform.Engine):
         if not os.path.exists(otl_path):
             return []
 
+        # Add the root otl folder to the list of paths to check, so as to maintain
+        # backwards compatibility, with apps that may not have version folder otls.
         otl_paths = [otl_path]
 
         # Check for Houdini version folder containing version specific otl files.
