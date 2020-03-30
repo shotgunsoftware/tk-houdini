@@ -574,30 +574,34 @@ class HoudiniEngine(sgtk.platform.Engine):
         version_folder = None
         for filename in os.listdir(otl_path):
             full_path = self._safe_path_join(otl_path, filename)
-            if os.path.isdir(full_path):
-                # https://regex101.com/r/3ujhFJ/2
-                # matches folder in the following format vx.x.x where "x" is either
-                # actually an x character or any number.
-                matches = re.search(r"^v(\d+|x).(\d+|x).(\d+|x)$", filename)
-                if matches:
-                    # Now we have a version folder, check to see if the folder version
-                    # is less than or equal to the current Houdini session version,
-                    # as we don't want to use otls for versions higher than our current version,
-                    if self._is_version_less_or_equal(
-                        matches.groups(), self._houdini_version
-                    ):
-                        # The folder version could be used so we should now check if it is more suitable
-                        # than any folder versions we have previously found. Ultimately we want to
-                        # find a version number folder that is lower but as closely matches
-                        # our current Houdini version.
-                        if version_folder is None or self._is_version_less_or_equal(
-                            version_folder[0], matches.groups()
-                        ):
-                            # Either there is no previous match, in which case set this match
-                            # as the current one to import, or the current match is less than the
-                            # new match, so we should use the new match.
-                            # Don't import yet, wait for all matches to be compared.
-                            version_folder = (matches.groups(), full_path)
+            if not os.path.isdir(full_path):
+                continue
+
+            # https://regex101.com/r/3ujhFJ/2
+            # matches folder in the following format vx.x.x where "x" is either
+            # actually an x character or any number.
+            matches = re.search(r"^v(\d+|x).(\d+|x).(\d+|x)$", filename)
+            if not matches:
+                continue
+            # Now we have a version folder, check to see if the folder version
+            # is less than or equal to the current Houdini session version,
+            # as we don't want to use otls for versions higher than our current version,
+            if not self._is_version_less_or_equal(
+                matches.groups(), self._houdini_version
+            ):
+                continue
+            # The folder version could be used so we should now check if it is more suitable
+            # than any folder versions we have previously found. Ultimately we want to
+            # find a version number folder that is lower but as closely matches
+            # our current Houdini version.
+            if version_folder is None or self._is_version_less_or_equal(
+                version_folder[0], matches.groups()
+            ):
+                # Either there is no previous match, in which case set this match
+                # as the current one to import, or the current match is less than the
+                # new match, so we should use the new match.
+                # Don't import yet, wait for all matches to be compared.
+                version_folder = (matches.groups(), full_path)
 
         if version_folder:
             # We found a version specific otl folder install any otls in that.

@@ -26,6 +26,12 @@ class TestLoadingOtls(TestHooks):
         super(TestLoadingOtls, self).setUp()
 
     def __check_paths(self, houdini_version, expected_folders):
+        """
+        Checks that the expected folders are gathered for the correct Houdini version.
+        :param houdini_version: The version of Houdini as a tuple of three ints.
+        :param expected_folders: The list of paths that we expect want to compare against the engine generated ones.
+        :return:
+        """
         # Change what the engine thinks the Houdini version is.
         self.engine._houdini_version = houdini_version
         # Ask the engine for the otl paths.
@@ -40,6 +46,11 @@ class TestLoadingOtls(TestHooks):
         )
 
     def _make_folder(self, folder_name):
+        """
+        Makes a folder in the app's otl folder with the provided name.
+        :param folder_name:
+        :return:
+        """
         os.makedirs(os.path.join(self.app_otl_folder, folder_name))
 
     def test_otl_paths(self):
@@ -92,6 +103,10 @@ class TestLoadingOtls(TestHooks):
         )
 
     def test_otls_installed(self):
+        """
+        Checks that the otls file get installed correctly in Houdini, and that Houdini
+        reports them as installed.
+        """
         # The alembic app is added and it should have installed two otl files,
         # check that Houdini recognises this.
         alembic_app = self.engine.apps["tk-houdini-alembicnode"]
