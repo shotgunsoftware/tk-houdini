@@ -112,7 +112,11 @@ class TestLoadingOtls(TestHooks):
         alembic_app = self.engine.apps["tk-houdini-alembicnode"]
         otl_path = self.engine._safe_path_join(alembic_app.disk_location, "otls")
 
-        # This should happen when the engine starts up, but for some reason in this test we need to force it.
+        # This would normally happen when the engine starts up, but the
+        # `if bootstrap.g_temp_env in os.environ:` line prevents it from running
+        # during the tests. This might be down to us using a 123.py startup script
+        # I'm not sure at the time of writing.
+        # So we will call it manually.
         self.engine._load_app_otls(self.tank_temp)
 
         # The alembic node should have version folders, so remove root folder from the list,
