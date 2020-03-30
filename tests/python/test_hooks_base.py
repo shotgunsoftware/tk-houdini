@@ -9,6 +9,7 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
+import sys
 import hou
 
 import sgtk
@@ -35,6 +36,9 @@ class TestHooks(TankTestBase):
         # Always cleanup the scene after tests have run to have a clean slate.
         self.addCleanup(self._reset_scene)
 
+        # Define the TK Houdini temporary directory.
+        self._set_tk_houdini_temp_dir()
+
         # Create an asset with a concept task.
         self._asset = self.mockgun.create(
             "Asset",
@@ -59,6 +63,28 @@ class TestHooks(TankTestBase):
             "tk-houdini", self.tk, self._asset_task_ctx
         )
         self.addCleanup(self.engine.destroy)
+
+    def _set_tk_houdini_temp_dir(self):
+        """
+        Usually when Houdini is launched via the launch app, the `TK_HOUDINI_TEMP` env var is set
+        to point to a temp directory. However during testing we don't launch via the
+        startup script, so we need to set this here.
+        :return:
+        """
+        # Setup a path for the engine to write out its menu file
+        tk_houdini_temp_dir = os.path.join(self.tank_temp, "tk-houdini-temp")
+
+        # Import the bootstrap module so as to get the environment variable name.
+        # At the time of writing this was `TK_HOUDINI_TEMP`.
+        tk_houdini_python_path = os.path.join(
+            os.path.dirname(__file__), "../..", "python",
+        )
+        sys.path.insert(0, tk_houdini_python_path)
+
+        from tk_houdini import bootstrap
+
+        # set env var to point engine at temp path
+        os.environ[bootstrap.g_temp_env] = tk_houdini_temp_dir
 
     def _reset_scene(self):
         """
