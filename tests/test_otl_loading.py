@@ -27,6 +27,12 @@ class TestLoadingOtls(TestHooks):
         super(TestLoadingOtls, self).setUp()
 
     def __check_paths(self, houdini_version, expected_folders):
+        """
+        Checks that the expected folders are gathered for the correct Houdini version.
+        :param houdini_version: The version of Houdini as a tuple of three ints.
+        :param expected_folders: The list of paths that we expect want to compare against the engine generated ones.
+        :return:
+        """
         # Change what the engine thinks the Houdini version is.
         self.engine._houdini_version = houdini_version
         # Ask the engine for the otl paths.
@@ -49,6 +55,11 @@ class TestLoadingOtls(TestHooks):
         )
 
     def _make_folder(self, folder_name):
+        """
+        Makes a folder in the app's otl folder with the provided name.
+        :param folder_name:
+        :return:
+        """
         os.makedirs(os.path.join(self.app_otl_folder, folder_name))
 
     def test_otl_paths(self):
@@ -102,12 +113,20 @@ class TestLoadingOtls(TestHooks):
         )
 
     def test_otls_installed(self):
+        """
+        Checks that the otls file get installed correctly in Houdini, and that Houdini
+        reports them as installed.
+        """
         # The alembic app is added and it should have installed two otl files,
-        # check that Houdini recognises this.
+        # check that Houdini recognizes this.
         alembic_app = self.engine.apps["tk-houdini-alembicnode"]
         otl_path = self.engine._safe_path_join(alembic_app.disk_location, "otls")
 
-        # This should happen when the engine starts up, but for some reason in this test we need to force it.
+        # This would normally happen when the engine starts up, but the
+        # `if bootstrap.g_temp_env in os.environ:` line prevents it from running
+        # during the tests. This might be down to us using a 123.py startup script
+        # I'm not sure at the time of writing.
+        # So we will call it manually.
         self.engine._load_app_otls(self.tank_temp)
 
         # The alembic node should have version folders, so remove root folder from the list,
