@@ -108,7 +108,7 @@ class TestLoadingOtls(TestHooks):
         reports them as installed.
         """
         # The alembic app is added and it should have installed two otl files,
-        # check that Houdini recognises this.
+        # check that Houdini recognizes this.
         alembic_app = self.engine.apps["tk-houdini-alembicnode"]
         otl_path = self.engine._safe_path_join(alembic_app.disk_location, "otls")
 
