@@ -15,6 +15,7 @@ import hou
 from tank_test.tank_test_base import setUpModule  # noqa
 
 from test_hooks_base import TestHooks
+from sgtk.util import ShotgunPath
 
 
 class TestWorkfiles2Hooks(TestHooks):
@@ -42,14 +43,20 @@ class TestWorkfiles2Hooks(TestHooks):
         # Create a temporary scene file, so we can test the reset works.
         created_file = self._create_file("temp")
         # Make sure the scene file we created matches what Houdini believes to be the scene file.
-        self.assertEqual(hou.hipFile.name(), created_file)
+        self.assertEqual(
+            ShotgunPath.from_current_os_path(hou.hipFile.name()),
+            ShotgunPath.from_current_os_path(created_file),
+        )
 
         result = self.scene_operation.reset_current_scene(
             self.app, self.scene_operation.NEW_FILE_ACTION, self.engine.context
         )
         self.assertTrue(result)
         # When we reset the file name should be untitled.hip
-        self.assertEqual(hou.hipFile.name(), "untitled.hip")
+        self.assertEqual(
+            ShotgunPath.from_current_os_path(hou.hipFile.name()),
+            ShotgunPath.from_current_os_path("untitled.hip"),
+        )
 
     def test_get_current_path(self):
         """
@@ -64,7 +71,10 @@ class TestWorkfiles2Hooks(TestHooks):
         result = self.scene_operation.get_current_path(
             self.app, self.scene_operation.NEW_FILE_ACTION, self.engine.context
         )
-        self.assertEqual(hou.hipFile.name(), result)
+        self.assertEqual(
+            ShotgunPath.from_current_os_path(hou.hipFile.name()),
+            ShotgunPath.from_current_os_path(result),
+        )
 
     def test_prepare_new_scene(self):
         """
@@ -92,7 +102,10 @@ class TestWorkfiles2Hooks(TestHooks):
             self.engine.context,
             path=save_path,
         )
-        self.assertEqual(save_path, hou.hipFile.name())
+        self.assertEqual(
+            ShotgunPath.from_current_os_path(save_path),
+            ShotgunPath.from_current_os_path(hou.hipFile.name()),
+        )
 
         # Now test saving over the same file.
         self.scene_operation.save_file(
@@ -117,4 +130,8 @@ class TestWorkfiles2Hooks(TestHooks):
             1,
             False,
         )
-        self.assertEqual(created_file, hou.hipFile.name())
+
+        self.assertEqual(
+            ShotgunPath.from_current_os_path(created_file),
+            ShotgunPath.from_current_os_path(hou.hipFile.name()),
+        )

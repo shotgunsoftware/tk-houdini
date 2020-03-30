@@ -16,6 +16,7 @@ import pytest
 from tank_test.tank_test_base import setUpModule  # noqa
 
 from test_hooks_base import TestHooks
+from sgtk.util import ShotgunPath
 
 
 class TestSnapShotHooks(TestHooks):
@@ -61,4 +62,7 @@ class TestSnapShotHooks(TestHooks):
         handler = self.app.tk_multi_snapshot.Snapshot(self.app)
         handler._do_scene_operation("open", file_path)
         # Now check that the file Houdini has open is the same as the one we originally saved.
-        self.assertEqual(file_path, hou.hipFile.name())
+        self.assertEqual(
+            ShotgunPath.from_current_os_path(file_path),
+            ShotgunPath.from_current_os_path(hou.hipFile.name()),
+        )
