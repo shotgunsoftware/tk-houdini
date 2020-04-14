@@ -11,10 +11,13 @@
 import os
 import hou
 
+import sgtk
+
 # Required so that the SHOTGUN_HOME env var will be set
 from tank_test.tank_test_base import setUpModule  # noqa
 
 from test_hooks_base import TestHooks
+from sgtk.util import ShotgunPath
 
 
 class TestLoadingOtls(TestHooks):
@@ -35,13 +38,21 @@ class TestLoadingOtls(TestHooks):
         # Change what the engine thinks the Houdini version is.
         self.engine._houdini_version = houdini_version
         # Ask the engine for the otl paths.
-        paths = self.engine._get_otl_paths(self.app_otl_folder)
+        paths_from_engine = self.engine._get_otl_paths(self.app_otl_folder)
         # We would always expect to get the root otl folder returned.
         expected_folders.insert(0, self.app_otl_folder)
 
+        # Handle forward and backwards slashes so that the comparison doesn't care.
+        sanitized_paths_from_engine = [
+            ShotgunPath.from_current_os_path(path) for path in paths_from_engine
+        ]
+        sanitized_expected_paths = [
+            ShotgunPath.from_current_os_path(path) for path in expected_folders
+        ]
+
         self.assertEqual(
-            paths,
-            expected_folders,
+            sanitized_paths_from_engine,
+            sanitized_expected_paths,
             "Houdini version number was: v%s.%s.%s" % houdini_version,
         )
 
@@ -51,7 +62,9 @@ class TestLoadingOtls(TestHooks):
         :param folder_name:
         :return:
         """
-        os.makedirs(os.path.join(self.app_otl_folder, folder_name))
+        sgtk.util.filesystem.ensure_folder_exists(
+            os.path.join(self.app_otl_folder, folder_name)
+        )
 
     def test_otl_paths(self):
         """
@@ -60,6 +73,7 @@ class TestLoadingOtls(TestHooks):
         part of the process.
         :return:
         """
+
         # First test that when no version folders exist it only gathers the otls folder.
         self.app_otl_folder = os.path.join(self.tank_temp, "test_app", "otls")
         os.makedirs(self.app_otl_folder)
@@ -119,9 +133,18 @@ class TestLoadingOtls(TestHooks):
         self.assertTrue(len(otl_paths) == 1)
 
         # Now check both otls were installed in Houdini.
+        sanitized_loaded_files = [
+            ShotgunPath.from_current_os_path(path) for path in hou.hda.loadedFiles()
+        ]
         self.assertTrue(
-            os.path.join(otl_paths[0], "sgtk_alembic.otl") in hou.hda.loadedFiles()
+            ShotgunPath.from_current_os_path(
+                os.path.join(otl_paths[0], "sgtk_alembic.otl")
+            )
+            in sanitized_loaded_files
         )
         self.assertTrue(
-            os.path.join(otl_paths[0], "sgtk_alembic_sop.otl") in hou.hda.loadedFiles()
+            ShotgunPath.from_current_os_path(
+                os.path.join(otl_paths[0], "sgtk_alembic_sop.otl")
+            )
+            in sanitized_loaded_files
         )

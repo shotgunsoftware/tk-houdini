@@ -98,12 +98,29 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         from sgtk.platform.qt import QtCore
 
+        tk_houdini = self.import_module("tk_houdini")
+        bootstrap = tk_houdini.bootstrap
+
+        # load any app otls
+        if bootstrap.g_temp_env in os.environ:
+            # Figure out the tmp OP Library path for this session
+            oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")
+
+            # Setup the OTLs that need to be loaded for the Toolkit apps
+            def _load_otls():
+                self._load_app_otls(oplibrary_path)
+
+            # We have the same problem here on Windows that we have above with
+            # the population of the shelf. If we defer the execution of the otl
+            # loading by an event loop cycle, Houdini loads up quickly.
+            if self.has_ui and sgtk.util.is_windows():
+                QtCore.QTimer.singleShot(1, _load_otls)
+            else:
+                _load_otls()
+
         if not self.has_ui:
             # no UI. everything after this requires the UI!
             return
-
-        tk_houdini = self.import_module("tk_houdini")
-        bootstrap = tk_houdini.bootstrap
 
         if bootstrap.g_temp_env in os.environ:
 
@@ -221,21 +238,6 @@ class HoudiniEngine(sgtk.platform.Engine):
                         self, commands, panel_commands
                     )
                     panels.create_panels(self._panels_file)
-
-            # Figure out the tmp OP Library path for this session
-            oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")
-
-            # Setup the OTLs that need to be loaded for the Toolkit apps
-            def _load_otls():
-                self._load_app_otls(oplibrary_path)
-
-            # We have the same problem here on Windows that we have above with
-            # the population of the shelf. If we defer the execution of the otl
-            # loading by an event loop cycle, Houdini loads up quickly.
-            if sgtk.util.is_windows():
-                QtCore.QTimer.singleShot(1, _load_otls)
-            else:
-                _load_otls()
 
         # tell QT to interpret C strings as utf-8
         utf8 = QtCore.QTextCodec.codecForName("utf-8")

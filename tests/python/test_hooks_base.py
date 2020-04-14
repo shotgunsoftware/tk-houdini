@@ -74,6 +74,8 @@ class TestHooks(TankTestBase):
         # Setup a path for the engine to write out its menu file
         tk_houdini_temp_dir = os.path.join(self.tank_temp, "tk-houdini-temp")
 
+        sgtk.util.filesystem.ensure_folder_exists(tk_houdini_temp_dir)
+
         # Import the bootstrap module so as to get the environment variable name.
         # At the time of writing this was `TK_HOUDINI_TEMP`.
         tk_houdini_python_path = os.path.join(

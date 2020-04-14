@@ -23,7 +23,15 @@ else:
     venv_folder = "venv_py3"
 
 # Activate the virtual environment required to run test tests in Houdini.
-activate_this_py = os.path.join(tests_folder, venv_folder, "bin", "activate_this.py")
+if sys.platform == "win32":
+    activate_this_py = os.path.join(
+        tests_folder, venv_folder, "Scripts", "activate_this.py"
+    )
+else:
+    activate_this_py = os.path.join(
+        tests_folder, venv_folder, "bin", "activate_this.py"
+    )
+
 with open(activate_this_py, "rt") as f:
     exec(f.read(), {"__file__": activate_this_py})
 
