@@ -16,6 +16,14 @@ engines:
       path: '$SHOTGUN_CURRENT_REPO_ROOT'
 
     apps:
+      tk-houdini-alembicnode:
+        location: {'type': 'dev', 'path': '$SHOTGUN_REPOS_ROOT/tk-houdini-alembicnode'}
+        work_file_template: work_path
+        output_profiles:
+          - name: Shot Work Cache
+            settings: {}
+            color: []
+            output_cache_template: alembic_cache
       tk-multi-workfiles2:
         location: {'type': 'dev', 'path': '$SHOTGUN_REPOS_ROOT/tk-multi-workfiles2'}
       tk-multi-loader2:
