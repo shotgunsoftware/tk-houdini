@@ -992,8 +992,9 @@ def _on_file_change_timeout():
     except sgtk.TankError:
         # Unable to get tk api instance from the path. won't be able to get a
         # new context. if there is an engine running, destroy it.
-        if cur_engine:
-            cur_engine.destroy()
+        cur_engine.logger.warning(
+            "Could not execute tank_from_path('%s')" % cur_file
+        )
         return
 
     # get the new context from the file
