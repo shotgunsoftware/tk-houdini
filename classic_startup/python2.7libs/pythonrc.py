@@ -26,7 +26,7 @@ def classic_startup():
     # construct the path to the engine's python directory and add it to sys
     # path. this provides us access to the bootstrap module which contains
     # helper methods for constructing the proper environment based on the
-    # bootstrap scanario. For this file, the python directory is 3 levels up.
+    # bootstrap scenario. For this file, the python directory is 3 levels up.
     tk_houdini_python_path = os.path.abspath(
         os.path.join(current_file_path, "..", "..", "..", "python",)
     )
