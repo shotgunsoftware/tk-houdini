@@ -1,5 +1,5 @@
 
-# Running Maya engine tests
+# Running Houdini engine tests
 
 To run these tests, you need to do the following (tested on Mac)
 
