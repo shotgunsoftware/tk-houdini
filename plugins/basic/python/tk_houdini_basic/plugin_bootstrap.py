@@ -96,8 +96,8 @@ def bootstrap(plugin_root_path):
         # credentials.
         user = sgtk.authentication.ShotgunAuthenticator().get_user()
     except sgtk.authentication.AuthenticationCancelled:
-        # TODO: show a "Shotgun > Login" menu in houdini
-        sgtk_logger.info("Shotgun login was cancelled by the user.")
+        # TODO: show a "SG > Login" menu in houdini
+        sgtk_logger.info("SG login was cancelled by the user.")
         return
 
     # Create a boostrap manager for the logged in user with the plug-in
@@ -120,7 +120,7 @@ def bootstrap(plugin_root_path):
     toolkit_mgr.progress_callback = bootstrap_progress_callback
 
     # start engine
-    sgtk_logger.info("Bootstrapping the Shotgun engine for Houdini...")
+    sgtk_logger.info("Bootstrapping the SG engine for Houdini...")
     toolkit_mgr.bootstrap_engine("tk-houdini", entity)
 
     sgtk_logger.debug("Bootstrap complete.")

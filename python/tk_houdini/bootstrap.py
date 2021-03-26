@@ -80,7 +80,7 @@ def bootstrap_classic():
     except Exception as e:
         bootstrap_exception(
             "Toolkit bootstrap failed to extract the current context from the "
-            "environment! The Shotgun integration will be disabled. Details: "
+            "environment! The SG integration will be disabled. Details: "
             "%s" % (e,)
         )
         return
