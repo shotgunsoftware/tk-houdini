@@ -278,11 +278,11 @@ class HoudiniEngine(sgtk.platform.Engine):
             # dismiss the dialog to unblock it.
             def run_when_idle():
                 hou.ui.displayMessage(
-                    text="Houdini 18 versions older than 18.0.348 are unstable when using Shotgun "
+                    text="Houdini 18 versions older than 18.0.348 are unstable when using SG "
                     "Toolkit. Be aware that Houdini crashes may occur if attempting to use "
-                    "Toolkit apps from your current Houdini session. Shotgun recommends updating "
+                    "Toolkit apps from your current Houdini session. SG recommends updating "
                     "Houdini to 18.0.348 or newer.",
-                    title="Shotgun Toolkit",
+                    title="SG Toolkit",
                     severity=hou.severityType.Warning,
                 )
 

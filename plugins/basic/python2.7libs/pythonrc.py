@@ -82,7 +82,7 @@ def plugin_startup():
 
         stack_trace = traceback.format_exc()
 
-        message = "Shotgun Toolkit Error: %s" % (e,)
+        message = "SG Toolkit Error: %s" % (e,)
         details = "Error stack trace:\n\n%s" % (stack_trace)
 
         import hou
