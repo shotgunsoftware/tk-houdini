@@ -24,9 +24,9 @@ configuration:
         type: bool
         description: "Controls whether a menu will be built with commands
                      registered by the installed apps. It is not currently
-                     possible to rebuild the menu on a Shotgun context switch,
+                     possible to rebuild the menu on a ShotGrid context switch,
                      so this option allows for the menu to be disabled in
-                     favor of the Shotgun shelf which can be rebuilt
+                     favor of the ShotGrid shelf which can be rebuilt
                      dynamically."
         default_value: true
 
@@ -34,7 +34,7 @@ configuration:
         type: bool
         description: "Controls whether a shelf will be built with commands
                      registered by the installed apps. The shelf will be
-                     rebuilt dynamically as the Shotgun context changes."
+                     rebuilt dynamically as the ShotGrid context changes."
         default_value: true
 
     debug_logging:
@@ -89,8 +89,8 @@ configuration:
 requires_shotgun_fields:
 
 # More verbose description of this item
-display_name: "Shotgun Engine for Houdini"
-description: "Shotgun Pipeline Toolkit integration in Houdini"
+display_name: "ShotGrid Engine for Houdini"
+description: "ShotGrid Pipeline Toolkit integration in Houdini"
 
 # Required minimum versions for this item to run
 requires_shotgun_version:

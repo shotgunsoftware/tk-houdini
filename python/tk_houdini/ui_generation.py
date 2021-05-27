@@ -211,7 +211,7 @@ class AppCommandsMenu(AppCommandsUI):
         return self._commands_by_app
 
     def _build_shotgun_menu_item(self):
-        """Constructs a top-level "Shotgun" menu.
+        """Constructs a top-level "ShotGrid" menu.
 
         Same logic for both the static and dynamic menu.
 
@@ -221,7 +221,7 @@ class AppCommandsMenu(AppCommandsUI):
 
         root = ET.Element("mainMenu")
         menubar = ET.SubElement(root, "menuBar")
-        shotgun_menu = self._menuNode(menubar, "Shotgun", "tk.shotgun")
+        shotgun_menu = self._menuNode(menubar, "ShotGrid", "tk.shotgun")
         insert_before = ET.SubElement(shotgun_menu, "insertBefore")
         insert_before.text = "help_menu"
 
@@ -485,7 +485,7 @@ class AppCommandsPanelHandler(AppCommandsUI):
 
 
 class AppCommandsShelf(AppCommandsUI):
-    def __init__(self, engine, commands=None, name="Shotgun", label="Shotgun"):
+    def __init__(self, engine, commands=None, name="ShotGrid", label="ShotGrid"):
         """Initialize the shotgun commands shelf.
 
             engine:
@@ -717,7 +717,7 @@ def get_registered_commands(engine):
         not registered, but always present in the shotgun menu and shelves.
         Those commands are:
 
-            "Jump to Shotgun"
+            "Jump to ShotGrid"
             "Jump to File System"
     """
 
@@ -730,7 +730,7 @@ def get_registered_commands(engine):
     )
 
     jump_to_sg_cmd = AppCommand(
-        name="Jump to Shotgun",
+        name="Jump to ShotGrid",
         command_dict={
             "properties": {
                 "description": "Open the current SG context in your web browser.",
@@ -1052,7 +1052,7 @@ import tank.platform.engine
 
 engine = tank.platform.engine.current_engine()
 if engine is None or not hasattr(engine, 'launch_command'):
-    msg = "Shotgun: Houdini engine is not loaded."
+    msg = "ShotGrid: Houdini engine is not loaded."
     if hou.isUIAvailable():
         hou.ui.displayMessage(msg)
     else:
