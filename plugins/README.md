@@ -3,7 +3,7 @@
 The Houdini engine supports the ability to run one or more plugins at startup
 time. This is made possible by the `launch_builtin_plugins` setting where a list
 of plugin names can be defined. The `basic` plugin handles bootstrapping
-toolkit. Plugins that run after can assume that the Shotgun engine for Houdini
+toolkit. Plugins that run after can assume that the ShotGrid engine for Houdini
 is up and running. See the `test` plugin as an example of a simple plugin that
 can run after toolkit is bootstrapped.
 

@@ -26,6 +26,6 @@ cmd_id = sys.argv[1]
 engine = tank.platform.engine.current_engine()
 
 if engine is None or not hasattr(engine, "launch_command"):
-    error("Shotgun: Houdini engine is not loaded")
+    error("ShotGrid: Houdini engine is not loaded")
 else:
     engine.launch_command(cmd_id)
