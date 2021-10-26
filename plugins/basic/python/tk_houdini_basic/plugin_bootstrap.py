@@ -70,7 +70,7 @@ def bootstrap(plugin_root_path):
 
         # open the yaml file and read the data
         with open(plugin_info_yml, "r") as plugin_info_fh:
-            plugin_info = yaml.load(plugin_info_fh)
+            plugin_info = yaml.load(plugin_info_fh, Loader=yaml.FullLoader)
 
         base_config = plugin_info["base_configuration"]
         plugin_id = plugin_info["plugin_id"]
