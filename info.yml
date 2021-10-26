@@ -94,4 +94,4 @@ description: "ShotGrid Pipeline Toolkit integration in Houdini"
 
 # Required minimum versions for this item to run
 requires_shotgun_version:
-requires_core_version: "v0.19.1"
+requires_core_version: "v0.20.5"
