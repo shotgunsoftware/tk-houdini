@@ -65,6 +65,12 @@ def bootstrap_classic():
         bootstrap_exception("Failed to import 'sgtk'!")
         return
 
+    # get the necessary environment variable for launch
+    env = get_classic_startup_env()
+
+    # update the environment with the classic startup vars
+    os.environ.update(env)
+
     # ensure the engine name and context are defined in the environment
     for env_var in [g_sgtk_context_env, g_sgtk_engine_env]:
         if env_var not in os.environ:
