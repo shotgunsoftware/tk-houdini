@@ -89,7 +89,10 @@ class HoudiniLauncher(SoftwareLauncher):
         # path. this provides us access to the bootstrap module which contains
         # helper methods for constructing the proper environment based on the
         # bootstrap scanario.
-        tk_houdini_python_path = os.path.join(self.disk_location, "python",)
+        tk_houdini_python_path = os.path.join(
+            self.disk_location,
+            "python",
+        )
         sys.path.insert(0, tk_houdini_python_path)
 
         from tk_houdini import bootstrap

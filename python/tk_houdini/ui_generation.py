@@ -51,7 +51,7 @@ class AppCommandsUI(object):
         return self._context_name
 
     def _group_commands(self):
-        """ This method provides a consistent method for organizing commands.
+        """This method provides a consistent method for organizing commands.
 
         Used by the menu and shelf classes to collect the registered commands
         into groups. The method returns a tuple with the first item being
@@ -120,7 +120,7 @@ class AppCommandsMenu(AppCommandsUI):
         self._context_menu_item_id = None
 
     def create_menu(self, xml_path):
-        """ Create the SG Menu """
+        """Create the SG Menu"""
 
         import hou
 
@@ -488,18 +488,18 @@ class AppCommandsShelf(AppCommandsUI):
     def __init__(self, engine, commands=None, name="ShotGrid", label="ShotGrid"):
         """Initialize the shotgun commands shelf.
 
-            engine:
-                The engine driving the integration (required)
+        engine:
+            The engine driving the integration (required)
 
-            commands:
-                Optional commands to display in the shelf. If not
-                      supplied, pulled from the engine's registered commands
+        commands:
+            Optional commands to display in the shelf. If not
+                  supplied, pulled from the engine's registered commands
 
-            name:
-                The houdini internal name for the shelf
+        name:
+            The houdini internal name for the shelf
 
-            label:
-                The display name for the shelf in the shelf tab
+        label:
+            The display name for the shelf in the shelf tab
         """
 
         super(AppCommandsShelf, self).__init__(engine, commands)
@@ -510,8 +510,8 @@ class AppCommandsShelf(AppCommandsUI):
     def create_shelf(self, shelf_file):
         """Creates a Shotgun shelf with a tool button for each command.
 
-            shelf_file:
-                The xml file where the shelf definition will be written
+        shelf_file:
+            The xml file where the shelf definition will be written
         """
 
         import hou
@@ -576,11 +576,11 @@ class AppCommandsShelf(AppCommandsUI):
     def create_tool(self, shelf_file, cmd):
         """Create a new shelf tool.
 
-            cmd:
-                The AppCommand to create a shelf tool for.
+        cmd:
+            The AppCommand to create a shelf tool for.
 
-            shelf_file:
-                The shelf file to write the tool definition to.
+        shelf_file:
+            The shelf file to write the tool definition to.
         """
 
         import hou
@@ -641,7 +641,7 @@ class AppCommandsShelf(AppCommandsUI):
 
 
 class AppCommand(object):
-    """ Wraps around a single command that you get from engine.commands """
+    """Wraps around a single command that you get from engine.commands"""
 
     def __init__(self, name, command_dict):
         self.name = name
@@ -711,14 +711,14 @@ class AppCommand(object):
 def get_registered_commands(engine):
     """Returns a list of AppCommands for the engine's registered commands.
 
-        :param engine: The engine to return registered commands for
+    :param engine: The engine to return registered commands for
 
-        NOTE: This method currently returns additional panel commands that are
-        not registered, but always present in the shotgun menu and shelves.
-        Those commands are:
+    NOTE: This method currently returns additional panel commands that are
+    not registered, but always present in the shotgun menu and shelves.
+    Those commands are:
 
-            "Jump to ShotGrid"
-            "Jump to File System"
+        "Jump to ShotGrid"
+        "Jump to File System"
     """
 
     # ---- build a couple of "always present" commands
@@ -796,7 +796,7 @@ def ensure_file_change_timer_running():
 def get_registered_panels(engine):
     """Returns a list of AppCommands for the engine's registered panels.
 
-        :param engine: The engine to return registered panel commands for
+    :param engine: The engine to return registered panel commands for
     """
 
     panels = []

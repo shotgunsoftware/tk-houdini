@@ -96,24 +96,30 @@ class TestLoadingOtls(TestHooks):
         self._make_folder("v20.0.0")
         # Test it picks the exact or next lowest version folder testing major version numbers specifically
         self.__check_paths(
-            (17, 1, 1), [os.path.join(self.app_otl_folder, "v16.x.x")],
+            (17, 1, 1),
+            [os.path.join(self.app_otl_folder, "v16.x.x")],
         )
         self.__check_paths(
-            (18, 0, 0), [os.path.join(self.app_otl_folder, "v18.x.x")],
+            (18, 0, 0),
+            [os.path.join(self.app_otl_folder, "v18.x.x")],
         )
         self.__check_paths(
-            (18, 1, 134), [os.path.join(self.app_otl_folder, "v18.x.x")],
+            (18, 1, 134),
+            [os.path.join(self.app_otl_folder, "v18.x.x")],
         )
         # Test it picks the exact or next lowest version folder testing minor version numbers specifically
         self.__check_paths(
-            (19, 6, 10), [os.path.join(self.app_otl_folder, "v19.5.x")],
+            (19, 6, 10),
+            [os.path.join(self.app_otl_folder, "v19.5.x")],
         )
         # Test it picks the exact or next lowest version folder testing patch version numbers specifically
         self.__check_paths(
-            (19, 6, 20), [os.path.join(self.app_otl_folder, "v19.6.19")],
+            (19, 6, 20),
+            [os.path.join(self.app_otl_folder, "v19.6.19")],
         )
         self.__check_paths(
-            (20, 1, 2), [os.path.join(self.app_otl_folder, "v20.0.0")],
+            (20, 1, 2),
+            [os.path.join(self.app_otl_folder, "v20.0.0")],
         )
 
     def test_otls_installed(self):

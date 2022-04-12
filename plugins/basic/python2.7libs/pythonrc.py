@@ -56,7 +56,9 @@ def plugin_startup():
             # of the system Python install.
             plugins_path = os.path.dirname(plugin_root_path)
             packages_path = os.path.join(
-                os.path.dirname(plugins_path), "python", "packages",
+                os.path.dirname(plugins_path),
+                "python",
+                "packages",
             )
 
             sys.path.insert(0, packages_path)

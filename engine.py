@@ -770,7 +770,8 @@ class HoudiniEngine(sgtk.platform.Engine):
         from sgtk.platform import constants
 
         return self._safe_path_join(
-            self.disk_location, constants.BUNDLE_STYLESHEET_FILE,
+            self.disk_location,
+            constants.BUNDLE_STYLESHEET_FILE,
         )
 
     def _get_engine_root_path(self):
