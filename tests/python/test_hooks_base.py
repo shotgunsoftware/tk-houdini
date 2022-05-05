@@ -79,7 +79,9 @@ class TestHooks(TankTestBase):
         # Import the bootstrap module so as to get the environment variable name.
         # At the time of writing this was `TK_HOUDINI_TEMP`.
         tk_houdini_python_path = os.path.join(
-            os.path.dirname(__file__), "../..", "python",
+            os.path.dirname(__file__),
+            "../..",
+            "python",
         )
         sys.path.insert(0, tk_houdini_python_path)
 

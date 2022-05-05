@@ -65,6 +65,13 @@ def bootstrap_classic():
         bootstrap_exception("Failed to import 'sgtk'!")
         return
 
+    if g_temp_env not in os.environ:
+        # get the necessary environment variable for launch
+        env = get_classic_startup_env()
+
+        # update the environment with the classic startup vars
+        os.environ.update(env)
+
     # ensure the engine name and context are defined in the environment
     for env_var in [g_sgtk_context_env, g_sgtk_engine_env]:
         if env_var not in os.environ:
@@ -158,7 +165,11 @@ def get_plugin_startup_env(plugin_names):
         # Each plugin should have the standard pythonX.Xlibs/pythonrc.py folders
         # at the top-level which houdini will execute at startup time.
         plugin_startup_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "plugins", plugin_name,
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "plugins",
+            plugin_name,
         )
         plugin_startup_path = os.path.normpath(plugin_startup_path)
 
