@@ -28,7 +28,13 @@ def classic_startup():
     # helper methods for constructing the proper environment based on the
     # bootstrap scanario. For this file, the python directory is 3 levels up.
     tk_houdini_python_path = os.path.abspath(
-        os.path.join(current_file_path, "..", "..", "..", "python",)
+        os.path.join(
+            current_file_path,
+            "..",
+            "..",
+            "..",
+            "python",
+        )
     )
 
     # add to the system path
