@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Shotgun Software Inc.
+# Copyright (c) 2023 ShotGrid Software Inc.
 #
 # CONFIDENTIAL AND PROPRIETARY
 #
