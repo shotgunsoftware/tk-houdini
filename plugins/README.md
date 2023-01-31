@@ -22,4 +22,4 @@ files in these folders should be identicial, and should call shared code in
 the plugin's `python` folder to keep the code duplication to a minimum.
 
 For more information on these standard Houdini files,
-[http://www.sidefx.com/docs/houdini/hom/locations](see the official documentation).
+[see the official documentation](http://www.sidefx.com/docs/houdini/hom/locations).
