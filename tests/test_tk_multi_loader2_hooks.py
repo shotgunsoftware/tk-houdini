@@ -59,7 +59,7 @@ class TestLoader2Hooks(TestHooks):
         publish = {
             "published_file_type": {"type": "PublishedFileType", "name": publish_type}
         }
-        return self.action_manager._get_actions_for_publish(
+        return self.action_manager.get_actions_for_publish(
             publish, self.action_manager.UI_AREA_MAIN
         )
 
@@ -70,7 +70,7 @@ class TestLoader2Hooks(TestHooks):
         # Test that given a PublishedFileType it will generate a single action for import
         actions = self._publish_type_actions(publish_type)
         self.assertTrue(len(actions) == 1)
-        self.assertTrue(actions[0]["name"] == action)
+        self.assertTrue(actions[0].text().lower().replace(" ", "_") == action)
 
     def test_generate_actions(self):
         """
