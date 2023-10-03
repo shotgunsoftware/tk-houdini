@@ -4,7 +4,7 @@
 To run these tests, you need to do the following (tested on Mac)
 
 1. From a terminal, create a virtual environment (using `virtualenv` even on newer versions of Python) at the specific location of `tests/venv_py3` depending on the version of python you are testing. 
-To create a virtual env for Python 3 do something like this: 
+To create a virtual env for Python 3 do something like this:
 
 ```
 virtualenv --python=/Users/username/.pyenv/versions/3.7.6/bin/python3 venv_py3
@@ -16,19 +16,19 @@ virtualenv --python=/Users/username/.pyenv/versions/3.7.6/bin/python3 venv_py3
 source venv_p3/bin/activate
 ```
 
-3. Install all dependencies needed for the test: 
+3. Install all dependencies needed for the test:
 
 ```
 pip install -r requirements.txt
 ```
 
-4. In the command line, set the `HOUDINI_PATH` env var to point to this test folder: 
+4. In the command line, set the `HOUDINI_PATH` env var to point to this test folder:
 
 ```
 export HOUDINI_PATH="/Users/philips1/source_code/tk-houdini/tests;&"
 ``` 
 
-on Mac, or 
+on Mac, or
 
 ```
 set "HOUDINI_PATH=E:\code\tk-houdini\tests;&"
