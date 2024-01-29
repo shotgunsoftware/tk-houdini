@@ -243,7 +243,7 @@ def _build_houdini_path(startup_paths):
         # bootstrap, use colons as the path separator. This is completely valid
         # and matches the POSIX convention.
 
-        if sys.platform is not "win32":
+        if sys.platform != "win32":
             # for non-windows OS, see if semicolon is in use
             if ";" in hou_path_str:
                 # already using semi-colons, continue using semicolons. this
