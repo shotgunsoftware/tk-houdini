@@ -84,7 +84,7 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         if self._houdini_version[0] >= 15:
             # In houdini 15+, we can use the dynamic menus and shelf api to
-            # properly handle cases where a file is loaded outside of a SG
+            # properly handle cases where a file is loaded outside of a PTR
             # context. Make sure the timer that looks for current file changes
             # is running.
             tk_houdini = self.import_module("tk_houdini")
@@ -278,11 +278,11 @@ class HoudiniEngine(sgtk.platform.Engine):
             # dismiss the dialog to unblock it.
             def run_when_idle():
                 hou.ui.displayMessage(
-                    text="Houdini 18 versions older than 18.0.348 are unstable when using SG "
-                    "Toolkit. Be aware that Houdini crashes may occur if attempting to use "
-                    "Toolkit apps from your current Houdini session. SG recommends updating "
-                    "Houdini to 18.0.348 or newer.",
-                    title="SG Toolkit",
+                    text="Houdini 18 versions older than 18.0.348 are unstable when using "
+                    "Flow Production Tracking Toolkit. Be aware that Houdini crashes may "
+                    "occur if attempting to use Toolkit apps from your current Houdini "
+                    "session. PTR recommends updating Houdini to 18.0.348 or newer.",
+                    title="Flow Production Tracking Toolkit",
                     severity=hou.severityType.Warning,
                 )
 
