@@ -90,7 +90,7 @@ requires_shotgun_fields:
 
 # More verbose description of this item
 display_name: "Flow Production Tracking Engine for Houdini"
-description: "Flow Production Tracking Toolkit integration in Houdini"
+description: "Flow Production Tracking integration in Houdini"
 
 # Required minimum versions for this item to run
 requires_shotgun_version:

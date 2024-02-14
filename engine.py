@@ -279,10 +279,10 @@ class HoudiniEngine(sgtk.platform.Engine):
             def run_when_idle():
                 hou.ui.displayMessage(
                     text="Houdini 18 versions older than 18.0.348 are unstable when using "
-                    "Flow Production Tracking Toolkit. Be aware that Houdini crashes may "
+                    "Flow Production Tracking. Be aware that Houdini crashes may "
                     "occur if attempting to use Toolkit apps from your current Houdini "
                     "session. PTR recommends updating Houdini to 18.0.348 or newer.",
-                    title="Flow Production Tracking Toolkit",
+                    title="Flow Production Tracking",
                     severity=hou.severityType.Warning,
                 )
 
