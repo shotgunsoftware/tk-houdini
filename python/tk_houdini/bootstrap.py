@@ -86,9 +86,9 @@ def bootstrap_classic():
         context = sgtk.context.deserialize(os.environ.get(g_sgtk_context_env))
     except Exception as e:
         bootstrap_exception(
-            "Toolkit bootstrap failed to extract the current context from the "
-            "environment! The PTR integration will be disabled. Details: "
-            "%s" % (e,)
+            "Flow Production Tracking Toolkit bootstrap failed to extract the "
+            "current context from the environment! The PTR integration will be "
+            "disabled. Details: %s" % (e,)
         )
         return
 
