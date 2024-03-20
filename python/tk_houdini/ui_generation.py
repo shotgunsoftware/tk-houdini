@@ -120,17 +120,17 @@ class AppCommandsMenu(AppCommandsUI):
         self._context_menu_item_id = None
 
     def create_menu(self, xml_path):
-        """Create the SG Menu"""
+        """Create the PTR Menu"""
 
         import hou
 
         # houdini 15+ allows for dynamic menu creation, so do that if possible.
         # otherwise, fallback to the static menu
         if hou.applicationVersion()[0] >= 15:
-            self._engine.logger.debug("Constructing dynamic SG menu.")
+            self._engine.logger.debug("Constructing dynamic PTR menu.")
             self._create_dynamic_menu(xml_path)
         else:
-            self._engine.logger.debug("Constructing static SG menu.")
+            self._engine.logger.debug("Constructing static PTR menu.")
             self._create_static_menu(xml_path)
 
     def _get_context_commands(self):
@@ -160,7 +160,7 @@ class AppCommandsMenu(AppCommandsUI):
                 name=self._get_context_name(),
                 command_dict={
                     "properties": {
-                        "description": "Displays the current context, jumps to SG.",
+                        "description": "Displays the current context, jumps to PTR.",
                         "type": "context_menu",
                     },
                     "callback": lambda: None,
@@ -211,7 +211,7 @@ class AppCommandsMenu(AppCommandsUI):
         return self._commands_by_app
 
     def _build_shotgun_menu_item(self):
-        """Constructs a top-level "ShotGrid" menu.
+        """Constructs a top-level "Flow Production Tracking" menu.
 
         Same logic for both the static and dynamic menu.
 
@@ -221,7 +221,7 @@ class AppCommandsMenu(AppCommandsUI):
 
         root = ET.Element("mainMenu")
         menubar = ET.SubElement(root, "menuBar")
-        shotgun_menu = self._menuNode(menubar, "ShotGrid", "tk.shotgun")
+        shotgun_menu = self._menuNode(menubar, "Flow Production Tracking", "tk.shotgun")
         insert_before = ET.SubElement(shotgun_menu, "insertBefore")
         insert_before.text = "help_menu"
 
@@ -485,7 +485,13 @@ class AppCommandsPanelHandler(AppCommandsUI):
 
 
 class AppCommandsShelf(AppCommandsUI):
-    def __init__(self, engine, commands=None, name="ShotGrid", label="ShotGrid"):
+    def __init__(
+        self,
+        engine,
+        commands=None,
+        name="Flow Production Tracking",
+        label="Flow Production Tracking",
+    ):
         """Initialize the shotgun commands shelf.
 
         engine:
@@ -717,7 +723,7 @@ def get_registered_commands(engine):
     not registered, but always present in the shotgun menu and shelves.
     Those commands are:
 
-        "Jump to ShotGrid"
+        "Jump to Flow Production Tracking"
         "Jump to File System"
     """
 
@@ -730,10 +736,10 @@ def get_registered_commands(engine):
     )
 
     jump_to_sg_cmd = AppCommand(
-        name="Jump to ShotGrid",
+        name="Jump to Flow Production Tracking",
         command_dict={
             "properties": {
-                "description": "Open the current SG context in your web browser.",
+                "description": "Open the current PTR context in your web browser.",
                 "icon": sg_icon.replace("\\", "/"),  # account for UNC path
                 "type": "context_menu",
             },
@@ -755,7 +761,7 @@ def get_registered_commands(engine):
             command_dict={
                 "properties": {
                     "icon": fs_icon.replace("\\", "/"),  # account for UNC path
-                    "description": "Open the current SG context in your file browser.",
+                    "description": "Open the current PTR context in your file browser.",
                     "type": "context_menu",
                 },
                 "callback": lambda: _jump_to_fs(engine),
@@ -1052,7 +1058,7 @@ import tank.platform.engine
 
 engine = tank.platform.engine.current_engine()
 if engine is None or not hasattr(engine, 'launch_command'):
-    msg = "ShotGrid: Houdini engine is not loaded."
+    msg = "Flow Production Tracking: Houdini engine is not loaded."
     if hou.isUIAvailable():
         hou.ui.displayMessage(msg)
     else:
@@ -1108,8 +1114,8 @@ def createInterface():
         import tank.platform.engine
     except ImportError:
         return NoPanelWidget(
-            "It looks like you're running Houdini outside of a SG "
-            "context. Next time you launch Houdini from within a SG "
+            "It looks like you're running Houdini outside of a PTR "
+            "context. Next time you launch Houdini from within a PTR "
             "context, you will see the '%s' panel here."
         )
 
@@ -1209,11 +1215,11 @@ try:
     # special id if there is no shotgun context/engine
     if command_id == "tk.houdini.menu.no.shotgun":
         msg = (
-            "It appears as though you are not currently working in a SG "
-            "context. There is no SG for Houdini Engine running so no "
-            "menu or shelf items are available. In order to restart the SG "
+            "It appears as though you are not currently working in a PTR "
+            "context. There is no PTR for Houdini Engine running so no "
+            "menu or shelf items are available. In order to restart the PTR "
             "integration, please close and reopen Houdini or choose a file "
-            "from your SG project in the 'Recent Files' menu. If you "
+            "from your PTR project in the 'Recent Files' menu. If you "
             "believe this to be an error, please contact your support team."
         )
         hou.ui.displayMessage(msg, severity=hou.severityType.Warning)
@@ -1235,7 +1241,7 @@ try:
         engine.launch_command(command_id)
 except Exception as e:
     # handle any exceptions raised during menu building
-    msg = "An error occurred building the SG menu...\\n\\n%s" % (e,)
+    msg = "An error occurred building the PTR menu...\\n\\n%s" % (e,)
     if engine:
         hou.ui.displayMessage(msg, severity=hou.severityType.Error)
     else:
