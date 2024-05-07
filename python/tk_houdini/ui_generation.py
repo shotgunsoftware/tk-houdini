@@ -886,13 +886,6 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
                         self.setStyleSheet(self.styleSheet() + qss_data)
                         self.update()
 
-                    # We have some funky qss behavior in H16 that requires us to
-                    # kick the parent's stylesheet by reassigning it as is. Not
-                    # sure what causes the problem, but this does resolve it. The
-                    # original symptoms were some widgets not changing after applying
-                    # the engine's stylesheet, while others did.
-                    if self.parent():
-                        self.parent().setStyleSheet(self.parent().styleSheet())
             except Exception as e:
                 engine.logger.warning(
                     "Unable to re-apply stylesheet for panel: %s %s" % (title, e)
