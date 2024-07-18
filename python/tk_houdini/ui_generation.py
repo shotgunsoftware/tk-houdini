@@ -238,7 +238,10 @@ class AppCommandsMenu(AppCommandsUI):
         :param xml_path: The path to the xml file to store the menu definitions
 
         """
-        from tank_vendor import six
+        try:
+            from tank_vendor import sgutils
+        except ImportError:
+            from tank_vendor import six as sgutils
 
         # documentation on the dynamic menu xml tags can be found here:
         # http://www.sidefx.com/docs/houdini15.0/basics/config_menus
@@ -297,7 +300,7 @@ class AppCommandsMenu(AppCommandsUI):
         )
 
         # format the xml and write it to disk
-        xml = _format_xml(six.ensure_str(ET.tostring(root)))
+        xml = _format_xml(sgutils.ensure_str(ET.tostring(root)))
         _write_xml(xml, xml_path)
         self._engine.logger.debug("Dynamic menu written to: %s" % (xml_path,))
 
@@ -402,7 +405,11 @@ class AppCommandsPanelHandler(AppCommandsUI):
         """Create the registered panels."""
 
         import hou
-        from tank_vendor import six
+
+        try:
+            from tank_vendor import sgutils
+        except ImportError:
+            from tank_vendor import six as sgutils
 
         # this code builds an xml file that defines panel interfaces to be
         # read by houdini. The xml should look something like this:
@@ -468,7 +475,7 @@ class AppCommandsPanelHandler(AppCommandsUI):
             toolbar_menu.set("menu_position", "300")
             toolbar_menu.set("create_separator", "false")
 
-        xml = _format_xml(six.ensure_str(ET.tostring(root)))
+        xml = _format_xml(sgutils.ensure_str(ET.tostring(root)))
         _write_xml(xml, panels_file)
         self._engine.logger.debug("Panels written to: %s" % panels_file)
 
