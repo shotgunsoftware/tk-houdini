@@ -154,6 +154,10 @@ class HoudiniEngine(sgtk.platform.Engine):
                 if self._houdini_version > (12, 5, 0):
                     menu_file = menu_file + ".xml"
 
+                self._menu_name = "Flow Production Tracking"
+                if self.get_setting("use_short_menu_name", False):
+                    self._menu_name = "FPTR"
+
                 # keep the reference to the menu handler for convenience so
                 # that we can access it from the menu scripts when they get
                 # ahold of the current engine.

@@ -221,7 +221,12 @@ class AppCommandsMenu(AppCommandsUI):
 
         root = ET.Element("mainMenu")
         menubar = ET.SubElement(root, "menuBar")
-        shotgun_menu = self._menuNode(menubar, "Flow Production Tracking", "tk.shotgun")
+        shotgun_menu = self._menuNode(
+            menubar,
+            self._engine._menu_name,
+            "tk.shotgun",
+        )
+
         insert_before = ET.SubElement(shotgun_menu, "insertBefore")
         insert_before.text = "help_menu"
 

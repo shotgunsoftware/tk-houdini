@@ -37,6 +37,11 @@ configuration:
                      rebuilt dynamically as the Flow Production Tracking context changes."
         default_value: true
 
+    use_short_menu_name:
+        type: bool
+        description: Optionally choose to use "FPTR" as the primary menu name instead of "Flow Production Tracking"
+        default_value: false
+
     debug_logging:
         type: bool
         description: Controls whether debug messages should be emitted to the logger
