@@ -20,7 +20,7 @@ import sys
 def plugin_startup():
 
     # construct the path to the plugin root's folder.
-    #      plugins/basic/python2.Xlibs/pythonrc.py
+    #      plugins/basic/python3.Xlibs/pythonrc.py
     #      -------------|
     # this part ^
 

@@ -139,7 +139,7 @@ def get_classic_startup_env():
 
     # Add the classic startup directory for the engine (2 levels up from this
     # file). This directory, in the engine root, includes the pythonrc.py files
-    # within python2.6libs and python2.7libs directories once on HOUDINI_PATH,
+    # within pythonX.Xlibs directories once on HOUDINI_PATH,
     # houdini will execute the appropriate file at startup
     startup_path = os.path.join(
         os.path.dirname(__file__), "..", "..", "classic_startup"
