@@ -91,6 +91,10 @@ class HoudiniEngine(sgtk.platform.Engine):
             if self.get_setting("automatic_context_switch", True):
                 tk_houdini.ensure_file_change_timer_running()
 
+        self._menu_name = "Flow Production Tracking"
+        if self.get_setting("use_short_menu_name", False):
+            self._menu_name = "FPTR"
+
     def post_app_init(self):
         """
         Init that runs after all apps have been loaded.
