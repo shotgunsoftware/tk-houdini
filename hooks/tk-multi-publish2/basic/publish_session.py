@@ -12,7 +12,10 @@ import os
 import hou
 import sgtk
 
-from tank_vendor import six
+try:
+    from tank_vendor import sgutils
+except ImportError:
+    from tank_vendor import six as sgutils
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -338,7 +341,7 @@ def _save_session(path):
     # We need to flip the slashes on Windows to avoid a bug in Houdini. If we don't
     # the next Save As dialog will have the filename box populated with the complete
     # file path.
-    sanitized_path = six.ensure_str(path.replace("\\", "/"))
+    sanitized_path = sgutils.ensure_str(path.replace("\\", "/"))
     hou.hipFile.save(file_name=sanitized_path)
 
 
