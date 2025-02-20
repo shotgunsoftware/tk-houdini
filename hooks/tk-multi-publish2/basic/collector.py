@@ -54,7 +54,7 @@ class HoudiniSessionCollector(HookBaseClass):
         """
 
         # grab any base class settings
-        collector_settings = super(HoudiniSessionCollector, self).settings or {}
+        collector_settings = super().settings or {}
 
         # settings specific to this collector
         houdini_session_settings = {
@@ -191,7 +191,7 @@ class HoudiniSessionCollector(HookBaseClass):
 
                     # allow the base class to collect and create the item. it
                     # should know how to handle the output path
-                    item = super(HoudiniSessionCollector, self)._collect_file(
+                    item = super()._collect_file(
                         parent_item, path, frame_sequence=True
                     )
 
@@ -246,9 +246,7 @@ class HoudiniSessionCollector(HookBaseClass):
 
             # allow the base class to collect and create the item. it
             # should know how to handle the output path
-            item = super(HoudiniSessionCollector, self)._collect_file(
-                parent_item, out_path
-            )
+            item = super()._collect_file(parent_item, out_path)
 
             # the item has been created. update the display name to
             # include the node path to make it clear to the user how it
@@ -306,7 +304,7 @@ class HoudiniSessionCollector(HookBaseClass):
 
             # allow the base class to collect and create the item. it
             # should know how to handle the output path
-            item = super(HoudiniSessionCollector, self)._collect_file(
+            item = super()._collect_file(
                 parent_item, out_path, frame_sequence=True
             )
 

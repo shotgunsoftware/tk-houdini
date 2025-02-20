@@ -12,11 +12,6 @@ import os
 import hou
 import sgtk
 
-try:
-    from tank_vendor import sgutils
-except ImportError:
-    from tank_vendor import six as sgutils
-
 HookBaseClass = sgtk.get_hook_baseclass()
 
 
@@ -112,7 +107,7 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
         """
 
         # inherit the settings from the base publish plugin
-        base_settings = super(HoudiniSessionPublishPlugin, self).settings or {}
+        base_settings = super().settings or {}
 
         # settings specific to this class
         houdini_publish_settings = {
@@ -291,7 +286,7 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
         item.properties["path"] = path
 
         # run the base class validation
-        return super(HoudiniSessionPublishPlugin, self).validate(settings, item)
+        return super().validate(settings, item)
 
     def publish(self, settings, item):
         """
@@ -314,7 +309,7 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
         item.properties["path"] = path
 
         # let the base class register the publish
-        super(HoudiniSessionPublishPlugin, self).publish(settings, item)
+        super().publish(settings, item)
 
     def finalize(self, settings, item):
         """
@@ -328,7 +323,7 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
         """
 
         # do the base class finalization
-        super(HoudiniSessionPublishPlugin, self).finalize(settings, item)
+        super().finalize(settings, item)
 
         # bump the session file to the next version
         self._save_to_next_version(item.properties["path"], item, _save_session)
@@ -341,7 +336,7 @@ def _save_session(path):
     # We need to flip the slashes on Windows to avoid a bug in Houdini. If we don't
     # the next Save As dialog will have the filename box populated with the complete
     # file path.
-    sanitized_path = sgutils.ensure_str(path.replace("\\", "/"))
+    sanitized_path = str(path.replace("\\", "/"))
     hou.hipFile.save(file_name=sanitized_path)
 
 

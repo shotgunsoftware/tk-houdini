@@ -24,7 +24,7 @@ class TestWorkfiles2Hooks(TestHooks):
     """
 
     def setUp(self):
-        super(TestWorkfiles2Hooks, self).setUp()
+        super().setUp()
 
         if not self.engine.has_ui:
             self.tearDown()
