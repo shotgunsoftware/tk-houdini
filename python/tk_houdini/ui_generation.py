@@ -679,7 +679,7 @@ class AppCommand(object):
         app_instance = self.properties["app"]
         engine = app_instance.engine
 
-        for (app_instance_name, app_instance_obj) in engine.apps.items():
+        for app_instance_name, app_instance_obj in engine.apps.items():
             if app_instance_obj == app_instance:
                 return app_instance_name
 
@@ -782,7 +782,7 @@ def get_registered_commands(engine):
 
         commands.append(jump_to_fs_cmd)
 
-    for (cmd_name, cmd_details) in engine.commands.items():
+    for cmd_name, cmd_details in engine.commands.items():
         commands.append(AppCommand(cmd_name, cmd_details))
     return commands
 
@@ -818,7 +818,7 @@ def get_registered_panels(engine):
     """
 
     panels = []
-    for (panel_name, panel_details) in engine.panels.items():
+    for panel_name, panel_details in engine.panels.items():
         panels.append(AppCommand(panel_name, panel_details))
     return panels
 
