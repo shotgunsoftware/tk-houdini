@@ -363,7 +363,7 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         """
 
-        for (panel_id, panel_dict) in self.panels.items():
+        for panel_id, panel_dict in self.panels.items():
             if not panel_id == requested_panel_id:
                 continue
 
@@ -657,7 +657,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         # Build a dictionary mapping app instance names to dictionaries of
         # commands they registered with the engine.
         app_instance_commands = {}
-        for (cmd_name, value) in self.commands.items():
+        for cmd_name, value in self.commands.items():
             app_instance = value["properties"].get("app")
             if app_instance:
                 # Add entry 'command name: command function' to the command
@@ -692,7 +692,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             else:
                 if not setting_cmd_name:
                     # add commands to the list for the given app instance.
-                    for (cmd_name, cmd_function) in cmd_dict.items():
+                    for cmd_name, cmd_function in cmd_dict.items():
                         self.log_debug(
                             "%s startup running app '%s' command '%s'."
                             % (self.name, app_instance_name, cmd_name)
@@ -742,7 +742,7 @@ class HoudiniEngine(sgtk.platform.Engine):
                 if self._get_dialog_parent() is None or not parent_window.isVisible():
                     return
 
-            for (cmd_name, command) in commands_to_run:
+            for cmd_name, command in commands_to_run:
                 # iterate over all the commands and execute them.
                 self.log_debug("Executing startup command: %s" % (cmd_name,))
                 command()
