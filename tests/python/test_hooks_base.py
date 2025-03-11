@@ -27,7 +27,7 @@ class TestHooks(TankTestBase):
         Set up the configuration and start the engine.
         """
         # TODO: add clean up for files created.
-        super(TestHooks, self).setUp()
+        super().setUp()
         self.setup_fixtures()
 
         # Cleanup the scene before the test run so we don't get polluted with

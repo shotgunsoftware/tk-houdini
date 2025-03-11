@@ -16,11 +16,7 @@ __file__ = os.path.abspath(__file__)
 tests_folder = os.path.abspath(os.path.dirname(__file__))
 repo_root = os.path.dirname(tests_folder)
 
-# Load the right environment based on the Python version.
-if sys.version_info.major == 2:
-    venv_folder = "venv_py2"
-else:
-    venv_folder = "venv_py3"
+venv_folder = "venv_py3"
 
 # Activate the virtual environment required to run test tests in Houdini.
 if sys.platform == "win32":

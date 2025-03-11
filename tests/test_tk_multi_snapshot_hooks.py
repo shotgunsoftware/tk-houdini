@@ -24,7 +24,7 @@ class TestSnapShotHooks(TestHooks):
     """
 
     def setUp(self):
-        super(TestSnapShotHooks, self).setUp()
+        super().setUp()
 
         # Now get the app and run the reset operation.
         self.app = self.engine.apps["tk-multi-snapshot"]

@@ -26,7 +26,7 @@ class TestLoadingOtls(TestHooks):
     """
 
     def setUp(self):
-        super(TestLoadingOtls, self).setUp()
+        super().setUp()
 
     def __check_paths(self, houdini_version, expected_folders):
         """

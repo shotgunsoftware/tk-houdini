@@ -22,7 +22,7 @@ class TestLoader2Hooks(TestHooks):
     """
 
     def setUp(self):
-        super(TestLoader2Hooks, self).setUp()
+        super().setUp()
 
         # Now get the app and run the reset operation.
         self.app = self.engine.apps["tk-multi-loader2"]

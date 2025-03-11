@@ -106,7 +106,7 @@ class AppCommandsUI(object):
 
 class AppCommandsMenu(AppCommandsUI):
     def __init__(self, engine, commands):
-        super(AppCommandsMenu, self).__init__(engine, commands)
+        super().__init__(engine, commands)
 
         # this will hold an exception raised during menu creation for dynamic
         # menus. having this allows for the ability to display a clickable
@@ -404,7 +404,7 @@ class AppCommandsPanelHandler(AppCommandsUI):
         """
 
         self._panel_commands = panel_commands
-        super(AppCommandsPanelHandler, self).__init__(engine, commands)
+        super().__init__(engine, commands)
 
     def create_panels(self, panels_file):
         """Create the registered panels."""
@@ -520,7 +520,7 @@ class AppCommandsShelf(AppCommandsUI):
             The display name for the shelf in the shelf tab
         """
 
-        super(AppCommandsShelf, self).__init__(engine, commands)
+        super().__init__(engine, commands)
 
         self._name = name
         self._label = label
@@ -846,7 +846,7 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
     # the wrapper
     class PanelWrapper(widget_class):
         def __init__(self, *args, **kwargs):
-            super(PanelWrapper, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
             self._stylesheet_applied = False
             self._changing_stylesheet = False
             self.installEventFilter(self)
@@ -1080,7 +1080,7 @@ class NoPanelWidget(QtGui.QWidget):
 
     def __init__(self, msg, error=None):
 
-        super(NoPanelWidget, self).__init__()
+        super().__init__()
 
         sg_icon_path = '%s'
         sg_icon = QtGui.QLabel()
