@@ -281,10 +281,7 @@ Please report any issues to:
 
                 # setup houdini menus
                 menu_file = self._safe_path_join(xml_tmp_dir, "MainMenuCommon")
-
-                # as of houdini 12.5 add .xml
-                if self._houdini_version > (12, 5, 0):
-                    menu_file = menu_file + ".xml"
+                menu_file = menu_file + ".xml"
 
                 # keep the reference to the menu handler for convenience so
                 # that we can access it from the menu scripts when they get
@@ -351,7 +348,7 @@ Please report any issues to:
                 else:
                     _setup_shelf()
 
-            if commands and self._panels_supported():
+            if commands:
 
                 # Get the list of registered commands to build panels for. The
                 # commands returned are AppCommand objects defined in
@@ -386,52 +383,10 @@ Please report any issues to:
         # consistent, intended look and feel of the toolkit widgets.
         # Surprisingly, calling this does not seem to have any affect on
         # houdini itself, despite the global nature of the method.
-        #
-        # NOTE: Except for 16+. It's no longer safe and causes lots of styling
-        # problems in Houdini's UI globally.
-        if self._houdini_version < (16, 0, 0):
-            self.logger.debug("Houdini < 16 detected: applying dark look and feel.")
-            self._initialize_dark_look_and_feel()
 
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
 
-        # In Houdini 18, we see substantial stability problems related to Qt in
-        # builds older than 18.0.348, which is the point when SideFx moved to a
-        # newer version of Qt and PySide2. We've reproduced problems on OSX and
-        # Linux, and we have reports of crashes on Windows, as well. All of these
-        # issues are no longer a problem in 348+, so we'll warn users on builds
-        # of H18 older than that.
-        if self._houdini_version[0] == 18 and self._houdini_version[-1] < 348:
-            # We need to wait until Houdini idles before showing the message.
-            # If we show it right now, it will pop up behind Houdini's splash
-            # screen, and since the dialog is modal you end up in a situation
-            # where Houdini does not continue to launch, and you can't see or
-            # dismiss the dialog to unblock it.
-            def run_when_idle():
-                hou.ui.displayMessage(
-                    text="Houdini 18 versions older than 18.0.348 are unstable when using "
-                    "Flow Production Tracking. Be aware that Houdini crashes may "
-                    "occur if attempting to use Toolkit apps from your current Houdini "
-                    "session. PTR recommends updating Houdini to 18.0.348 or newer.",
-                    title="Flow Production Tracking",
-                    severity=hou.severityType.Warning,
-                )
-
-                # Have the function unregister itself. It does this by looping over
-                # all the registered callbacks and finding itself by looking for a
-                # special attribute that is added below (just before registering it
-                # as an event loop callback).
-                for callback in hou.ui.eventLoopCallbacks():
-                    if hasattr(callback, "tk_houdini_stability_msg"):
-                        hou.ui.removeEventLoopCallback(callback)
-
-            # Add the special attribute that the function will look use to find
-            # and unregister itself when executed.
-            run_when_idle.tk_houdini_stability_msg = True
-
-            # Add the function as an event loop callback.
-            hou.ui.addEventLoopCallback(run_when_idle)
 
     def destroy_engine(self):
         """
@@ -561,48 +516,36 @@ Please report any issues to:
                 pane_tab.setIsCurrentTab()
                 return
 
-        # panel support differs between 14/15.
-        if self._panels_supported():
+        # if it can't be located, try to create a new tab and set the
+        # interface.
+        panel_interface = None
+        try:
+            for interface in hou.pypanel.interfacesInFile(self._panels_file):
+                if interface.name() == panel_id:
+                    panel_interface = interface
+                    break
+        except hou.OperationFailed:
+            # likely due to panels file not being a valid file, missing, etc.
+            # hopefully not the case, but try to continue gracefully.
+            self.logger.warning(
+                "Unable to find interface for panel '%s' in file: %s"
+                % (panel_id, self._panels_file)
+            )
 
-            # if it can't be located, try to create a new tab and set the
-            # interface.
-            panel_interface = None
-            try:
-                for interface in hou.pypanel.interfacesInFile(self._panels_file):
-                    if interface.name() == panel_id:
-                        panel_interface = interface
-                        break
-            except hou.OperationFailed:
-                # likely due to panels file not being a valid file, missing, etc.
-                # hopefully not the case, but try to continue gracefully.
-                self.logger.warning(
-                    "Unable to find interface for panel '%s' in file: %s"
-                    % (panel_id, self._panels_file)
-                )
+        if panel_interface:
+            # the options to create a named panel on the far right of the
+            # UI doesn't seem to be present in python. so hscript it is!
+            # Here's the docs for the hscript command:
+            #     https://www.sidefx.com/docs/houdini14.0/commands/pane
+            hou.hscript("pane -S -m pythonpanel -o -n %s" % panel_id)
+            panel = hou.ui.curDesktop().findPaneTab(panel_id)
 
-            if panel_interface:
-                # the options to create a named panel on the far right of the
-                # UI doesn't seem to be present in python. so hscript it is!
-                # Here's the docs for the hscript command:
-                #     https://www.sidefx.com/docs/houdini14.0/commands/pane
-                hou.hscript("pane -S -m pythonpanel -o -n %s" % panel_id)
-                panel = hou.ui.curDesktop().findPaneTab(panel_id)
+            panel.setActiveInterface(panel_interface)
 
-                # different calls to set the python panel interface in Houdini
-                # 14/15
-                if self._houdini_version[0] >= 15:
-                    panel.setActiveInterface(panel_interface)
-                else:
-                    # if SESI puts in a fix for setInterface, then panels
-                    # will work for houini 14. will just need to update
-                    # _panels_supported() to add the proper version. and
-                    # remove this comment.
-                    panel.setInterface(panel_interface)
-
-                # turn off the python panel toolbar to make the tk panels look
-                # more integrated. should be all good so just return
-                panel.showToolbar(False)
-                return
+            # turn off the python panel toolbar to make the tk panels look
+            # more integrated. should be all good so just return
+            panel.showToolbar(False)
+            return
 
         # if we're here, then showing as a panel was unsuccesful or not
         # supported. Just show it as a dialog.
@@ -640,7 +583,7 @@ Please report any issues to:
         return os.path.join(*args).replace(os.path.sep, "/")
 
     @staticmethod
-    def _is_version_less_or_equal(check_version, base_version):
+    def _is_version_less_or_equal(check_version, base_version): # TODO replace that with modern Python version cmp functions
         """
         Checks if the folder version is less than or equal to the current Houdini session version.
         :param check_version:
@@ -748,37 +691,6 @@ Please report any issues to:
             otl_paths.append(version_folder[1])
 
         return otl_paths
-
-    def _panels_supported(self):
-        """
-        Returns True if panels are supported for current Houdini version.
-        """
-
-        ver = hou.applicationVersion()
-
-        # first version where saving python panel in desktop was fixed
-        if sgtk.util.is_macos():
-            # We have some serious painting problems with Python panes in
-            # H16 that are specific to OS X. We have word out to SESI, and
-            # are waiting to hear back from them as to how we might be able
-            # to proceed. Until that is sorted out, though, we're going to
-            # have to disable panel support on OS X for H16. Our panel apps
-            # appear to function just fine in dialog mode.
-            #
-            # Update: H17 resolves some of the issues, but we still have problems
-            # with item delegates not rendering consistently in the Shotgun Panel's
-            # entity views.
-            if ver >= (16, 0, 0):
-                return False
-
-        if ver >= (15, 0, 272):
-            return True
-
-        return False
-
-        # NOTE: there is an outstanding bug at SESI to backport a fix to make
-        # setInterface work properly in houdini 14. If that goes through, we'll
-        # be able to make embedded panels work in houdini 14 too.
 
     def _run_app_instance_commands(self):
         """
@@ -943,14 +855,6 @@ Please report any issues to:
             # the style to the dark look and feel in preparation for the
             # re-application below. See the comment about initializing the dark
             # look and feel above.
-            #
-            # We can only do this in Houdini 15.x or older. With the switch to
-            # Qt5/PySide2 in H16, enough has changed in Houdini's styling that
-            # we break its styling in a few places if we zero out the main window's
-            # stylesheet. We're now compensating for the problems that arise in
-            # the engine's style.qss.
-            if h_ver < (16, 0, 0):
-                dialog.parent().setStyleSheet("")
 
             # This will ensure our dialogs don't fall behind Houdini's main
             # window when they lose focus.
@@ -958,9 +862,8 @@ Please report any issues to:
             # NOTE: Setting the window flags in H18 on OSX causes a crash. Once
             # that bug is resolved we can re-enable this. The result is that
             # on H18 without the window flags set per the below, our dialogs
-            # will fall behind Houdini if they lose focus. This is only an issue
-            # for versions of H18 older than 18.0.348.
-            if sgtk.util.is_macos() and (h_ver[0] == 18 and h_ver >= (18, 0, 348)):
+            # will fall behind Houdini if they lose focus.
+            if sgtk.util.is_macos():
                 dialog.setWindowFlags(dialog.windowFlags() | QtCore.Qt.Tool)
         else:
             # no parent found, so style should be ok. this is probably,
@@ -1021,20 +924,14 @@ Please report any issues to:
                     widget.setStyleSheet(widget.styleSheet() + qss_data)
                     widget.update()
         else:
-            # manually re-apply any bundled stylesheet to the dialog if we are older
-            # than H16. In 16 we inherited styling problems and need to rely on the
+            # manually re-apply any bundled stylesheet to the dialog
+            # We inherited styling problems and need to rely on the
             # engine level qss only.
-            #
-            # If we're in 16+, we also need to apply the engine-level qss.
-            if h_major_ver >= 16:
-                self._apply_external_styleshet(self, dialog)
-                qss = dialog.styleSheet()
-                qss = qss.replace("{{ENGINE_ROOT_PATH}}", engine_root_path)
-                dialog.setStyleSheet(qss)
-                dialog.update()
-
-            if hou.applicationVersion()[0] < 16:
-                self._apply_external_styleshet(bundle, dialog)
+            self._apply_external_styleshet(self, dialog)
+            qss = dialog.styleSheet()
+            qss = qss.replace("{{ENGINE_ROOT_PATH}}", engine_root_path)
+            dialog.setStyleSheet(qss)
+            dialog.update()
 
         # raise and activate the dialog:
         dialog.raise_()
@@ -1045,11 +942,7 @@ Please report any issues to:
             # Anything beyond 16.5.481 bundles a PySide2 version that gives us
             # a usable hwnd directly. We also check to make sure this is Qt5,
             # since SideFX still offers Qt4/PySide builds of modern Houdinis.
-            if hou.applicationVersion() >= (
-                16,
-                5,
-                481,
-            ) and QtCore.__version__.startswith("5."):
+            if QtCore.__version__.startswith("5."):
                 hwnd = dialog.winId()
             else:
                 ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
@@ -1087,8 +980,7 @@ Please report any issues to:
         # our dialog, those styling changes we've applied either as part
         # of the app's style.qss, or tk-houdini's, everything sticks the
         # way it should.
-        if hou.applicationVersion() >= (16, 0, 0):
-            dialog.parent().setStyleSheet(dialog.parent().styleSheet())
+        dialog.parent().setStyleSheet(dialog.parent().styleSheet())
 
         # finally launch it, modal state
         status = dialog.exec_()
@@ -1128,8 +1020,7 @@ Please report any issues to:
         # our dialog, those styling changes we've applied either as part
         # of the app's style.qss, or tk-houdini's, everything sticks the
         # way it should.
-        if hou.applicationVersion() >= (16, 0, 0):
-            dialog.parent().setStyleSheet(dialog.parent().styleSheet())
+        dialog.parent().setStyleSheet(dialog.parent().styleSheet())
 
         # lastly, return the instantiated widget
         return widget
