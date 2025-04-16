@@ -66,10 +66,10 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         self.logger.debug("%s: Initializing..." % self)
 
-        if self._houdini_version[0] < 14:
+        if self._houdini_version[0:2] < (18, 5):
             raise sgtk.TankError(
-                "Your version of Houdini is not supported. Currently, Toolkit "
-                "only supports version 14+."
+                "Flow Production Tracking is not compatible with Houdini "
+                "versions older than 18.5."
             )
 
         # keep track of if a UI exists
