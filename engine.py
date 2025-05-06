@@ -78,6 +78,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
 
         if self._houdini_version[0:2] < VERSION_OLDEST_COMPATIBLE:
+            # Older than the oldest compatible version
             message = """
 Flow Production Tracking is no longer compatible with {product} versions older
 than {version}.
@@ -103,6 +104,7 @@ For information regarding support engine versions, please visit this page:
                     )
             finally:
                 raise sgtk.TankError(message)
+
         elif self._houdini_version[0:2] < VERSION_OLDEST_SUPPORTED:
             # Older than the oldest supported version
             self.logger.warning(
@@ -132,6 +134,7 @@ For information regarding support engine versions, please visit this page:
                         version="{}.{}".format(*VERSION_OLDEST_SUPPORTED[0:2]),
                     ),
                 )
+
         elif self._houdini_version[0:2] < VERSION_NEWEST_SUPPORTED:
             # Within the range of supported versions
             self.logger.debug(
@@ -139,6 +142,7 @@ For information regarding support engine versions, please visit this page:
                     version="{}.{}".format(*self._houdini_version[0:2]),
                 )
             )
+
         else:
             # Newer than the newest supported version
             # This is an untested version of Houdini.
