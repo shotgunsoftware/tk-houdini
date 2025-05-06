@@ -77,11 +77,7 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
         compatibility_warning_msg = None
-        show_warning_dlg = (
-            self._ui_enabled
-          #  and "TANK_NUKE_ENGINE_INIT_NAME" not in os.environ
-          #  and not self.hiero_enabled
-        )
+        show_warning_dlg = self._ui_enabled
 
         if self._houdini_version[0:2] < VERSION_OLDEST_COMPATIBLE:
             raise sgtk.TankError(
