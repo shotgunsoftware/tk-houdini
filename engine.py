@@ -91,8 +91,8 @@ For information regarding support engine versions, please visit this page:
                 version="{}.{}".format(*VERSION_OLDEST_COMPATIBLE[0:2]),
             )
 
-            try:
-                if self._ui_enabled:
+            if self._ui_enabled:
+                try:
                     hou.ui.displayMessage(
                         # This method does not allow Rich Text :(
                         "Flow Production Tracking Compatibility!",
@@ -102,8 +102,15 @@ For information regarding support engine versions, please visit this page:
                         ),
                         help=message,
                     )
-            finally:
-                raise sgtk.TankError(message)
+                except:
+                    # We probably won't be able to rely on the warning dialog,
+                    # because Houdini older versions ships Python 2. And older
+                    # versions come with Qt4.
+                    # So, we raise an exception cases with an error message that
+                    # will hopefully make sense for the user.
+                    pass
+
+            raise sgtk.TankError(message)
 
         elif self._houdini_version[0:2] < VERSION_OLDEST_SUPPORTED:
             # Older than the oldest supported version
