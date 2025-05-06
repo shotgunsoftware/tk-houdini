@@ -16,7 +16,6 @@ import os
 import re
 import ctypes
 import shutil
-import textwrap
 import time
 
 import sgtk
@@ -77,22 +76,18 @@ class HoudiniEngine(sgtk.platform.Engine):
         self._ui_enabled = hasattr(hou, "ui")
 
         url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
-        compatibility_warning_msg = None
-        show_warning_dlg = False
 
         if self._houdini_version[0:2] < VERSION_OLDEST_COMPATIBLE:
-            message = textwrap.dedent(
-                """\
-                    Flow Production Tracking is no longer compatible with {product} versions older
-                    than {version}.
+            message = """
+Flow Production Tracking is no longer compatible with {product} versions older
+than {version}.
 
-                    For information regarding support engine versions, please visit this page:
-                    {url_doc_supported_versions}
-                """.format(
-                    product="Houdini",
-                    url_doc_supported_versions=url_doc_supported_versions,
-                    version="{}.{}".format(*VERSION_OLDEST_COMPATIBLE[0:2]),
-                ),
+For information regarding support engine versions, please visit this page:
+{url_doc_supported_versions}
+            """.strip().format(
+                product="Houdini",
+                url_doc_supported_versions=url_doc_supported_versions,
+                version="{}.{}".format(*VERSION_OLDEST_COMPATIBLE[0:2]),
             )
 
             try:
@@ -101,26 +96,42 @@ class HoudiniEngine(sgtk.platform.Engine):
                         # This method does not allow Rich Text :(
                         "Flow Production Tracking Compatibility!",
                         severity=hou.severityType.Fatal,
-                        title="Error - Flow Production Tracking Compatibility!",
+                        title="Error - Flow Production Tracking Compatibility!".ljust(
+                            70
+                        ),
                         help=message,
                     )
             finally:
                 raise sgtk.TankError(message)
         elif self._houdini_version[0:2] < VERSION_OLDEST_SUPPORTED:
             # Older than the oldest supported version
-            compatibility_warning_msg = textwrap.dedent(
-                """\
-                    Flow Production Tracking no longer supports {product} versions older than {version}.
-                    You can continue to use Toolkit but you may experience bugs or instabilities.
-
-                    For information regarding support engine versions, please visit this page:
-                    {url_doc_supported_versions}
-                """.format(
+            self.logger.warning(
+                "Flow Production Tracking no longer supports {product} "
+                "versions older than {version}".format(
                     product="Houdini",
-                    url_doc_supported_versions=url_doc_supported_versions,
                     version="{}.{}".format(*VERSION_OLDEST_SUPPORTED[0:2]),
-                ),
+                )
             )
+
+            if self._ui_enabled:
+                hou.ui.displayMessage(
+                    # This method does not allow Rich Text :(
+                    "Flow Production Tracking Compatibility!",
+                    severity=hou.severityType.ImportantMessage,
+                    title="Warning - Flow Production Tracking Compatibility!".ljust(70),
+                    help="""
+Flow Production Tracking no longer supports {product} versions older than
+{version}.
+You can continue to use Toolkit but you may experience bugs or instabilities.
+
+For information regarding support engine versions, please visit this page:
+{url_doc_supported_versions}
+                    """.strip().format(
+                        product="Houdini",
+                        url_doc_supported_versions=url_doc_supported_versions,
+                        version="{}.{}".format(*VERSION_OLDEST_SUPPORTED[0:2]),
+                    ),
+                )
         elif self._houdini_version[0:2] < VERSION_NEWEST_SUPPORTED:
             # Within the range of supported versions
             self.logger.debug(
@@ -131,39 +142,38 @@ class HoudiniEngine(sgtk.platform.Engine):
         else:
             # Newer than the newest supported version
             # This is an untested version of Houdini.
-            compatibility_warning_msg = textwrap.dedent(
-                """\
-                    Flow Production Tracking has not yet been fully tested with {product} version {version}.
-                    You can continue to use the Toolkit but you may experience bugs or instabilities.
-
-                    Please report any issues to:
-                    {support_url}
-                """.format(
+            self.logger.warning(
+                "Flow Production Tracking has not yet been fully tested with "
+                "{product} version {version}.".format(
                     product="Houdini",
-                    support_url=sgtk.support_url,
-                    version="{}.{}".format(*self._houdini_version[0:2]),
+                    version="{}.{}".format(*VERSION_OLDEST_SUPPORTED[0:2]),
                 )
             )
 
-            show_warning_dlg = self._houdini_version[0] >= self.get_setting(
+            if self._ui_enabled and self._houdini_version[0] >= self.get_setting(
                 "compatibility_dialog_min_version",
                 default=VERSION_NEWEST_SUPPORTED[0],
-            )
-
-        if compatibility_warning_msg:
-            # Show the message if in UI mode and the warning dialog isn't
-            # overridden by the config.
-            if self._ui_enabled and show_warning_dlg:
-                # hou.ui.displayMessage does not allow Rich Text :(
+            ):
+                # Show the message if in UI mode and the warning dialog isn't
+                # overridden by the config.
                 hou.ui.displayMessage(
+                    # This method does not allow Rich Text :(
                     "Flow Production Tracking Compatibility!",
                     severity=hou.severityType.ImportantMessage,
-                    title="Warning - Flow Production Tracking Compatibility!",
-                    help=compatibility_warning_msg,
-                )
+                    title="Warning - Flow Production Tracking Compatibility!".ljust(70),
+                    help="""
+Flow Production Tracking has not yet been fully tested with {product} version
+{version}.
+You can continue to use Toolkit but you may experience bugs or instabilities.
 
-            # Log the warning.
-            self.logger.warning(re.sub("\\n+", " ", compatibility_warning_msg))
+Please report any issues to:
+{support_url}
+                    """.strip().format(
+                        product="Houdini",
+                        support_url=sgtk.support_url,
+                        version="{}.{}".format(*self._houdini_version[0:2]),
+                    ),
+                )
 
     def pre_app_init(self):
         """
