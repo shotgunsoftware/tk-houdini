@@ -72,7 +72,7 @@ class HoudiniLauncher(SoftwareLauncher):
     @property
     def minimum_supported_version(self):
         """The minimum supported Houdini version."""
-        return ".".join(VERSION_OLDEST_COMPATIBLE)
+        return "{}.{}".format(*VERSION_OLDEST_COMPATIBLE[0:2])
 
     def prepare_launch(self, exec_path, args, file_to_open=None):
         """
