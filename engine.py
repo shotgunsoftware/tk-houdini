@@ -16,6 +16,7 @@ import os
 import re
 import ctypes
 import shutil
+import textwrap
 import time
 
 import sgtk
@@ -26,7 +27,7 @@ import hou
 # Houdini versions compatibility constants
 VERSION_OLDEST_COMPATIBLE = (18, 5)
 VERSION_OLDEST_SUPPORTED = (19, 0)
-VERSION_NEWEST_SUPPORTED = (19, 5)
+VERSION_NEWEST_SUPPORTED = (20, 5)
 
 
 class HoudiniEngine(sgtk.platform.Engine):
@@ -80,37 +81,69 @@ class HoudiniEngine(sgtk.platform.Engine):
         show_warning_dlg = self._ui_enabled
 
         if self._houdini_version[0:2] < VERSION_OLDEST_COMPATIBLE:
-            raise sgtk.TankError(
-                "Flow Production Tracking is no longer compatible with Nuke "
-                f"versions older than { '{}.{}'.format(*VERSION_OLDEST_COMPATIBLE[0:2]) }.\n"
-                "For information regarding support engine versions, please "
-                f"visit this page: {url_doc_supported_versions}"
+            message = textwrap.dedent(
+                """\
+                    Flow Production Tracking is no longer compatible with {product} versions older
+                    than {version}.
+
+                    For information regarding support engine versions, please visit this page:
+                    {url_doc_supported_versions}
+                """.format(
+                    product="Houdini",
+                    url_doc_supported_versions=url_doc_supported_versions,
+                    version = '{}.{}'.format(*VERSION_OLDEST_COMPATIBLE[0:2]),
+                ),
             )
+
+            try:
+                if show_warning_dlg:
+                    hou.ui.displayMessage(
+                        # This method does not allow Rich Text :(
+                        "Flow Production Tracking Compatibility!",
+                        severity=hou.severityType.Fatal,
+                        title="Error - Flow Production Tracking Compatibility!",
+                        help=message,
+                    )
+            finally:
+                raise sgtk.TankError(message)
         elif self._houdini_version[0:2] < VERSION_OLDEST_SUPPORTED:
             # Older than the oldest supported version
 
-            compatibility_warning_msg = (
-                "Flow Production Tracking no longer supports Houdini versions "
-                f"older than { '{}.{}'.format(*VERSION_OLDEST_SUPPORTED[0:2]) }.\n"
-                "You can continue to use Toolkit but you may experience bugs "
-                "or instabilities.\n\n"
-                "For information regarding support engine versions, please "
-                "visit this page: {url_doc_supported_versions}"
+            compatibility_warning_msg = textwrap.dedent(
+                """\
+                    Flow Production Tracking no longer supports {product} versions older than {version}.
+                    You can continue to use Toolkit but you may experience bugs or instabilities.
+
+                    For information regarding support engine versions, please visit this page:
+                    {url_doc_supported_versions}
+                """.format(
+                    product="Houdini",
+                    url_doc_supported_versions=url_doc_supported_versions,
+                    version = '{}.{}'.format(*VERSION_OLDEST_SUPPORTED[0:2])
+                ),
             )
         elif self._houdini_version[0:2] < VERSION_NEWEST_SUPPORTED:
             # Within the range of supported versions
             self.logger.debug(
-                f"Running Houdini version { '{}.{}'.format(*self._houdini_version[0:2]) }"
+                "Running Houdini version {version}".format(
+                    version='{}.{}'.format(*self._houdini_version[0:2]),
+                )
             )
         else:
             # Newer than the newest supported version
             # This is an untested version of Houdini.
-            compatibility_warning_msg = (
-                "The Flow Production Tracking has not yet been fully tested "
-                f"with Nuke { '{}.{}'.format(*self._houdini_version[0:2]) }.\n"
-                "You can continue to use the Toolkit but you may experience "
-                "bugs or instabilities.\n\n"
-                "Please report any issues to: {support_url}"
+            compatibility_warning_msg = textwrap.dedent(
+                """\
+                    Flow Production Tracking has not yet been fully tested with {product} version {version}.
+                    You can continue to use the Toolkit but you may experience bugs or instabilities.
+
+                    Please report any issues to:
+                    {support_url}
+                """.format(
+                    product="Houdini",
+                    support_url=sgtk.support_url,
+                    version='{}.{}'.format(*self._houdini_version[0:2]),
+                )
             )
 
             show_warning_dlg = show_warning_dlg and (
@@ -121,29 +154,20 @@ class HoudiniEngine(sgtk.platform.Engine):
             )
 
         if compatibility_warning_msg:
-            # Show nuke message if in UI mode, this is the first time the engine
-            # has been started and the warning dialog isn't overridden by the
-            # config.
-            # Note that nuke.message isn't available in Hiero, so we have to
-            # skip this there.
+            # Show the message if in UI mode and the warning dialog isn't
+            # overridden by the config.
             if show_warning_dlg:
                 # hou.ui.displayMessage does not allow Rich Text :(
                 hou.ui.displayMessage(
                     "Flow Production Tracking Compatibility!",
-                    severity=hou.severityType.Warning,
+                    severity=hou.severityType.ImportantMessage,
                     title="Warning - Flow Production Tracking Compatibility!",
-                    help = compatibility_warning_msg.format(
-                        support_url=sgtk.support_url,
-                        url_doc_supported_versions=url_doc_supported_versions,
-                    ),
+                    help = compatibility_warning_msg,
                 )
 
             # Log the warning.
             self.logger.warning(
-                re.sub("\\n+", " ", compatibility_warning_msg).format(
-                    support_url=sgtk.support_url,
-                    url_doc_supported_versions=url_doc_supported_versions,
-                )
+                re.sub("\\n+", " ", compatibility_warning_msg)
             )
 
 
