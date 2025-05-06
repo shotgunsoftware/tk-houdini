@@ -27,6 +27,8 @@ import hou
 VERSION_OLDEST_COMPATIBLE = (18, 5)
 VERSION_OLDEST_SUPPORTED = (19, 0)
 VERSION_NEWEST_SUPPORTED = (20, 5)
+# Caution: make sure compatibility_dialog_min_version default value in info.yml
+# is equal to VERSION_NEWEST_SUPPORTED
 
 
 class HoudiniEngine(sgtk.platform.Engine):
@@ -157,13 +159,12 @@ For information regarding support engine versions, please visit this page:
                 "Flow Production Tracking has not yet been fully tested with "
                 "{product} version {version}.".format(
                     product="Houdini",
-                    version="{}.{}".format(*VERSION_NEWEST_SUPPORTED[0:2]),
+                    version="{}.{}".format(*self._houdini_version[0:2]),
                 )
             )
 
             if self._ui_enabled and self._houdini_version[0] >= self.get_setting(
                 "compatibility_dialog_min_version",
-                default=VERSION_NEWEST_SUPPORTED[0],
             ):
                 # Show the message if in UI mode and the warning dialog isn't
                 # overridden by the config.
