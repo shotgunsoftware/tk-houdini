@@ -69,16 +69,16 @@ class HoudiniEngine(sgtk.platform.Engine):
         Main initialization entry point.
         """
 
-        self._houdini_version = hou.applicationVersion()
-
         self.logger.debug("%s: Initializing..." % self)
+
+        self._houdini_version = hou.applicationVersion()
 
         # keep track of if a UI exists
         self._ui_enabled = hasattr(hou, "ui")
 
         url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
         compatibility_warning_msg = None
-        show_warning_dlg = self._ui_enabled
+        show_warning_dlg = False
 
         if self._houdini_version[0:2] < VERSION_OLDEST_COMPATIBLE:
             message = textwrap.dedent(
@@ -96,7 +96,7 @@ class HoudiniEngine(sgtk.platform.Engine):
             )
 
             try:
-                if show_warning_dlg:
+                if self._ui_enabled:
                     hou.ui.displayMessage(
                         # This method does not allow Rich Text :(
                         "Flow Production Tracking Compatibility!",
@@ -108,7 +108,6 @@ class HoudiniEngine(sgtk.platform.Engine):
                 raise sgtk.TankError(message)
         elif self._houdini_version[0:2] < VERSION_OLDEST_SUPPORTED:
             # Older than the oldest supported version
-
             compatibility_warning_msg = textwrap.dedent(
                 """\
                     Flow Production Tracking no longer supports {product} versions older than {version}.
@@ -146,7 +145,7 @@ class HoudiniEngine(sgtk.platform.Engine):
                 )
             )
 
-            show_warning_dlg = show_warning_dlg and (
+            show_warning_dlg = (
                 self._houdini_version[0] >= self.get_setting(
                     "compatibility_dialog_min_version",
                     default=VERSION_NEWEST_SUPPORTED[0],
@@ -156,7 +155,7 @@ class HoudiniEngine(sgtk.platform.Engine):
         if compatibility_warning_msg:
             # Show the message if in UI mode and the warning dialog isn't
             # overridden by the config.
-            if show_warning_dlg:
+            if self._ui_enabled and show_warning_dlg:
                 # hou.ui.displayMessage does not allow Rich Text :(
                 hou.ui.displayMessage(
                     "Flow Production Tracking Compatibility!",
