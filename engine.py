@@ -23,6 +23,12 @@ import sgtk
 import hou
 
 
+# Houdini versions compatibility constants
+VERSION_OLDEST_COMPATIBLE = (18, 5)
+VERSION_OLDEST_SUPPORTED = (19, 0)
+VERSION_NEWEST_SUPPORTED = (20, 5)
+
+
 class HoudiniEngine(sgtk.platform.Engine):
     """
     Houdini Engine implementation
@@ -66,14 +72,94 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         self.logger.debug("%s: Initializing..." % self)
 
-        if self._houdini_version[0:2] < (18, 5):
-            raise sgtk.TankError(
-                "Flow Production Tracking is not compatible with Houdini "
-                "versions older than 18.5."
-            )
-
         # keep track of if a UI exists
         self._ui_enabled = hasattr(hou, "ui")
+
+        url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
+        compatibility_warning_msg = None
+        show_warning_dlg = (
+            self._ui_enabled
+          #  and "TANK_NUKE_ENGINE_INIT_NAME" not in os.environ
+          #  and not self.hiero_enabled
+        )
+
+        if self._houdini_version[0:2] < VERSION_OLDEST_COMPATIBLE:
+            raise sgtk.TankError(
+                "Flow Production Tracking is no longer compatible with Nuke "
+                f"versions older than {'.'.join(VERSION_OLDEST_COMPATIBLE)}.\n"
+                "For information regarding support engine versions, please "
+                f"visit this page: {url_doc_supported_versions}"
+            )
+        elif self._houdini_version[0:2] < VERSION_OLDEST_SUPPORTED:
+            # Older than the oldest supported version
+
+            compatibility_warning_msg = (
+                "Flow Production Tracking no longer supports Houdini versions "
+                f"older than {VERSION_OLDEST_SUPPORTED}.\n"
+                "You can continue to use Toolkit but you may experience bugs "
+                "or instabilities.\n\n"
+                "For information regarding support engine versions, please "
+                "visit this page: {url_doc_supported_versions}"
+            )
+        elif self._houdini_version[0:2] < VERSION_NEWEST_SUPPORTED:
+            # Within the range of supported versions
+            self.logger.debug(
+                f"Running Houdini version {'.'.join(self._houdini_version[0:2])}"
+            )
+        else:
+            # Newer than the newest supported version
+            # This is an untested version of Houdini.
+            compatibility_warning_msg = (
+                "The Flow Production Tracking has not yet been fully tested "
+                f"with Nuke {'.'.join(self._houdini_version[0:2])}.\n"
+                "You can continue to use the Toolkit but you may experience "
+                "bugs or instabilities.\n\n"
+                "Please report any issues to: {support_url}"
+            )
+
+            show_warning_dlg = show_warning_dlg and (
+                self._houdini_version[0] >= self.get_setting(
+                    "compatibility_dialog_min_version",
+                    default=VERSION_NEWEST_SUPPORTED[0],
+                )
+            )
+
+        if compatibility_warning_msg:
+            # Show nuke message if in UI mode, this is the first time the engine
+            # has been started and the warning dialog isn't overridden by the
+            # config.
+            # Note that nuke.message isn't available in Hiero, so we have to
+            # skip this there.
+            if show_warning_dlg:
+                hou.ui.displayMessage(
+                    compatibility_warning_msg.format(
+                        support_url='<a href="{u}">{u}</a>'.format(
+                            u=sgtk.support_url
+                        ),
+                        url_doc_supported_versions='<a href="{u}">{u}</a>'.format(
+                            u=url_doc_supported_versions,
+                        ),
+                    ),
+                    #buttons=('OK',),
+                    severity=hou.severityType.Warning,
+                    # default_choice=0,
+                    # close_choice=-1,
+                    # help=None,
+                    title="Warning - Flow Production Tracking Compatibility!",
+                    # details=None,
+                    # details_label=None,
+                    # details_expanded=False,
+                    # suppress=hou.confirmType.NoConfirmType,
+                )
+
+            # Log the warning.
+            self.logger.warning(
+                re.sub("\\n+", " ", compatibility_warning_msg).format(
+                    support_url=sgtk.support_url,
+                    url_doc_supported_versions=url_doc_supported_versions,
+                )
+            )
+
 
     def pre_app_init(self):
         """
