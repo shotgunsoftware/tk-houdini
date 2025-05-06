@@ -91,7 +91,7 @@ class HoudiniEngine(sgtk.platform.Engine):
                 """.format(
                     product="Houdini",
                     url_doc_supported_versions=url_doc_supported_versions,
-                    version = '{}.{}'.format(*VERSION_OLDEST_COMPATIBLE[0:2]),
+                    version="{}.{}".format(*VERSION_OLDEST_COMPATIBLE[0:2]),
                 ),
             )
 
@@ -118,14 +118,14 @@ class HoudiniEngine(sgtk.platform.Engine):
                 """.format(
                     product="Houdini",
                     url_doc_supported_versions=url_doc_supported_versions,
-                    version = '{}.{}'.format(*VERSION_OLDEST_SUPPORTED[0:2])
+                    version="{}.{}".format(*VERSION_OLDEST_SUPPORTED[0:2]),
                 ),
             )
         elif self._houdini_version[0:2] < VERSION_NEWEST_SUPPORTED:
             # Within the range of supported versions
             self.logger.debug(
                 "Running Houdini version {version}".format(
-                    version='{}.{}'.format(*self._houdini_version[0:2]),
+                    version="{}.{}".format(*self._houdini_version[0:2]),
                 )
             )
         else:
@@ -141,15 +141,13 @@ class HoudiniEngine(sgtk.platform.Engine):
                 """.format(
                     product="Houdini",
                     support_url=sgtk.support_url,
-                    version='{}.{}'.format(*self._houdini_version[0:2]),
+                    version="{}.{}".format(*self._houdini_version[0:2]),
                 )
             )
 
-            show_warning_dlg = (
-                self._houdini_version[0] >= self.get_setting(
-                    "compatibility_dialog_min_version",
-                    default=VERSION_NEWEST_SUPPORTED[0],
-                )
+            show_warning_dlg = self._houdini_version[0] >= self.get_setting(
+                "compatibility_dialog_min_version",
+                default=VERSION_NEWEST_SUPPORTED[0],
             )
 
         if compatibility_warning_msg:
@@ -161,14 +159,11 @@ class HoudiniEngine(sgtk.platform.Engine):
                     "Flow Production Tracking Compatibility!",
                     severity=hou.severityType.ImportantMessage,
                     title="Warning - Flow Production Tracking Compatibility!",
-                    help = compatibility_warning_msg,
+                    help=compatibility_warning_msg,
                 )
 
             # Log the warning.
-            self.logger.warning(
-                re.sub("\\n+", " ", compatibility_warning_msg)
-            )
-
+            self.logger.warning(re.sub("\\n+", " ", compatibility_warning_msg))
 
     def pre_app_init(self):
         """
