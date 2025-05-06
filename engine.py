@@ -150,7 +150,7 @@ For information regarding support engine versions, please visit this page:
                 "Flow Production Tracking has not yet been fully tested with "
                 "{product} version {version}.".format(
                     product="Houdini",
-                    version="{}.{}".format(*VERSION_OLDEST_SUPPORTED[0:2]),
+                    version="{}.{}".format(*VERSION_NEWEST_SUPPORTED[0:2]),
                 )
             )
 
