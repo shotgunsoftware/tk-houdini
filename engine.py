@@ -79,48 +79,25 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
 
+        # Unable to use sgtk.platform.qt from here because it has not been
+        # provisionned by tk-core yet
         from sgtk.util.qt_importer import QtImporter
+
         qt = QtImporter()
 
         if self._houdini_version[0:2] < VERSION_OLDEST_COMPATIBLE:
             # Older than the oldest compatible version
-            message = """
+
+            # No QMessageBox.critical here because Houdini will issue a warning
+            # message from the TankError exception
+            raise sgtk.TankError(
+                """
 Flow Production Tracking is no longer compatible with {product} versions older
 than {version}.
 
 For information regarding support engine versions, please visit this page:
 {url_doc_supported_versions}
-            """.strip()
-
-            if self._ui_enabled:
-                try:
-                    qt.QtGui.QMessageBox.critical(
-                        # Can't use hou.ui.displayMessage because does not support Rich Text
-                        None,  # parent
-                        "Error - Flow Production Tracking Compatibility!".ljust(
-                            # Padding to try to prevent the dialog being insanely narrow
-                            70
-                        ),
-                        message.replace(
-                            # Precense of \n breaks the Rich Text Format
-                            "\n",
-                            "<br>",
-                        ).format(
-                            product="Houdini",
-                            url_doc_supported_versions='<a href="{u}">{u}</a>'.format(
-                                u=url_doc_supported_versions,
-                            ),
-                            version=self.version_str(VERSION_OLDEST_COMPATIBLE),
-                        ),
-                    )
-                except:
-                    # It is unlikely that the above message will go through
-                    # on old versions of Houdini (Python2, Qt4, ...).
-                    # But there is nothing more we can do here.
-                    pass
-
-            raise sgtk.TankError(
-                message.format(
+                """.strip().format(
                     product="Houdini",
                     url_doc_supported_versions=url_doc_supported_versions,
                     version=self.version_str(VERSION_OLDEST_COMPATIBLE),
