@@ -26,7 +26,7 @@ import hou
 # Houdini versions compatibility constants
 VERSION_OLDEST_COMPATIBLE = (18, 5)
 VERSION_OLDEST_SUPPORTED = (19, 0)
-VERSION_NEWEST_SUPPORTED = (20, 5)
+VERSION_NEWEST_SUPPORTED = (20, 0)
 # Caution: make sure compatibility_dialog_min_version default value in info.yml
 # is equal to VERSION_NEWEST_SUPPORTED
 
@@ -79,6 +79,9 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
 
+        from sgtk.util.qt_importer import QtImporter
+        qt = QtImporter()
+
         if self._houdini_version[0:2] < VERSION_OLDEST_COMPATIBLE:
             # Older than the oldest compatible version
             message = """
@@ -87,32 +90,42 @@ than {version}.
 
 For information regarding support engine versions, please visit this page:
 {url_doc_supported_versions}
-            """.strip().format(
-                product="Houdini",
-                url_doc_supported_versions=url_doc_supported_versions,
-                version="{}.{}".format(*VERSION_OLDEST_COMPATIBLE[0:2]),
-            )
+            """.strip()
 
             if self._ui_enabled:
                 try:
-                    hou.ui.displayMessage(
-                        # This method does not allow Rich Text :(
-                        "Flow Production Tracking Compatibility!",
-                        severity=hou.severityType.Fatal,
-                        title="Error - Flow Production Tracking Compatibility!".ljust(
+                    qt.QtGui.QMessageBox.critical(
+                        # Can't use hou.ui.displayMessage because does not support Rich Text
+                        None,  # parent
+                        "Error - Flow Production Tracking Compatibility!".ljust(
+                            # Padding to try to prevent the dialog being insanely narrow
                             70
                         ),
-                        help=message,
+                        message.replace(
+                            # Precense of \n breaks the Rich Text Format
+                            "\n",
+                            "<br>",
+                        ).format(
+                            product="Houdini",
+                            url_doc_supported_versions='<a href="{u}">{u}</a>'.format(
+                                u=url_doc_supported_versions,
+                            ),
+                            version=self.version_str(VERSION_OLDEST_COMPATIBLE),
+                        ),
                     )
                 except:
-                    # We probably won't be able to rely on the warning dialog,
-                    # because Houdini older versions ships Python 2. And older
-                    # versions come with Qt4.
-                    # So, we raise an exception cases with an error message that
-                    # will hopefully make sense for the user.
+                    # It is unlikely that the above message will go through
+                    # on old versions of Houdini (Python2, Qt4, ...).
+                    # But there is nothing more we can do here.
                     pass
 
-            raise sgtk.TankError(message)
+            raise sgtk.TankError(
+                message.format(
+                    product="Houdini",
+                    url_doc_supported_versions=url_doc_supported_versions,
+                    version=self.version_str(VERSION_OLDEST_COMPATIBLE),
+                )
+            )
 
         elif self._houdini_version[0:2] < VERSION_OLDEST_SUPPORTED:
             # Older than the oldest supported version
@@ -120,27 +133,37 @@ For information regarding support engine versions, please visit this page:
                 "Flow Production Tracking no longer supports {product} "
                 "versions older than {version}".format(
                     product="Houdini",
-                    version="{}.{}".format(*VERSION_OLDEST_SUPPORTED[0:2]),
+                    version=self.version_str(VERSION_OLDEST_SUPPORTED),
                 )
             )
 
             if self._ui_enabled:
-                hou.ui.displayMessage(
-                    # This method does not allow Rich Text :(
-                    "Flow Production Tracking Compatibility!",
-                    severity=hou.severityType.ImportantMessage,
-                    title="Warning - Flow Production Tracking Compatibility!".ljust(70),
-                    help="""
+                qt.QtGui.QMessageBox.warning(
+                    # Can't use hou.ui.displayMessage because does not support Rich Text
+                    None,  # parent
+                    "Warning - Flow Production Tracking Compatibility!".ljust(
+                        # Padding to try to prevent the dialog being insanely narrow
+                        70
+                    ),
+                    """
 Flow Production Tracking no longer supports {product} versions older than
 {version}.
 You can continue to use Toolkit but you may experience bugs or instabilities.
 
 For information regarding support engine versions, please visit this page:
 {url_doc_supported_versions}
-                    """.strip().format(
-                        product="Houdini",
-                        url_doc_supported_versions=url_doc_supported_versions,
-                        version="{}.{}".format(*VERSION_OLDEST_SUPPORTED[0:2]),
+                    """.strip()
+                    .replace(
+                        # Precense of \n breaks the Rich Text Format
+                        "\n",
+                        "<br>",
+                    )
+                    .format(
+                        product="Nuke",
+                        url_doc_supported_versions='<a href="{u}">{u}</a>'.format(
+                            u=url_doc_supported_versions,
+                        ),
+                        version=self.version_str(VERSION_OLDEST_SUPPORTED),
                     ),
                 )
 
@@ -168,22 +191,32 @@ For information regarding support engine versions, please visit this page:
             ):
                 # Show the message if in UI mode and the warning dialog isn't
                 # overridden by the config.
-                hou.ui.displayMessage(
-                    # This method does not allow Rich Text :(
-                    "Flow Production Tracking Compatibility!",
-                    severity=hou.severityType.ImportantMessage,
-                    title="Warning - Flow Production Tracking Compatibility!".ljust(70),
-                    help="""
+                qt.QtGui.QMessageBox.warning(
+                    # Can't use hou.ui.displayMessage because does not support Rich Text
+                    None,  # parent
+                    "Warning - Flow Production Tracking Compatibility!".ljust(
+                        # Padding to try to prevent the dialog being insanely narrow
+                        70
+                    ),
+                    """
 Flow Production Tracking has not yet been fully tested with {product} version
 {version}.
 You can continue to use Toolkit but you may experience bugs or instabilities.
 
 Please report any issues to:
 {support_url}
-                    """.strip().format(
-                        product="Houdini",
-                        support_url=sgtk.support_url,
-                        version="{}.{}".format(*self._houdini_version[0:2]),
+                    """.strip()
+                    .replace(
+                        # Precense of \n breaks the Rich Text Format
+                        "\n",
+                        "<br>",
+                    )
+                    .format(
+                        product="Nuke",
+                        support_url='<a href="{u}">{u}</a>'.format(
+                            u=sgtk.support_url,
+                        ),
+                        version=self.version_str(self._houdini_version),
                     ),
                 )
 
@@ -595,6 +628,10 @@ Please report any issues to:
     ############################################################################
     # internal methods
     ############################################################################
+
+    @staticmethod
+    def version_str(version_tuple):
+        return ".".join([str(v) for v in version_tuple])
 
     def launch_command(self, cmd_id):
         """
