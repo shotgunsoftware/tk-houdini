@@ -163,10 +163,8 @@ For information regarding support engine versions, please visit this page:
                 )
             )
 
-            if (
-                self._ui_enabled
-                and self._houdini_version[0]
-                >= self.get_setting("compatibility_dialog_min_version")
+            if self._ui_enabled and self._houdini_version[0] >= self.get_setting(
+                "compatibility_dialog_min_version"
             ):
                 # Show the message if in UI mode and the warning dialog isn't
                 # overridden by the config.
