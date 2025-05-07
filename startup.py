@@ -14,6 +14,9 @@ import sys
 import sgtk
 from sgtk.platform import SoftwareLauncher, SoftwareVersion, LaunchInformation
 
+# Houdini versions compatibility constants
+VERSION_OLDEST_COMPATIBLE = (18, 5)
+
 
 class HoudiniLauncher(SoftwareLauncher):
     """
@@ -69,7 +72,7 @@ class HoudiniLauncher(SoftwareLauncher):
     @property
     def minimum_supported_version(self):
         """The minimum supported Houdini version."""
-        return "18.5"
+        return "{}.{}".format(*VERSION_OLDEST_COMPATIBLE[0:2])
 
     def prepare_launch(self, exec_path, args, file_to_open=None):
         """
