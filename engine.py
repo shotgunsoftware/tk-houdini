@@ -137,8 +137,12 @@ For information regarding support engine versions, please visit this page:
                     )
                     .format(
                         product="Nuke",
-                        url_doc_supported_versions='<a href="{u}">{u}</a>'.format(
+                        url_doc_supported_versions='<a style="color: {color}" href="{u}">{u}</a>'.format(
                             u=url_doc_supported_versions,
+                            color=sgtk.platform.constants.SG_STYLESHEET_CONSTANTS.get(
+                                "SG_HIGHLIGHT_COLOR",
+                                "#18A7E3",
+                            ),
                         ),
                         version=self.version_str(VERSION_OLDEST_SUPPORTED),
                     ),
@@ -190,8 +194,12 @@ Please report any issues to:
                     )
                     .format(
                         product="Nuke",
-                        support_url='<a href="{u}">{u}</a>'.format(
+                        support_url='<a style="color: {color}" href="{u}">{u}</a>'.format(
                             u=sgtk.support_url,
+                            color=sgtk.platform.constants.SG_STYLESHEET_CONSTANTS.get(
+                                "SG_HIGHLIGHT_COLOR",
+                                "#18A7E3",
+                            ),
                         ),
                         version=self.version_str(self._houdini_version),
                     ),
