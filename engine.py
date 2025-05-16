@@ -131,12 +131,12 @@ For information regarding support engine versions, please visit this page:
 {url_doc_supported_versions}
                     """.strip()
                     .replace(
-                        # Precense of \n breaks the Rich Text Format
+                        # Presence of \n breaks the Rich Text Format
                         "\n",
                         "<br>",
                     )
                     .format(
-                        product="Nuke",
+                        product="Houdini",
                         url_doc_supported_versions='<a style="color: {color}" href="{u}">{u}</a>'.format(
                             u=url_doc_supported_versions,
                             color=sgtk.platform.constants.SG_STYLESHEET_CONSTANTS.get(
@@ -148,7 +148,7 @@ For information regarding support engine versions, please visit this page:
                     ),
                 )
 
-        elif self._houdini_version[0:2] < VERSION_NEWEST_SUPPORTED:
+        elif self._houdini_version[0:2] <= VERSION_NEWEST_SUPPORTED:
             # Within the range of supported versions
             self.logger.debug(
                 "Running Houdini version {version}".format(
@@ -156,9 +156,7 @@ For information regarding support engine versions, please visit this page:
                 )
             )
 
-        else:
-            # Newer than the newest supported version
-            # This is an untested version of Houdini.
+        else:  # Newer than the newest supported version (untested)
             self.logger.warning(
                 "Flow Production Tracking has not yet been fully tested with "
                 "{product} version {version}.".format(
@@ -188,12 +186,12 @@ Please report any issues to:
 {support_url}
                     """.strip()
                     .replace(
-                        # Precense of \n breaks the Rich Text Format
+                        # Presence of \n breaks the Rich Text Format
                         "\n",
                         "<br>",
                     )
                     .format(
-                        product="Nuke",
+                        product="Houdini",
                         support_url='<a style="color: {color}" href="{u}">{u}</a>'.format(
                             u=sgtk.support_url,
                             color=sgtk.platform.constants.SG_STYLESHEET_CONSTANTS.get(
