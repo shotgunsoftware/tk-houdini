@@ -23,6 +23,14 @@ import sgtk
 import hou
 
 
+# Houdini versions compatibility constants
+VERSION_OLDEST_COMPATIBLE = (18, 5)
+VERSION_OLDEST_SUPPORTED = (19, 0)
+VERSION_NEWEST_SUPPORTED = (20, 5)
+# Caution: make sure compatibility_dialog_min_version default value in info.yml
+# is equal to VERSION_NEWEST_SUPPORTED
+
+
 class HoudiniEngine(sgtk.platform.Engine):
     """
     Houdini Engine implementation
@@ -62,18 +70,138 @@ class HoudiniEngine(sgtk.platform.Engine):
         Main initialization entry point.
         """
 
-        self._houdini_version = hou.applicationVersion()
-
         self.logger.debug("%s: Initializing..." % self)
 
-        if self._houdini_version[0:2] < (18, 5):
-            raise sgtk.TankError(
-                "Flow Production Tracking is not compatible with Houdini "
-                "versions older than 18.5."
-            )
+        self._houdini_version = hou.applicationVersion()
 
         # keep track of if a UI exists
         self._ui_enabled = hasattr(hou, "ui")
+
+        url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
+
+        # Unable to use sgtk.platform.qt from here because it has not been
+        # provisionned by tk-core yet
+        from sgtk.util.qt_importer import QtImporter
+
+        qt = QtImporter()
+
+        if self._houdini_version[0:2] < VERSION_OLDEST_COMPATIBLE:
+            # Older than the oldest compatible version
+
+            # No QMessageBox.critical here because Houdini will issue a warning
+            # message from the TankError exception
+            raise sgtk.TankError(
+                """
+Flow Production Tracking is no longer compatible with {product} versions older
+than {version}.
+
+For information regarding support engine versions, please visit this page:
+{url_doc_supported_versions}
+                """.strip().format(
+                    product="Houdini",
+                    url_doc_supported_versions=url_doc_supported_versions,
+                    version=self.version_str(VERSION_OLDEST_COMPATIBLE),
+                )
+            )
+
+        elif self._houdini_version[0:2] < VERSION_OLDEST_SUPPORTED:
+            # Older than the oldest supported version
+            self.logger.warning(
+                "Flow Production Tracking no longer supports {product} "
+                "versions older than {version}".format(
+                    product="Houdini",
+                    version=self.version_str(VERSION_OLDEST_SUPPORTED),
+                )
+            )
+
+            if self._ui_enabled:
+                qt.QtGui.QMessageBox.warning(
+                    # Can't use hou.ui.displayMessage because does not support Rich Text
+                    None,  # parent
+                    "Warning - Flow Production Tracking Compatibility!".ljust(
+                        # Padding to try to prevent the dialog being insanely narrow
+                        70
+                    ),
+                    """
+Flow Production Tracking no longer supports {product} versions older than
+{version}.
+You can continue to use Toolkit but you may experience bugs or instabilities.
+
+For information regarding support engine versions, please visit this page:
+{url_doc_supported_versions}
+                    """.strip()
+                    .replace(
+                        # Presence of \n breaks the Rich Text Format
+                        "\n",
+                        "<br>",
+                    )
+                    .format(
+                        product="Houdini",
+                        url_doc_supported_versions='<a style="color: {color}" href="{u}">{u}</a>'.format(
+                            u=url_doc_supported_versions,
+                            color=sgtk.platform.constants.SG_STYLESHEET_CONSTANTS.get(
+                                "SG_HIGHLIGHT_COLOR",
+                                "#18A7E3",
+                            ),
+                        ),
+                        version=self.version_str(VERSION_OLDEST_SUPPORTED),
+                    ),
+                )
+
+        elif self._houdini_version[0:2] <= VERSION_NEWEST_SUPPORTED:
+            # Within the range of supported versions
+            self.logger.debug(
+                "Running Houdini version {version}".format(
+                    version="{}.{}".format(*self._houdini_version[0:2]),
+                )
+            )
+
+        else:  # Newer than the newest supported version (untested)
+            self.logger.warning(
+                "Flow Production Tracking has not yet been fully tested with "
+                "{product} version {version}.".format(
+                    product="Houdini",
+                    version="{}.{}".format(*self._houdini_version[0:2]),
+                )
+            )
+
+            if self._ui_enabled and self._houdini_version[0] >= self.get_setting(
+                "compatibility_dialog_min_version"
+            ):
+                # Show the message if in UI mode and the warning dialog isn't
+                # overridden by the config.
+                qt.QtGui.QMessageBox.warning(
+                    # Can't use hou.ui.displayMessage because does not support Rich Text
+                    None,  # parent
+                    "Warning - Flow Production Tracking Compatibility!".ljust(
+                        # Padding to try to prevent the dialog being insanely narrow
+                        70
+                    ),
+                    """
+Flow Production Tracking has not yet been fully tested with {product} version
+{version}.
+You can continue to use Toolkit but you may experience bugs or instabilities.
+
+Please report any issues to:
+{support_url}
+                    """.strip()
+                    .replace(
+                        # Presence of \n breaks the Rich Text Format
+                        "\n",
+                        "<br>",
+                    )
+                    .format(
+                        product="Houdini",
+                        support_url='<a style="color: {color}" href="{u}">{u}</a>'.format(
+                            u=sgtk.support_url,
+                            color=sgtk.platform.constants.SG_STYLESHEET_CONSTANTS.get(
+                                "SG_HIGHLIGHT_COLOR",
+                                "#18A7E3",
+                            ),
+                        ),
+                        version=self.version_str(self._houdini_version),
+                    ),
+                )
 
     def pre_app_init(self):
         """
@@ -483,6 +611,10 @@ class HoudiniEngine(sgtk.platform.Engine):
     ############################################################################
     # internal methods
     ############################################################################
+
+    @staticmethod
+    def version_str(version_tuple):
+        return ".".join([str(v) for v in version_tuple])
 
     def launch_command(self, cmd_id):
         """
