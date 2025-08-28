@@ -754,6 +754,8 @@ Please report any issues to:
         Returns True if panels are supported for current Houdini version.
         """
 
+        return True
+
         ver = hou.applicationVersion()
 
         # first version where saving python panel in desktop was fixed

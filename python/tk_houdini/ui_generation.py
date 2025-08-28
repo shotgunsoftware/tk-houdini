@@ -126,7 +126,7 @@ class AppCommandsMenu(AppCommandsUI):
 
         # houdini 15+ allows for dynamic menu creation, so do that if possible.
         # otherwise, fallback to the static menu
-        if hou.applicationVersion()[0] >= 15:
+        if False and hou.applicationVersion()[0] >= 15:
             self._engine.logger.debug("Constructing dynamic PTR menu.")
             self._create_dynamic_menu(xml_path)
         else:
@@ -227,13 +227,13 @@ class AppCommandsMenu(AppCommandsUI):
             "tk.shotgun",
         )
 
-        insert_before = ET.SubElement(shotgun_menu, "insertBefore")
-        insert_before.text = "help_menu"
+        # insert_before = ET.SubElement(shotgun_menu, "insertBefore")
+        # insert_before.text = "help_menu"
 
         # make sure the Help menu still comes last
-        modify_item = ET.SubElement(menubar, "modifyItem")
-        modify_item.set("id", "help_menu")
-        ET.SubElement(modify_item, "insertAfter")
+        # modify_item = ET.SubElement(menubar, "modifyItem")
+        # modify_item.set("id", "help_menu")
+        # ET.SubElement(modify_item, "insertAfter")
 
         return (root, shotgun_menu)
 
@@ -305,7 +305,7 @@ class AppCommandsMenu(AppCommandsUI):
         )
 
         # format the xml and write it to disk
-        xml = _format_xml(sgutils.ensure_str(ET.tostring(root)))
+        xml = _format_xml(ET.tostring(root).decode("utf-8"))
         _write_xml(xml, xml_path)
         self._engine.logger.debug("Dynamic menu written to: %s" % (xml_path,))
 
@@ -323,9 +323,9 @@ class AppCommandsMenu(AppCommandsUI):
         (root, shotgun_menu) = self._build_shotgun_menu_item()
 
         # create the menu object
-        ctx_name = self._get_context_name()
-        ctx_menu = self._menuNode(shotgun_menu, ctx_name, "tk.context")
-        ET.SubElement(ctx_menu, "separatorItem")
+        # ctx_name = self._get_context_name()
+        # ctx_menu = self._menuNode(shotgun_menu, ctx_name, "tk.context")
+        # ET.SubElement(ctx_menu, "separatorItem")
 
         (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
 
@@ -335,11 +335,11 @@ class AppCommandsMenu(AppCommandsUI):
             self._itemNode(shotgun_menu, cmd.name, cmd.get_id())
 
         # everything else
-        ET.SubElement(shotgun_menu, "separatorItem")
+        # ET.SubElement(shotgun_menu, "separatorItem")
 
         # add the context menu items
-        for cmd in context_cmds:
-            self._itemNode(ctx_menu, cmd.name, cmd.get_id())
+        # for cmd in context_cmds:
+        #     self._itemNode(ctx_menu, cmd.name, cmd.get_id())
 
         # build the main app-centric menu
         for app_name in sorted(cmds_by_app.keys()):
@@ -355,7 +355,7 @@ class AppCommandsMenu(AppCommandsUI):
                     self._itemNode(shotgun_menu, cmds[0].name, cmds[0].get_id())
 
         # format the xml and write it to disk
-        xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
+        xml = _format_xml(ET.tostring(root, encoding="UTF-8").decode("utf-8"))
         _write_xml(xml, xml_path)
         self._engine.logger.debug("Static menu written to: %s" % (xml_path,))
 
@@ -1048,7 +1048,10 @@ def _write_xml(xml, xml_path):
 
     # write the xml file
     with open(xml_path, "w") as xml_file_handle:
+        xml_file_handle.write('<?xml version="1.0" encoding="UTF-8"?>')
+        xml_file_handle.write("\n")
         xml_file_handle.write(xml)
+        xml_file_handle.write("\n")
 
 
 # -----------------------------------------------------------------------------
