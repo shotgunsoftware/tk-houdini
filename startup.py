@@ -134,6 +134,7 @@ class HoudiniLauncher(SoftwareLauncher):
         # TODO - only for Houdini version 21.0+
         enable_sg_menu = self.get_setting("enable_sg_menu", True)
         if enable_sg_menu:
+
             class MockEngine:
                 pass
 
@@ -147,10 +148,14 @@ class HoudiniLauncher(SoftwareLauncher):
             import tk_houdini
 
             xml_tmp_dir = required_env[bootstrap.g_temp_env]
-            menu_file = os.path.join(xml_tmp_dir, "MainMenuCommon.xml").replace(os.path.sep, "/")
+            menu_file = os.path.join(xml_tmp_dir, "MainMenuCommon.xml").replace(
+                os.path.sep, "/"
+            )
 
             menu = tk_houdini.AppCommandsMenu(mock_engine, [])
-            self.logger.debug("Constructing dynamic PTR menu - before starting Houdini - special 21.0 behaviour")
+            self.logger.debug(
+                "Constructing dynamic PTR menu - before starting Houdini - special 21.0 behaviour"
+            )
             menu._create_dynamic_menu(menu_file)
 
         return LaunchInformation(exec_path, args, required_env)
