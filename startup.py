@@ -131,6 +131,26 @@ class HoudiniLauncher(SoftwareLauncher):
 
         self.logger.debug("Launch environment: %s" % (required_env,))
 
+        # TODO - only for Houdini version 21.0+
+        enable_sg_menu = self.get_setting("enable_sg_menu", True)
+        if enable_sg_menu:
+            menu_name = "Flow Production Tracking"
+            if self.get_setting("use_short_menu_name", False):
+                menu_name = "FPTR"
+
+            import tk_houdini
+
+            xml_tmp_dir = required_env[bootstrap.g_temp_env]
+            menu_file = os.path.join(xml_tmp_dir, "MainMenuCommon.xml").replace(
+                os.path.sep, "/"
+            )
+
+            menu = tk_houdini.MenuBuilder(menu_name, self.logger)
+            self.logger.debug(
+                "Constructing dynamic PTR menu - before starting Houdini - special 21.0 behaviour"
+            )
+            menu.create(menu_file)
+
         return LaunchInformation(exec_path, args, required_env)
 
     def scan_software(self):

@@ -18,7 +18,6 @@ import ctypes
 import shutil
 import time
 
-from python import tk_houdini
 import sgtk
 
 import hou
@@ -288,10 +287,10 @@ Please report any issues to:
                 # ahold of the current engine.
                 self._menu = tk_houdini.AppCommandsMenu(self, commands)
 
-                menu = tk_houdini.MenuBuilder(self._engine._menu_name, self.logger)
+                menu = tk_houdini.MenuBuilder(self._menu_name, self.logger)
                 if not os.path.exists(menu_file):
                     # just create the xml for the menus
-                    menu.create_menu(menu_file)
+                    menu.create(menu_file)
 
             if commands and enable_sg_shelf:
 

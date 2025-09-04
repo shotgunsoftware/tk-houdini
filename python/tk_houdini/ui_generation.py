@@ -547,7 +547,7 @@ class MenuBuilder(object):
         self._menu_name = menu_name
         self._logger = logger
 
-    def create_menu(self, xml_path):
+    def create(self, xml_path):
         """
         Create a dynamic menu XML file.
 
