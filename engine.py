@@ -386,7 +386,6 @@ Please report any issues to:
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
 
-
     def destroy_engine(self):
         """
         Engine shutdown.
@@ -909,9 +908,7 @@ Please report any issues to:
             with open(qss_file, "rt") as f:
                 qss_data = f.read()
                 qss_data = self._resolve_sg_stylesheet_tokens(qss_data)
-                qss_data = qss_data.replace(
-                    "{{ENGINE_ROOT_PATH}}", engine_root_path
-                )
+                qss_data = qss_data.replace("{{ENGINE_ROOT_PATH}}", engine_root_path)
                 widget.setStyleSheet(widget.styleSheet() + qss_data)
                 widget.update()
         else:

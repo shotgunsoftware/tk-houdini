@@ -124,7 +124,6 @@ class AppCommandsMenu(AppCommandsUI):
         self._engine.logger.debug("Constructing dynamic PTR menu.")
         self._create_dynamic_menu(xml_path)
 
-
     def _get_context_commands(self):
         """This method returns a modified list of context commands.
 
