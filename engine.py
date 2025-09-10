@@ -582,7 +582,7 @@ Please report any issues to:
         return os.path.join(*args).replace(os.path.sep, "/")
 
     @staticmethod
-    def _is_version_less_or_equal(check_version, base_version): # TODO replace that with modern Python version cmp functions
+    def _is_version_less_or_equal(check_version, base_version):
         """
         Checks if the folder version is less than or equal to the current Houdini session version.
         :param check_version:
@@ -855,11 +855,7 @@ Please report any issues to:
 
             # This will ensure our dialogs don't fall behind Houdini's main
             # window when they lose focus.
-            #
-            # NOTE: Setting the window flags in H18 on OSX causes a crash. Once
-            # that bug is resolved we can re-enable this. The result is that
-            # on H18 without the window flags set per the below, our dialogs
-            # will fall behind Houdini if they lose focus.
+
             if sgtk.util.is_macos():
                 dialog.setWindowFlags(dialog.windowFlags() | QtCore.Qt.Tool)
         else:

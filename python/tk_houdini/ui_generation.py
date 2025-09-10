@@ -9,12 +9,8 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
-import re
 import sys
 import xml.etree.ElementTree as ET
-
-# TODO - ask copilot if any methods in this file are unused/orphan
-
 
 # Make sure we always give Houdini forward-slash-delimited paths. There is
 # a crash bug in early releases of H17 on Windows when it's given backslash
