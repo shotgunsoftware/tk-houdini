@@ -1040,21 +1040,11 @@ Please report any issues to:
         dialog.raise_()
         dialog.activateWindow()
 
-        # special case to get windows to raise the dialog
         if sgtk.util.is_windows():
-            # Anything beyond 16.5.481 bundles a PySide2 version that gives us
-            # a usable hwnd directly. We also check to make sure this is Qt5,
-            # since SideFX still offers Qt4/PySide builds of modern Houdinis.
-            if hou.applicationVersion() >= (
-                16,
-                5,
-                481,
-            ) and QtCore.__version__.startswith("5."):
-                hwnd = dialog.winId()
-            else:
-                ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
-                ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
-                hwnd = ctypes.pythonapi.PyCObject_AsVoidPtr(dialog.winId())
+            # special case to get windows to raise the dialog
+
+            hwnd = dialog.winId()
+
             ctypes.windll.user32.SetActiveWindow(hwnd)
 
         return dialog
