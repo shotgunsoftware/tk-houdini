@@ -210,14 +210,13 @@ Please report any issues to:
         if not self._ui_enabled:
             return
 
-        if self._houdini_version[0] >= 15:
-            # In houdini 15+, we can use the dynamic menus and shelf api to
-            # properly handle cases where a file is loaded outside of a PTR
-            # context. Make sure the timer that looks for current file changes
-            # is running.
-            tk_houdini = self.import_module("tk_houdini")
-            if self.get_setting("automatic_context_switch", True):
-                tk_houdini.ensure_file_change_timer_running()
+        # We can use the dynamic menus and shelf api to
+        # properly handle cases where a file is loaded outside of a PTR
+        # context. Make sure the timer that looks for current file changes
+        # is running.
+        tk_houdini = self.import_module("tk_houdini")
+        if self.get_setting("automatic_context_switch", True):
+            tk_houdini.ensure_file_change_timer_running()
 
         self._menu_name = "Flow Production Tracking"
         if self.get_setting("use_short_menu_name", False):
@@ -848,8 +847,6 @@ Please report any issues to:
             self, title, bundle, widget, parent
         )
 
-        h_ver = hou.applicationVersion()
-
         if dialog.parent():
             # parenting crushes the dialog's style. This seems to work to reset
             # the style to the dark look and feel in preparation for the
@@ -889,14 +886,12 @@ Please report any issues to:
         # and combine the two into a single, unified stylesheet for the dialog
         # and widget.
         engine_root_path = self._get_engine_root_path()
-        h_major_ver = hou.applicationVersion()[0]
 
         if bundle.name in ["tk-multi-shotgunpanel", "tk-multi-publish2"]:
             if bundle.name == "tk-multi-shotgunpanel":
                 self._apply_external_styleshet(bundle, dialog)
 
-            # Styling in H16+ is very different than in earlier versions of
-            # Houdini. The result is that we have to be more careful about
+            # Styling Houdini, we have to be more careful about
             # behavior concerning stylesheets, because we might bleed into
             # Houdini itself if we change qss on parent objects or make use
             # of QStyles on the QApplication.
@@ -905,24 +900,24 @@ Please report any issues to:
             # already assigned to the widget. This means that the engine
             # styling is helping patch holes in any app- or framework-level
             # qss that might have already been applied.
-            if h_major_ver >= 16:
-                # We don't apply the engine's style.qss to the dialog for the panel,
-                # but we do for the publisher. This will make sure that the tank
-                # dialog's header and info slide-out widget is properly styled. The
-                # panel app doesn't show that stuff, so we don't need to worry about
-                # it.
-                if bundle.name == "tk-multi-publish2":
-                    self._apply_external_styleshet(self, dialog)
+            #
+            # We don't apply the engine's style.qss to the dialog for the panel,
+            # but we do for the publisher. This will make sure that the tank
+            # dialog's header and info slide-out widget is properly styled. The
+            # panel app doesn't show that stuff, so we don't need to worry about
+            # it.
+            if bundle.name == "tk-multi-publish2":
+                self._apply_external_styleshet(self, dialog)
 
-                qss_file = self._get_engine_qss_file()
-                with open(qss_file, "rt") as f:
-                    qss_data = f.read()
-                    qss_data = self._resolve_sg_stylesheet_tokens(qss_data)
-                    qss_data = qss_data.replace(
-                        "{{ENGINE_ROOT_PATH}}", engine_root_path
-                    )
-                    widget.setStyleSheet(widget.styleSheet() + qss_data)
-                    widget.update()
+            qss_file = self._get_engine_qss_file()
+            with open(qss_file, "rt") as f:
+                qss_data = f.read()
+                qss_data = self._resolve_sg_stylesheet_tokens(qss_data)
+                qss_data = qss_data.replace(
+                    "{{ENGINE_ROOT_PATH}}", engine_root_path
+                )
+                widget.setStyleSheet(widget.styleSheet() + qss_data)
+                widget.update()
         else:
             # manually re-apply any bundled stylesheet to the dialog
             # We inherited styling problems and need to rely on the
