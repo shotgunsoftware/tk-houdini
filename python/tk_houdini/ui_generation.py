@@ -304,22 +304,6 @@ class AppCommandsMenu(AppCommandsUI):
         node.text = label
         return menu
 
-    def _itemNode(self, parent, label, id):
-        """Constructs a static menu item for the supplied parent.
-
-        Adds the script path and args which houdini uses as the callback.
-
-        """
-
-        item = ET.SubElement(parent, "scriptItem")
-        node = ET.SubElement(item, "label")
-        node.text = label
-        node = ET.SubElement(item, "scriptPath")
-        node.text = '"%s"' % (g_menu_item_script,)
-        node = ET.SubElement(item, "scriptArgs")
-        node.text = id
-        return item
-
 
 class AppCommandsPanelHandler(AppCommandsUI):
     """Creates panels and installs them into the session."""
