@@ -118,12 +118,6 @@ class AppCommandsMenu(AppCommandsUI):
         # _get_context_commands method.
         self._context_menu_item_id = None
 
-    def create_menu(self, xml_path):
-        """Create the PTR Menu"""
-
-        self._engine.logger.debug("Constructing dynamic PTR menu.")
-        self._create_dynamic_menu(xml_path)
-
     def _get_context_commands(self):
         """This method returns a modified list of context commands.
 
@@ -200,110 +194,6 @@ class AppCommandsMenu(AppCommandsUI):
             self._commands_by_app = cmds
 
         return self._commands_by_app
-
-    def _build_shotgun_menu_item(self):
-        """Constructs a top-level "Flow Production Tracking" menu.
-
-        Same logic for both the static and dynamic menu.
-
-        :returns: tuple containing the root element and the shotgun menu item
-
-        """
-
-        root = ET.Element("mainMenu")
-        menubar = ET.SubElement(root, "menuBar")
-        shotgun_menu = self._menuNode(
-            menubar,
-            self._engine._menu_name,
-            "tk.shotgun",
-        )
-
-        insert_before = ET.SubElement(shotgun_menu, "insertBefore")
-        insert_before.text = "help_menu"
-
-        # make sure the Help menu still comes last
-        modify_item = ET.SubElement(menubar, "modifyItem")
-        modify_item.set("id", "help_menu")
-        ET.SubElement(modify_item, "insertAfter")
-
-        return (root, shotgun_menu)
-
-    def _create_dynamic_menu(self, xml_path):
-        """Construct the dynamic Shotgun menu for toolkit in Houdini 15+.
-
-        :param xml_path: The path to the xml file to store the menu definitions
-
-        """
-        # documentation on the dynamic menu xml tags can be found here:
-        # http://www.sidefx.com/docs/houdini15.0/basics/config_menus
-
-        # build the Shotgun menu
-        (root, shotgun_menu) = self._build_shotgun_menu_item()
-
-        # add the context menu
-        context_menu = self._menuNode(
-            shotgun_menu, "Current Context", "tk.context.menu"
-        )
-        ET.SubElement(shotgun_menu, "separatorItem")
-
-        context_dynamic_menu = ET.SubElement(context_menu, "scriptMenuStripDynamic")
-        context_dynamic_menu.set("id", "tk.context_dynamic_menu")
-
-        # here we build an element that stores a python script for returning
-        # the ids and names of context menu items. the code is executed each
-        # time the menu is built.
-        context_dynamic_menu_contents = ET.SubElement(
-            context_dynamic_menu, "contentsScriptCode"
-        )
-        context_dynamic_menu_contents.text = (
-            "CDATA_START"
-            + _g_dynamic_menu_names % ("_get_context_commands",)
-            + "CDATA_END"
-        )
-
-        # this element defines a python script that has access to the id of the
-        # menu selected by the user (as defined in the previous element).  this
-        # script uses the id to determine the command and callback execute.
-        context_dynamic_menu_script = ET.SubElement(context_dynamic_menu, "scriptCode")
-        context_dynamic_menu_script.text = (
-            "CDATA_START" + _g_dynamic_menu_script + "CDATA_END"
-        )
-
-        main_dynamic_menu = ET.SubElement(shotgun_menu, "scriptMenuStripDynamic")
-        main_dynamic_menu.set("id", "tk.main_dynamic_menu")
-
-        # similar to the dynamic context menu. this time we format the python
-        # script to call the method to return the app specific commands.
-        main_dynamic_menu_contents = ET.SubElement(
-            main_dynamic_menu, "contentsScriptCode"
-        )
-        main_dynamic_menu_contents.text = (
-            "CDATA_START"
-            + _g_dynamic_menu_names % ("_get_commands_by_app",)
-            + "CDATA_END"
-        )
-
-        # same script as the context menu for mapping ids to callbacks for
-        # execution
-        main_dynamic_menu_script = ET.SubElement(main_dynamic_menu, "scriptCode")
-        main_dynamic_menu_script.text = (
-            "CDATA_START" + _g_dynamic_menu_script + "CDATA_END"
-        )
-
-        # format the xml and write it to disk
-        xml = _format_xml(ET.tostring(root).decode("utf-8"))
-        _write_xml(xml, xml_path)
-        self._engine.logger.debug("Dynamic menu written to: %s" % (xml_path,))
-
-    def _menuNode(self, parent, label, id):
-        """Constructs a submenu for the supplied parent."""
-
-        menu = ET.SubElement(parent, "subMenu")
-        menu.set("id", id)
-        node = ET.SubElement(menu, "label")
-        node.text = label
-        return menu
-
 
 class AppCommandsPanelHandler(AppCommandsUI):
     """Creates panels and installs them into the session."""
@@ -639,6 +529,130 @@ class AppCommand(object):
 
     def get_type(self):
         return self.properties.get("type", "default")
+
+
+class MenuBuilder(object):
+    """
+    A dedicated class for building Houdini menu XML files.
+    This class is engine-agnostic and handles the pure menu construction logic.
+    """
+
+    def __init__(self, menu_name, logger):
+        """
+        Initialize the menu builder.
+
+        :param menu_name: The name to display for the menu
+        :param logger: Optional logger for debug messages. If None, no logging is performed.
+        """
+        self._menu_name = menu_name
+        self._logger = logger
+
+    def create_menu(self, xml_path):
+        """
+        Create a dynamic menu XML file.
+
+        :param xml_path: The path to the xml file to store the menu definitions
+        """
+
+        # documentation on the dynamic menu xml tags can be found here:
+        # https://www.sidefx.com/docs/houdini21.0/basics/config_menus
+
+        self._logger.debug("Constructing dynamic PTR menu.")
+
+        # build the Shotgun menu
+        (root, shotgun_menu) = self._build_shotgun_menu_item()
+
+        # add the context menu
+        context_menu = self._menuNode(
+            shotgun_menu, "Current Context", "tk.context.menu"
+        )
+        ET.SubElement(shotgun_menu, "separatorItem")
+
+        context_dynamic_menu = ET.SubElement(context_menu, "scriptMenuStripDynamic")
+        context_dynamic_menu.set("id", "tk.context_dynamic_menu")
+
+        # here we build an element that stores a python script for returning
+        # the ids and names of context menu items. the code is executed each
+        # time the menu is built.
+        context_dynamic_menu_contents = ET.SubElement(
+            context_dynamic_menu, "contentsScriptCode"
+        )
+        context_dynamic_menu_contents.text = (
+            "CDATA_START"
+            + _g_dynamic_menu_names % ("_get_context_commands",)
+            + "CDATA_END"
+        )
+
+        # this element defines a python script that has access to the id of the
+        # menu selected by the user (as defined in the previous element).  this
+        # script uses the id to determine the command and callback execute.
+        context_dynamic_menu_script = ET.SubElement(context_dynamic_menu, "scriptCode")
+        context_dynamic_menu_script.text = (
+            "CDATA_START" + _g_dynamic_menu_script + "CDATA_END"
+        )
+
+        main_dynamic_menu = ET.SubElement(shotgun_menu, "scriptMenuStripDynamic")
+        main_dynamic_menu.set("id", "tk.main_dynamic_menu")
+
+        # similar to the dynamic context menu. this time we format the python
+        # script to call the method to return the app specific commands.
+        main_dynamic_menu_contents = ET.SubElement(
+            main_dynamic_menu, "contentsScriptCode"
+        )
+        main_dynamic_menu_contents.text = (
+            "CDATA_START"
+            + _g_dynamic_menu_names % ("_get_commands_by_app",)
+            + "CDATA_END"
+        )
+
+        # same script as the context menu for mapping ids to callbacks for
+        # execution
+        main_dynamic_menu_script = ET.SubElement(main_dynamic_menu, "scriptCode")
+        main_dynamic_menu_script.text = (
+            "CDATA_START" + _g_dynamic_menu_script + "CDATA_END"
+        )
+
+        # format the xml and write it to disk
+        xml = _format_xml(ET.tostring(root).decode("utf-8"))
+        _write_xml(xml, xml_path)
+        self._logger.debug("Dynamic menu written to: %s" % (xml_path,))
+
+    def _build_shotgun_menu_item(self):
+        """Constructs a top-level "Flow Production Tracking" menu.
+
+        Same logic for both the static and dynamic menu.
+
+        :returns: tuple containing the root element and the shotgun menu item
+
+        """
+
+        root = ET.Element("mainMenu")
+        menubar = ET.SubElement(root, "menuBar")
+        shotgun_menu = self._menuNode(
+            menubar,
+            self._menu_name,
+            "tk.shotgun",
+        )
+
+        insert_before = ET.SubElement(shotgun_menu, "insertBefore")
+        insert_before.text = "help_menu"
+
+        # make sure the Help menu still comes last
+        modify_item = ET.SubElement(menubar, "modifyItem")
+        modify_item.set("id", "help_menu")
+        ET.SubElement(modify_item, "insertAfter")
+
+        return (root, shotgun_menu)
+
+    def _menuNode(self, parent, label, id):
+        """Constructs a submenu for the supplied parent."""
+
+        menu = ET.SubElement(parent, "subMenu")
+        menu.set("id", id)
+        node = ET.SubElement(menu, "label")
+        node.text = label
+        return menu
+
 
 
 def get_registered_commands(engine):
