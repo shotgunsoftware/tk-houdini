@@ -12,16 +12,6 @@ import os
 import sys
 import xml.etree.ElementTree as ET
 
-# Make sure we always give Houdini forward-slash-delimited paths. There is
-# a crash bug in early releases of H17 on Windows when it's given backslash
-# paths to read.
-g_menu_item_script = os.path.join(os.path.dirname(__file__), "menu_action.py").replace(
-    os.path.sep, "/"
-)
-
-# #3716 Fixes UNC problems with menus. Prefix '\' are otherwise concatenated to a single character, therefore using '/' instead.
-g_menu_item_script = g_menu_item_script.replace("\\", "/")
-
 # global used to indicate that the file change time has been initialized and
 # started
 g_file_change_timer = None
