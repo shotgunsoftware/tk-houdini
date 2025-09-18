@@ -45,3 +45,7 @@ def exec_(application):
     This function returns right away.
     """
     IntegratedEventLoop(application).exec_()
+
+
+
+### Does this code ever runs?
