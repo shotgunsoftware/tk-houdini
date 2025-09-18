@@ -964,7 +964,7 @@ def _write_xml(xml, xml_path):
 
 # The code that executes when a shelf button is clicked.  This is pulled from
 # menu_action.py. Maybe there's a good way to share this rather than
-# duplicating the logic?
+# duplicating the logic? TODO!!!
 _g_launch_script = """
 import hou
 import tank.platform.engine
