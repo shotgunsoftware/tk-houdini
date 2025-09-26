@@ -3,45 +3,82 @@
 
 To run these tests, you need to do the following (tested on Mac)
 
-1. From a terminal, create a virtual environment (using `virtualenv` even on newer versions of Python) at the specific location of `tests/venv_py3` depending on the version of python you are testing.
-To create a virtual env for Python 3 do something like this:
+> [!NOTE]
+> You need to use the same Python version as the Houdini you want to test (`major.minor`)
+> 
 
-```
-virtualenv --python=/Users/username/.pyenv/versions/3.7.6/bin/python3 venv_py3
-```
+Make sure `virtualenv` is available.
 
-2. Activate the virtual environment.
 
-```
-source venv_py3/bin/activate
-```
+> [!Important]
+> Houdini should have a valid license enabled.
 
-3. Install all dependencies needed for the test:
 
-```
-pip install -U -r tests/requirements.txt
-```
+## Prepare the testing environment
 
-4. In the command line, set the `HOUDINI_PATH` env var to point to this test folder:
+From a terminal, from inside the tk-houdini folder:
 
-```
-export HOUDINI_PATH="/Users/philips1/source_code/tk-houdini/tests;&"
-```
+1.  Create a Python virtual environment
+    ```bash
+    virtualenv --python=/Users/username/.pyenv/versions/3.7.6/bin/python3 venv_py3
+    ```
 
-on Mac, or
+1.  Activate the virtual environment.
+    ```bash
+    source venv_py3/bin/activate
+    ```
 
-```
-set "HOUDINI_PATH=E:\code\tk-houdini\tests;&"
-```
+1.  Install all dependencies needed for the test:
+    ```bash
+    pip install -U -r tests/requirements.txt
+    ```
 
-on Windows, (make sure you include the `;&` at the end and wrap the value in quotes.)
+## Run the tests
 
-5. Launch Houdini via the same terminal you set the env var in. Houdini should have a valid license enabled.
+From a terminal:
 
-```
-/Applications/Houdini/Houdini18.0.392/Houdini\ FX\ 18.0.392.app/Contents/MacOS/houdini
-```
+1.  Set the `HOUDINI_PATH` env var to point to this test folder:
 
-It should then run the tests and dump the output to the shell and then close Houdini automatically.
+      * Linux or macOS:
+        ```bash
+        export HOUDINI_PATH="/Users/philips1/source_code/tk-houdini/tests;&"
+        ```
 
-> To run the tests via hython (to test without a UI) do everything the same, but instead of calling the Houdini app call hython: `/Applications/Houdini/Houdini18.0.348/Frameworks/Houdini.framework/Versions/18.0/Resources/bin/hython`.
+      * Windows:
+        ```batch
+        set "HOUDINI_PATH=E:\code\tk-houdini\tests;&"
+        ```
+
+        > [!NOTE]
+        > Make sure you include the `;&` at the end and wrap the value in quotes.
+        > 
+
+1. Launch Houdini via the same terminal you set the env var in. 
+      * Linux or macOS:
+        ```bash
+        /Applications/Houdini/Houdini18.0.392/Houdini\ FX\ 18.0.392.app/Contents/MacOS/houdini
+        ```
+
+      * Windows:
+        ```batch
+        "C:\Program Files\Side Effects Software\Houdini 19.0.720\bin\houdini.exe"
+        ```
+
+It should then run the tests and dump the output to the shell and then close
+Houdini automatically.
+
+## Testing the Houdini engine without the UI
+
+Using the same environment defined previously, we can run the tests that don't
+require the Houdini UI by calling the `hython` binary instead:
+
+
+*   Linux or macOS:
+    ```bash
+    /Applications/Houdini/Houdini19.0.720/Frameworks/Houdini.framework/Versions/Current/Resources/bin/hython
+    ```
+
+*  Windows:
+    ```batch
+    "C:\Program Files\Side Effects Software\Houdini 19.0.720\bin\hython.exe"
+    ```
