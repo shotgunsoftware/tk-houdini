@@ -9,11 +9,12 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
+import pytest
 import hou
 
 # Required so that the SHOTGUN_HOME env var will be set
 from tank_test.tank_test_base import setUpModule  # noqa
-
+import tank_test
 from test_hooks_base import TestHooks
 from sgtk.util import ShotgunPath
 
@@ -25,6 +26,11 @@ class TestSnapShotHooks(TestHooks):
 
     def setUp(self):
         super().setUp()
+        print("TANK location:", tank_test.__file__)
+
+        if not self.engine.has_ui:
+            self.tearDown()
+            pytest.skip("Requires a UI.")
 
         # Now get the app and run the reset operation.
         self.app = self.engine.apps["tk-multi-snapshot"]

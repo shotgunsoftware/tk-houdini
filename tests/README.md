@@ -13,13 +13,13 @@ virtualenv --python=/Users/username/.pyenv/versions/3.7.6/bin/python3 venv_py3
 2. Activate the virtual environment.
 
 ```
-source venv_p3/bin/activate
+source venv_py3/bin/activate
 ```
 
 3. Install all dependencies needed for the test:
 
 ```
-pip install -r requirements.txt
+pip install -U -r tests/requirements.txt
 ```
 
 4. In the command line, set the `HOUDINI_PATH` env var to point to this test folder:

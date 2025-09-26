@@ -19,14 +19,12 @@ repo_root = os.path.dirname(tests_folder)
 venv_folder = "venv_py3"
 
 # Activate the virtual environment required to run test tests in Houdini.
-if sys.platform == "win32":
-    activate_this_py = os.path.join(
-        tests_folder, venv_folder, "Scripts", "activate_this.py"
-    )
-else:
-    activate_this_py = os.path.join(
-        tests_folder, venv_folder, "bin", "activate_this.py"
-    )
+activate_this_py = os.path.join(
+    repo_root,
+    venv_folder,
+    "Scripts" if sys.platform == "win32" else "bin",
+    "activate_this.py",
+)
 
 with open(activate_this_py, "rt") as f:
     exec(f.read(), {"__file__": activate_this_py})
@@ -37,15 +35,15 @@ import pytest
 # We need to patch a couple of things to make pytest and argparse happy.
 # argparse doesn't like it when argv is empty.
 args = [
-    "--capture",
-    "no",
+    "--capture=no",
     "--cov",
-    "--cov-config",
-    os.path.join(repo_root, ".coveragerc"),
+    "--cov-config=.coveragerc",
     "--cov-report=html",
     "--verbose",
-    "--ignore=tests/venv_py2/*",
-    "--ignore=tests/venv_py3/*",
+    # "--ignore=**/venv_py3/**",
+    # "--ignore-glob=**/venv_py3/**",
+    '-s',
+    "tests", # Folder to run tests from
 ]
 
 current_dir = os.getcwd()

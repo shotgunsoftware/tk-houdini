@@ -25,7 +25,7 @@ import hou
 
 # Houdini versions compatibility constants
 VERSION_OLDEST_COMPATIBLE = (18, 5)
-VERSION_OLDEST_SUPPORTED = (19, 5)
+VERSION_OLDEST_SUPPORTED = (18, 5)
 VERSION_NEWEST_SUPPORTED = (20, 5)
 # Caution: make sure compatibility_dialog_min_version default value in info.yml
 # is equal to VERSION_NEWEST_SUPPORTED

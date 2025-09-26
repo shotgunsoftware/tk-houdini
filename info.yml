@@ -97,7 +97,7 @@ configuration:
                         tested with Toolkit. To disable the warning dialog for
                         the version you are testing, it is recommended that you
                         set this value to the current major version + 1.
-        default_value:  20
+        default_value:  23
 
 # the Shotgun fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
