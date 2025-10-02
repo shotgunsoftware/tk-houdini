@@ -16,9 +16,15 @@ __file__ = os.path.abspath(__file__)
 tests_folder = os.path.abspath(os.path.dirname(__file__))
 repo_root = os.path.dirname(tests_folder)
 
-venv_folder = "venv_py3"
+venv_folder = "venv"
+
+assert os.path.exists(
+    os.path.join(repo_root, venv_folder)
+), f"Cannot find venv folder: {venv_folder}"
+
 
 # Activate the virtual environment required to run test tests in Houdini.
+
 activate_this_py = os.path.join(
     repo_root,
     venv_folder,
@@ -26,9 +32,15 @@ activate_this_py = os.path.join(
     "activate_this.py",
 )
 
-with open(activate_this_py, "rt") as f:
-    exec(f.read(), {"__file__": activate_this_py})
-
+if os.path.exists(activate_this_py):
+    # activate with the old way from virtualenv
+    with open(activate_this_py, "rt") as f:
+        exec(f.read(), {"__file__": activate_this_py})
+else:
+    # Activate the new way
+    sys.path.insert(0, os.path.join(repo_root, venv_folder, "Lib", "site-packages"))
+    sys.real_prefix = sys.prefix
+    sys.prefix = os.path.join(repo_root, venv_folder, "Scripts" if sys.platform == "win32" else "bin")
 
 import pytest
 
@@ -40,9 +52,6 @@ args = [
     "--cov-config=.coveragerc",
     "--cov-report=html",
     "--verbose",
-    # "--ignore=**/venv_py3/**",
-    # "--ignore-glob=**/venv_py3/**",
-    '-s',
     "tests", # Folder to run tests from
 ]
 
