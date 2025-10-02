@@ -367,6 +367,14 @@ Please report any issues to:
                     )
                     panels.create_panels(self._panels_file)
 
+            if self._houdini_version >= (21, 0, 479):
+                # Houdini 21.0+ introduced changes to how startup paths are cached, which can
+                # prevent custom menus (like the FPTR menu) from appearing unless the cache is
+                # refreshed. The call below ensures that Houdini recognizes and loads our custom
+                # menu definitions from the temporary directory, as documented in SideFx ticket
+                # 169562 (SG-40163).
+                hou.refreshStartupPathCacheDirectory(xml_tmp_dir)
+
         # tell QT to interpret C strings as utf-8
         utf8 = QtCore.QTextCodec.codecForName("utf-8")
         QtCore.QTextCodec.setCodecForCStrings(utf8)
