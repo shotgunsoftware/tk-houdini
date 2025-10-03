@@ -17,9 +17,3 @@ from .ui_generation import (
     get_registered_panels,
     get_wrapped_panel_widget,
 )
-
-try:
-    # hou might not be available during bootstrap
-    from . import python_qt_houdini
-except:
-    pass
