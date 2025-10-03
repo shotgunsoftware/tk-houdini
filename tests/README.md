@@ -16,7 +16,7 @@ parts of the Toolkit integration is working as expected.
   > This interpreter even ships the `venv` module!
   >
   > Unfortunately, bootstrapping a Python virtual environment from this module is
-  > unstable accross Houdini versions and Operating Systems.
+  > unstable across Houdini versions and Operating Systems.
   >
   > So we prefer using **pyenv**.
 
