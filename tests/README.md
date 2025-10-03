@@ -15,7 +15,7 @@ parts of the Toolkit integration is working as expected.
   > Houdini provides its own Python interpreter: `hython`.
   > This interpreter even ships the `venv` module!
   >
-  > Unfortunately, bootstraping a Python virtual environment from this module is
+  > Unfortunately, bootstrapping a Python virtual environment from this module is
   > unstable accross Houdini versions and Operating Systems.
   >
   > So we prefer using **pyenv**.
