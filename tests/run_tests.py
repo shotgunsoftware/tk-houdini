@@ -24,7 +24,7 @@ if sys.platform == "win32":
     lib_folder = "Lib"
 elif sys.platform == "darwin":
     lib_folder = f"lib/python{sys.version_info.major}.{sys.version_info.minor}"
-else: # assuming Linux
+else:  # assuming Linux
     lib_folder = f"lib64/python{sys.version_info.major}.{sys.version_info.minor}"
 
 # "Activate" the virtual environment
@@ -40,7 +40,7 @@ args = [
     "--cov-config=.coveragerc",
     "--cov-report=html",
     "--verbose",
-    "tests", # Folder to run tests from
+    "tests",  # Folder to run tests from
 ]
 
 current_dir = os.getcwd()
