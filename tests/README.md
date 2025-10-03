@@ -142,7 +142,7 @@ folder.
 
     *   Linux
         ```bash
-        /opt/hfs20.0.751/bin/hython
+        /opt/hfs20.0.751/bin/houdini
         ```
 
     * Linux or macOS:
