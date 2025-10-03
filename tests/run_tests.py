@@ -16,31 +16,19 @@ __file__ = os.path.abspath(__file__)
 tests_folder = os.path.abspath(os.path.dirname(__file__))
 repo_root = os.path.dirname(tests_folder)
 
-venv_folder = "venv"
+venv_folder = os.path.join(repo_root, "venv")
+assert os.path.exists(venv_folder), f"Cannot find venv folder: {venv_folder}"
 
-assert os.path.exists(
-    os.path.join(repo_root, venv_folder)
-), f"Cannot find venv folder: {venv_folder}"
+# Identify the correct library folder based on the operating system
+if sys.platform == "win32":
+    lib_folder = "Lib"
+elif sys.platform == "darwin":
+    lib_folder = f"lib/python{sys.version_info.major}.{sys.version_info.minor}"
+else: # assuming Linux
+    lib_folder = f"lib64/python{sys.version_info.major}.{sys.version_info.minor}"
 
-
-# Activate the virtual environment required to run test tests in Houdini.
-
-activate_this_py = os.path.join(
-    repo_root,
-    venv_folder,
-    "Scripts" if sys.platform == "win32" else "bin",
-    "activate_this.py",
-)
-
-if os.path.exists(activate_this_py):
-    # activate with the old way from virtualenv
-    with open(activate_this_py, "rt") as f:
-        exec(f.read(), {"__file__": activate_this_py})
-else:
-    # Activate the new way
-    sys.path.insert(0, os.path.join(repo_root, venv_folder, "Lib", "site-packages"))
-    sys.real_prefix = sys.prefix
-    sys.prefix = os.path.join(repo_root, venv_folder, "Scripts" if sys.platform == "win32" else "bin")
+# "Activate" the virtual environment
+sys.path.insert(0, os.path.join(venv_folder, lib_folder, "site-packages"))
 
 import pytest
 
