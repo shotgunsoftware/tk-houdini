@@ -9,19 +9,8 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
-import re
 import sys
 import xml.etree.ElementTree as ET
-
-# Make sure we always give Houdini forward-slash-delimited paths. There is
-# a crash bug in early releases of H17 on Windows when it's given backslash
-# paths to read.
-g_menu_item_script = os.path.join(os.path.dirname(__file__), "menu_action.py").replace(
-    os.path.sep, "/"
-)
-
-# #3716 Fixes UNC problems with menus. Prefix '\' are otherwise concatenated to a single character, therefore using '/' instead.
-g_menu_item_script = g_menu_item_script.replace("\\", "/")
 
 # global used to indicate that the file change time has been initialized and
 # started
@@ -122,16 +111,8 @@ class AppCommandsMenu(AppCommandsUI):
     def create_menu(self, xml_path):
         """Create the PTR Menu"""
 
-        import hou
-
-        # houdini 15+ allows for dynamic menu creation, so do that if possible.
-        # otherwise, fallback to the static menu
-        if hou.applicationVersion()[0] >= 15:
-            self._engine.logger.debug("Constructing dynamic PTR menu.")
-            self._create_dynamic_menu(xml_path)
-        else:
-            self._engine.logger.debug("Constructing static PTR menu.")
-            self._create_static_menu(xml_path)
+        self._engine.logger.debug("Constructing dynamic PTR menu.")
+        self._create_dynamic_menu(xml_path)
 
     def _get_context_commands(self):
         """This method returns a modified list of context commands.
@@ -243,11 +224,6 @@ class AppCommandsMenu(AppCommandsUI):
         :param xml_path: The path to the xml file to store the menu definitions
 
         """
-        try:
-            from tank_vendor import sgutils
-        except ImportError:
-            from tank_vendor import six as sgutils
-
         # documentation on the dynamic menu xml tags can be found here:
         # http://www.sidefx.com/docs/houdini15.0/basics/config_menus
 
@@ -305,59 +281,9 @@ class AppCommandsMenu(AppCommandsUI):
         )
 
         # format the xml and write it to disk
-        xml = _format_xml(sgutils.ensure_str(ET.tostring(root)))
+        xml = _format_xml(ET.tostring(root).decode("utf-8"))
         _write_xml(xml, xml_path)
         self._engine.logger.debug("Dynamic menu written to: %s" % (xml_path,))
-
-    def _create_static_menu(self, xml_path):
-        """Construct the static Shotgun menu for older versions of Houdini.
-
-        :param xml_path: The path to the xml file to store the menu definitions
-
-        """
-
-        # documentation on the static menu xml tags can be found here:
-        # http://www.sidefx.com/docs/houdini15.0/basics/config_menus
-
-        # build the Shotgun menu
-        (root, shotgun_menu) = self._build_shotgun_menu_item()
-
-        # create the menu object
-        ctx_name = self._get_context_name()
-        ctx_menu = self._menuNode(shotgun_menu, ctx_name, "tk.context")
-        ET.SubElement(ctx_menu, "separatorItem")
-
-        (context_cmds, cmds_by_app, favourite_cmds) = self._group_commands()
-
-        # favourites
-        ET.SubElement(shotgun_menu, "separatorItem")
-        for cmd in favourite_cmds:
-            self._itemNode(shotgun_menu, cmd.name, cmd.get_id())
-
-        # everything else
-        ET.SubElement(shotgun_menu, "separatorItem")
-
-        # add the context menu items
-        for cmd in context_cmds:
-            self._itemNode(ctx_menu, cmd.name, cmd.get_id())
-
-        # build the main app-centric menu
-        for app_name in sorted(cmds_by_app.keys()):
-            cmds = cmds_by_app[app_name]
-            if len(cmds) > 1:
-                menu = self._menuNode(
-                    shotgun_menu, app_name, "tk.%s" % app_name.lower()
-                )
-                for cmd in cmds:
-                    self._itemNode(menu, cmd.name, cmd.get_id())
-            else:
-                if not cmds[0].favourite:
-                    self._itemNode(shotgun_menu, cmds[0].name, cmds[0].get_id())
-
-        # format the xml and write it to disk
-        xml = _format_xml(ET.tostring(root, encoding="UTF-8"))
-        _write_xml(xml, xml_path)
-        self._engine.logger.debug("Static menu written to: %s" % (xml_path,))
 
     def _menuNode(self, parent, label, id):
         """Constructs a submenu for the supplied parent."""
@@ -367,22 +293,6 @@ class AppCommandsMenu(AppCommandsUI):
         node = ET.SubElement(menu, "label")
         node.text = label
         return menu
-
-    def _itemNode(self, parent, label, id):
-        """Constructs a static menu item for the supplied parent.
-
-        Adds the script path and args which houdini uses as the callback.
-
-        """
-
-        item = ET.SubElement(parent, "scriptItem")
-        node = ET.SubElement(item, "label")
-        node.text = label
-        node = ET.SubElement(item, "scriptPath")
-        node.text = '"%s"' % (g_menu_item_script,)
-        node = ET.SubElement(item, "scriptArgs")
-        node.text = id
-        return item
 
 
 class AppCommandsPanelHandler(AppCommandsUI):
@@ -410,11 +320,6 @@ class AppCommandsPanelHandler(AppCommandsUI):
         """Create the registered panels."""
 
         import hou
-
-        try:
-            from tank_vendor import sgutils
-        except ImportError:
-            from tank_vendor import six as sgutils
 
         # this code builds an xml file that defines panel interfaces to be
         # read by houdini. The xml should look something like this:
@@ -480,7 +385,7 @@ class AppCommandsPanelHandler(AppCommandsUI):
             toolbar_menu.set("menu_position", "300")
             toolbar_menu.set("create_separator", "false")
 
-        xml = _format_xml(sgutils.ensure_str(ET.tostring(root)))
+        xml = _format_xml(ET.tostring(root).decode("utf-8"))
         _write_xml(xml, panels_file)
         self._engine.logger.debug("Panels written to: %s" % panels_file)
 
@@ -870,15 +775,9 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
 
             self._changing_stylesheet = True
             try:
-                # This is only safe in pre-H16. If we do this in 16 it destroys
-                # some styling in Houdini itself.
-                if self.parent() and hou.applicationVersion() < (16, 0, 0):
-                    self.parent().setStyleSheet("")
-
                 engine._apply_external_styleshet(bundle, self)
 
-                # Styling in H16+ is very different than in earlier versions of
-                # Houdini. The result is that we have to be more careful about
+                # Styling Houdini, we have to be more careful about
                 # behavior concerning stylesheets, because we might bleed into
                 # Houdini itself if we change qss on parent objects or make use
                 # of QStyles on the QApplication.
@@ -887,16 +786,15 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
                 # already assigned to the widget. This means that the engine
                 # styling is helping patch holes in any app- or framework-level
                 # qss that might have already been applied.
-                if hou.applicationVersion() >= (16, 0, 0):
-                    qss_file = engine._get_engine_qss_file()
-                    with open(qss_file, "rt") as f:
-                        qss_data = f.read()
-                        qss_data = engine._resolve_sg_stylesheet_tokens(qss_data)
-                        qss_data = qss_data.replace(
-                            "{{ENGINE_ROOT_PATH}}", engine._get_engine_root_path()
-                        )
-                        self.setStyleSheet(self.styleSheet() + qss_data)
-                        self.update()
+                qss_file = engine._get_engine_qss_file()
+                with open(qss_file, "rt") as f:
+                    qss_data = f.read()
+                    qss_data = engine._resolve_sg_stylesheet_tokens(qss_data)
+                    qss_data = qss_data.replace(
+                        "{{ENGINE_ROOT_PATH}}", engine._get_engine_root_path()
+                    )
+                    self.setStyleSheet(self.styleSheet() + qss_data)
+                    self.update()
 
             except Exception as e:
                 engine.logger.warning(
@@ -1056,7 +954,7 @@ def _write_xml(xml, xml_path):
 
 # The code that executes when a shelf button is clicked.  This is pulled from
 # menu_action.py. Maybe there's a good way to share this rather than
-# duplicating the logic?
+# duplicating the logic? TODO!!!
 _g_launch_script = """
 import hou
 import tank.platform.engine

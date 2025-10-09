@@ -16,36 +16,31 @@ __file__ = os.path.abspath(__file__)
 tests_folder = os.path.abspath(os.path.dirname(__file__))
 repo_root = os.path.dirname(tests_folder)
 
-venv_folder = "venv_py3"
+venv_folder = os.path.join(repo_root, "venv")
+assert os.path.exists(venv_folder), f"Cannot find venv folder: {venv_folder}"
 
-# Activate the virtual environment required to run test tests in Houdini.
+# Identify the correct library folder based on the operating system
 if sys.platform == "win32":
-    activate_this_py = os.path.join(
-        tests_folder, venv_folder, "Scripts", "activate_this.py"
-    )
-else:
-    activate_this_py = os.path.join(
-        tests_folder, venv_folder, "bin", "activate_this.py"
-    )
+    lib_folder = "Lib"
+elif sys.platform == "darwin":
+    lib_folder = f"lib/python{sys.version_info.major}.{sys.version_info.minor}"
+else:  # assuming Linux
+    lib_folder = f"lib64/python{sys.version_info.major}.{sys.version_info.minor}"
 
-with open(activate_this_py, "rt") as f:
-    exec(f.read(), {"__file__": activate_this_py})
-
+# "Activate" the virtual environment
+sys.path.insert(0, os.path.join(venv_folder, lib_folder, "site-packages"))
 
 import pytest
 
 # We need to patch a couple of things to make pytest and argparse happy.
 # argparse doesn't like it when argv is empty.
 args = [
-    "--capture",
-    "no",
+    "--capture=no",
     "--cov",
-    "--cov-config",
-    os.path.join(repo_root, ".coveragerc"),
+    "--cov-config=.coveragerc",
     "--cov-report=html",
     "--verbose",
-    "--ignore=tests/venv_py2/*",
-    "--ignore=tests/venv_py3/*",
+    "tests",  # Folder to run tests from
 ]
 
 current_dir = os.getcwd()
