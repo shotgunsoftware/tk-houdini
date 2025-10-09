@@ -9,6 +9,7 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import hou
+import pytest
 
 # Required so that the SHOTGUN_HOME env var will be set
 from tank_test.tank_test_base import setUpModule  # noqa
@@ -23,6 +24,12 @@ class TestLoader2Hooks(TestHooks):
 
     def setUp(self):
         super().setUp()
+
+        if not self.engine.has_ui:
+            # Crash hython sessions with Houdini versions 21.0+
+            # SideFx Support Ticket -#171494
+            self.tearDown()
+            pytest.skip("Requires a UI")
 
         # Now get the app and run the reset operation.
         self.app = self.engine.apps["tk-multi-loader2"]
