@@ -40,7 +40,7 @@ parts of the Toolkit integration is working as expected.
   > Also make sure those repos are up to date!
 
    For convenience, you can run the
-   [prepare-test-repos.ps1](./prepare-test-repos.sh) script:
+   [prepare-test-repos.sh](./prepare-test-repos.sh) script:
 
    ```bash
    bash tests/prepare-test-repos.sh
