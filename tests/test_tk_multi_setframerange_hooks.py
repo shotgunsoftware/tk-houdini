@@ -33,8 +33,8 @@ class TestFrameRangeHooks(TestHooks):
         """
         # Set the frame range so that we can test that we get the same range back, let not rely on the default range
         # in case it differs from setup to setup.
-        start = 10
-        end = 115
+        start = 1
+        end = 240
         hou.playbar.setPlaybackRange(start, end)
 
         cur_start, cur_end = self.app.get_current_frame_range()
