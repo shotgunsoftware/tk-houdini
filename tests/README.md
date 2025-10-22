@@ -39,6 +39,13 @@ parts of the Toolkit integration is working as expected.
   >
   > Also make sure those repos are up to date!
 
+   For convenience, you can run the
+   [prepare-test-repos.ps1](./prepare-test-repos.sh) script:
+
+   ```bash
+   bash tests/prepare-test-repos.sh
+   ```
+
 
 ## Prepare the testing environment and run the tests
 
@@ -48,22 +55,34 @@ folder.
 > [!Note]
 > On Windows, use a "Command Prompt" session. Not a PowerShell one!
 
+1.  Set the `HOUDINI_VERSION` env var to point to this test folder:
+
+      * Linux or macOS:
+        ```bash
+        export HOUDINI_VERSION="20.5.613"
+        ```
+
+      * Windows:
+        ```batch
+        set "HOUDINI_VERSION=20.5.613"
+        ```
+
 1. Select the Houdini version to test, identify its installation folder and
    Python version:
 
     *   Linux
           ```bash
-        /opt/hfs20.0.751/bin/hython -V
+        "/opt/hfs${HOUDINI_VERSION}/bin/hython" -V
         ```
 
     *   macOS:
         ```bash
-        /Applications/Houdini/Houdini20.0.751/Frameworks/Houdini.framework/Versions/Current/Resources/bin/hython -V
+        "/Applications/Houdini/Houdini${HOUDINI_VERSION}/Frameworks/Houdini.framework/Versions/Current/Resources/bin/hython" -V
         ```
 
     *  Windows:
         ```batch
-        "C:\Program Files\Side Effects Software\Houdini 20.0.751\bin\hython" -V
+        "C:\Program Files\Side Effects Software\Houdini %HOUDINI_VERSION%\bin\hython" -V
         ```
 
 1.  Verify you have an equivalent Python version installed (`major.minor`).
@@ -125,34 +144,34 @@ folder.
 
     *   Linux
           ```bash
-        /opt/hfs20.0.751/bin/hython
+        "/opt/hfs${HOUDINI_VERSION}/bin/hython"
         ```
 
     *   macOS:
         ```bash
-        /Applications/Houdini/Houdini20.0.751/Frameworks/Houdini.framework/Versions/Current/Resources/bin/hython
+        "/Applications/Houdini/Houdini${HOUDINI_VERSION}/Frameworks/Houdini.framework/Versions/Current/Resources/bin/hython"
         ```
 
     *  Windows:
         ```batch
-        "C:\Program Files\Side Effects Software\Houdini 20.0.751\bin\hython"
+        "C:\Program Files\Side Effects Software\Houdini %HOUDINI_VERSION%\bin\hython"
         ```
 
 1. Run the tests insides a **Houdini Fx** session (with the UI)
 
     *   Linux
         ```bash
-        /opt/hfs20.0.751/bin/houdini
+        "/opt/hfs${HOUDINI_VERSION}/bin/houdini"
         ```
 
     * Linux or macOS:
       ```bash
-      /Applications/Houdini/Houdini18.0.392/Houdini\ FX\ 18.0.392.app/Contents/MacOS/houdini
+      "/Applications/Houdini/Houdini${HOUDINI_VERSION}/Houdini FX ${HOUDINI_VERSION}.app/Contents/MacOS/houdini"
       ```
 
     * Windows:
       ```batch
-      "C:\Program Files\Side Effects Software\Houdini 19.0.720\bin\houdini"
+      "C:\Program Files\Side Effects Software\Houdini %HOUDINI_VERSION%\bin\houdini"
       ```
 
     It should then run the tests and dump the output to the shell and then close
