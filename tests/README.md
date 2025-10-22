@@ -164,7 +164,7 @@ folder.
         "/opt/hfs${HOUDINI_VERSION}/bin/houdini"
         ```
 
-    * Linux or macOS:
+    * macOS:
       ```bash
       "/Applications/Houdini/Houdini${HOUDINI_VERSION}/Houdini FX ${HOUDINI_VERSION}.app/Contents/MacOS/houdini"
       ```
