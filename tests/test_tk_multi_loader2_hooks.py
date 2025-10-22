@@ -25,9 +25,15 @@ class TestLoader2Hooks(TestHooks):
     def setUp(self):
         super().setUp()
 
-        if not self.engine.has_ui:
+        if not self.engine.has_ui and hou.applicationVersion() >= (21, 0, 0):
             # Crash hython sessions with Houdini versions 21.0+
             # SideFx Support Ticket -#171494
+
+            # The workaround should to initialize a QApplication instance but it
+            # does not work in the context of pytest for some reason. Anyway, if
+            # this tests requires Qt, that means it requires a UI, so we can
+            # just skip it.
+
             self.tearDown()
             pytest.skip("Requires a UI")
 
