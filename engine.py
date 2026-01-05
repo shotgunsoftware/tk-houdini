@@ -375,11 +375,6 @@ Please report any issues to:
                 # 169562 (SG-40163).
                 hou.refreshStartupPathCacheDirectory(xml_tmp_dir)
 
-        # tell QT to interpret C strings as utf-8
-        utf8 = QtCore.QTextCodec.codecForName("utf-8")
-        QtCore.QTextCodec.setCodecForCStrings(utf8)
-        self.logger.debug("set utf-8 codec for widget text")
-
         # Typically we only call this method for engines which don't have a
         # well defined styling. Houdini appears to use stylesheets to handle
         # its styling which it conflicts with the toolkit strategy of using a
