@@ -39,6 +39,16 @@ class HoudiniEngine(sgtk.platform.Engine):
     _pane_cache = dict()
 
     @property
+    def context_change_allowed(self):
+        """
+        Whether the engine allows a context change without the need for a restart.
+
+        Enabling this allows self.parent.engine.context to remain valid after
+        a context change, since the engine is not destroyed and recreated.
+        """
+        return True
+
+    @property
     def host_info(self):
         """
         :returns: A {"name": application name, "version": application version}
@@ -393,6 +403,32 @@ Please report any issues to:
 
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
+
+    def post_context_change(self, old_context, new_context):
+        """
+        Runs after a context change. Updates the menu and shelf to reflect
+        the new context.
+
+        :param old_context: The context being changed away from.
+        :param new_context: The new context being changed to.
+        """
+        self.logger.debug("Post context change: %s -> %s" % (old_context, new_context))
+
+        # Update the menu and shelf to reflect the new context
+        if self.has_ui:
+            tk_houdini = self.import_module("tk_houdini")
+
+            # Get new commands for the updated context
+            commands = tk_houdini.get_registered_commands(self)
+            self._callback_map = dict((cmd.get_id(), cmd.callback) for cmd in commands)
+
+            # Update menu with new context
+            if hasattr(self, "_menu") and self._menu:
+                self._menu.refresh(commands)
+
+            # Update shelf with new context
+            if hasattr(self, "_shelf") and self._shelf:
+                self._shelf.refresh(commands)
 
     def destroy_engine(self):
         """

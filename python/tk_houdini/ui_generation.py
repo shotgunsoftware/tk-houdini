@@ -27,6 +27,28 @@ class AppCommandsUI(object):
         self._engine = engine
         self._commands = commands
 
+    def refresh(self, commands):
+        """
+        Refresh the UI with new commands after a context change.
+
+        This method invalidates cached data and updates the commands list.
+        Used when the engine supports context_change_allowed and doesn't
+        do a full restart on context switch.
+
+        :param commands: The new list of commands for the updated context.
+        """
+        self._commands = commands
+
+        # Invalidate cached data
+        if hasattr(self, "_context_name"):
+            del self._context_name
+        if hasattr(self, "_grouped_commands"):
+            del self._grouped_commands
+        if hasattr(self, "_context_commands"):
+            del self._context_commands
+        if hasattr(self, "_commands_by_app"):
+            del self._commands_by_app
+
     def _get_context_name(self):
         """Returns a display name for the current context"""
 
