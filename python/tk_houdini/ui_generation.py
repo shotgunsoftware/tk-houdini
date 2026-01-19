@@ -40,7 +40,7 @@ class AppCommandsUI(object):
         return self._context_name
 
     def _group_commands(self):
-        """This method provides a consistent method for organizing commands.
+        """Test This method provides a consistent method for organizing commands.
 
         Used by the menu and shelf classes to collect the registered commands
         into groups. The method returns a tuple with the first item being
