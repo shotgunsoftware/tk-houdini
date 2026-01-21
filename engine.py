@@ -22,7 +22,6 @@ import sgtk
 
 import hou
 
-
 # Houdini versions compatibility constants
 VERSION_OLDEST_COMPATIBLE = (18, 5)
 VERSION_OLDEST_SUPPORTED = (19, 5)
