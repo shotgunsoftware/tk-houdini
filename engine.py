@@ -241,10 +241,11 @@ Please report any issues to:
             def _load_otls():
                 self._load_app_otls(oplibrary_path)
 
-            # We have the same problem here on Windows that we have above with
-            # the population of the shelf. If we defer the execution of the otl
-            # loading by an event loop cycle, Houdini loads up quickly.
-            if self.has_ui and sgtk.util.is_windows():
+            # We have an issue where loading OTLs blocks Houdini for a long
+            # period of time if we do it while it's still processing on launch.
+            # We're deferring a cycle here on the load, which appears to
+            # resolve the issue.
+            if self.has_ui:
                 QtCore.QTimer.singleShot(1, _load_otls)
             else:
                 _load_otls()
@@ -340,12 +341,12 @@ Please report any issues to:
                 # March 2019: The fix above is no longer working in houdini 17.0.506.
                 # Instead, wait for the UI to be created before attempting to create
                 # shelves.
-                if sgtk.util.is_windows():
-                    QtCore.QTimer.singleShot(
-                        100, _poll_for_ui_available_then_setup_shelves
-                    )
-                else:
-                    _setup_shelf()
+                #
+                # April 2021: Looks like this now impacts more than just Windows. Opening
+                # it up to all OSs.
+                QtCore.QTimer.singleShot(
+                    100, _poll_for_ui_available_then_setup_shelves
+                )
 
             if commands:
 
