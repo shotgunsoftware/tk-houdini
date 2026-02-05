@@ -14,6 +14,7 @@ It's called 123 because this is what Houdini looks for an runs on startup.
 You can also have a 456, the difference being, that 123 is run when Houdini
 starts with out a scene file, and 456 is run whenever a scene file is opened.
 """
+
 import inspect
 import os
 import sys

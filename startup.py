@@ -40,10 +40,10 @@ class HoudiniLauncher(SoftwareLauncher):
     # strings, these allow us to alter the regex matching for any of the
     # variable components of the path in one place
     COMPONENT_REGEX_LOOKUP = {
-        "version": "[\d.]+",
-        "product": "[\w\s]+",
-        "executable": "[\w]+",
-        "version_back": "[\d.]+",
+        "version": "[\\d.]+",
+        "product": "[\\w\\s]+",
+        "executable": "[\\w]+",
+        "version_back": "[\\d.]+",
     }
 
     # This dictionary defines a list of executable template strings for each
@@ -144,7 +144,7 @@ class HoudiniLauncher(SoftwareLauncher):
 
         supported_sw_versions = []
         for sw_version in self._find_software():
-            (supported, reason) = self._is_supported(sw_version)
+            supported, reason = self._is_supported(sw_version)
             if supported:
                 supported_sw_versions.append(sw_version)
             else:

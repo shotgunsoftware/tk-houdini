@@ -82,9 +82,7 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
         however only the most recent publish will be available to other users.
         Warnings will be provided during validation if there are previous
         publishes.
-        """ % (
-            loader_url,
-        )
+        """ % (loader_url,)
 
     @property
     def settings(self):
@@ -247,13 +245,13 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
         # check to see if the next version of the work file already exists on
         # disk. if so, warn the user and provide the ability to jump to save
         # to that version now
-        (next_version_path, version) = self._get_next_version_info(path, item)
+        next_version_path, version = self._get_next_version_info(path, item)
         if next_version_path and os.path.exists(next_version_path):
 
             # determine the next available version_number. just keep asking for
             # the next one until we get one that doesn't exist.
             while os.path.exists(next_version_path):
-                (next_version_path, version) = self._get_next_version_info(
+                next_version_path, version = self._get_next_version_info(
                     next_version_path, item
                 )
 
