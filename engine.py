@@ -499,11 +499,16 @@ Please report any issues to:
             # information it needs to construct the proper panel widget, it
             # needs information that is only available when `show_panel` is
             # called via the callback. So, we set a flag that `show_panel` can
-            # use to short-circuit and return the info needed.
+            # use to short-circuit and store the info in a temporary location.
+            # This avoids corrupting the app's internal state (e.g., storing
+            # a dict where a widget is expected).
             self._panel_info_request = True
+            self._panel_info_result = None
             self.logger.debug("Retrieving panel widget for %s" % panel_id)
-            panel_info = panel_dict["callback"]()
+            panel_dict["callback"]()
+            panel_info = self._panel_info_result
             del self._panel_info_request
+            del self._panel_info_result
             return panel_info
 
         return None
@@ -530,11 +535,13 @@ Please report any issues to:
         widget_class constructor.
         """
 
-        # check to see if we just need to return the widget itself. Since we
+        # check to see if we just need to collect panel info. Since we
         # don't really have information about the panel outside of this call,
-        # we use a special flag to know when the info is needed and return it.
+        # we use a special flag to know when the info is needed. We store it
+        # in a temporary location and return None to avoid corrupting the
+        # app's internal state (e.g., _current_panel expecting a widget).
         if hasattr(self, "_panel_info_request") and self._panel_info_request:
-            return {
+            self._panel_info_result = {
                 "id": panel_id,
                 "title": title,
                 "bundle": bundle,
@@ -542,6 +549,7 @@ Please report any issues to:
                 "args": args,
                 "kwargs": kwargs,
             }
+            return None
 
         # try to locate the pane in the desktop and make it the current tab.
         for pane_tab in hou.ui.curDesktop().paneTabs():
