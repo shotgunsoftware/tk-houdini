@@ -38,6 +38,16 @@ class HoudiniEngine(sgtk.platform.Engine):
     _pane_cache = dict()
 
     @property
+    def context_change_allowed(self):
+        """
+        Whether the engine allows a context change without the need for a restart.
+
+        Enabling this allows self.parent.engine.context to remain valid after
+        a context change, since the engine is not destroyed and recreated.
+        """
+        return True
+
+    @property
     def host_info(self):
         """
         :returns: A {"name": application name, "version": application version}
@@ -388,6 +398,32 @@ Please report any issues to:
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
 
+    def post_context_change(self, old_context, new_context):
+        """
+        Runs after a context change. Updates the menu and shelf to reflect
+        the new context.
+
+        :param old_context: The context being changed away from.
+        :param new_context: The new context being changed to.
+        """
+        self.logger.debug("Post context change: %s -> %s" % (old_context, new_context))
+
+        # Update the menu and shelf to reflect the new context
+        if self.has_ui:
+            tk_houdini = self.import_module("tk_houdini")
+
+            # Get new commands for the updated context
+            commands = tk_houdini.get_registered_commands(self)
+            self._callback_map = dict((cmd.get_id(), cmd.callback) for cmd in commands)
+
+            # Update menu with new context
+            if hasattr(self, "_menu") and self._menu:
+                self._menu.refresh(commands)
+
+            # Update shelf with new context
+            if hasattr(self, "_shelf") and self._shelf:
+                self._shelf.refresh(commands)
+
     def destroy_engine(self):
         """
         Engine shutdown.
@@ -457,11 +493,16 @@ Please report any issues to:
             # information it needs to construct the proper panel widget, it
             # needs information that is only available when `show_panel` is
             # called via the callback. So, we set a flag that `show_panel` can
-            # use to short-circuit and return the info needed.
+            # use to short-circuit and store the info in a temporary location.
+            # This avoids corrupting the app's internal state (e.g., storing
+            # a dict where a widget is expected).
             self._panel_info_request = True
+            self._panel_info_result = None
             self.logger.debug("Retrieving panel widget for %s" % panel_id)
-            panel_info = panel_dict["callback"]()
+            panel_dict["callback"]()
+            panel_info = self._panel_info_result
             del self._panel_info_request
+            del self._panel_info_result
             return panel_info
 
         return None
@@ -488,11 +529,13 @@ Please report any issues to:
         widget_class constructor.
         """
 
-        # check to see if we just need to return the widget itself. Since we
+        # check to see if we just need to collect panel info. Since we
         # don't really have information about the panel outside of this call,
-        # we use a special flag to know when the info is needed and return it.
+        # we use a special flag to know when the info is needed. We store it
+        # in a temporary location and return None to avoid corrupting the
+        # app's internal state (e.g., _current_panel expecting a widget).
         if hasattr(self, "_panel_info_request") and self._panel_info_request:
-            return {
+            self._panel_info_result = {
                 "id": panel_id,
                 "title": title,
                 "bundle": bundle,
@@ -500,6 +543,7 @@ Please report any issues to:
                 "args": args,
                 "kwargs": kwargs,
             }
+            return None
 
         # try to locate the pane in the desktop and make it the current tab.
         for pane_tab in hou.ui.curDesktop().paneTabs():
