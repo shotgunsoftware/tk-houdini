@@ -401,17 +401,27 @@ Please report any issues to:
     def post_context_change(self, old_context, new_context):
         """
         Runs after a context change. Updates the menu and shelf to reflect
-        the new context.
+        the new context, and reloads OTLs for apps that may only be active
+        in the new context (e.g. tk-houdini-alembicnode, tk-houdini-mantranode).
 
         :param old_context: The context being changed away from.
         :param new_context: The new context being changed to.
         """
         self.logger.debug("Post context change: %s -> %s" % (old_context, new_context))
 
+        tk_houdini = self.import_module("tk_houdini")
+        bootstrap = tk_houdini.bootstrap
+
+        # Reload OTLs so apps that only activate in a task context (e.g.
+        # alembic/mantra nodes) have their Digital Assets registered. Without
+        # this, context_change_allowed=True prevents post_app_init from being
+        # called again, leaving those OTLs uninstalled.
+        if bootstrap.g_temp_env in os.environ:
+            oplibrary_path = os.environ[bootstrap.g_temp_env].replace("\\", "/")
+            self._load_app_otls(oplibrary_path)
+
         # Update the menu and shelf to reflect the new context
         if self.has_ui:
-            tk_houdini = self.import_module("tk_houdini")
-
             # Get new commands for the updated context
             commands = tk_houdini.get_registered_commands(self)
             self._callback_map = dict((cmd.get_id(), cmd.callback) for cmd in commands)
