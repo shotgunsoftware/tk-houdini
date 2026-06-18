@@ -8,4 +8,3 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 from . import tk_houdini
-from . import flowam

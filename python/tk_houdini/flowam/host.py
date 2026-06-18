@@ -23,8 +23,6 @@ from tank_vendor.flow_integration_sdk.utils import (
     trace,
 )
 
-import hou
-
 
 class HoudiniHost(FlowHost):
     """ "Houdini implementation of FlowHost interface.
@@ -50,6 +48,7 @@ class HoudiniHost(FlowHost):
     # ------------------------------------------
 
     def __init__(self, context):
+        import hou
 
         self.logger.info("Doing HoudiniHost initialization...")
 
@@ -61,6 +60,8 @@ class HoudiniHost(FlowHost):
     @trace
     def current_file(self) -> str:
         """Return current open file path in dcc."""
+        import hou
+
         return cleanpath(hou.hipFile.path())
 
     @trace
@@ -73,6 +74,8 @@ class HoudiniHost(FlowHost):
         Returns:
             True if new scene is opened, False if operation is cancelled.
         """
+        import hou
+
         # NOTE: Houdini automatically handles warning for unsaved changes
         #       with options "Save and New", "Discard and New" and "Cancel".
         return hou.hipFile.clear(suppress_save_prompt=force)
@@ -87,6 +90,8 @@ class HoudiniHost(FlowHost):
         Returns:
             True if file is opened, False on error or if operation is cancelled.
         """
+        import hou
+
         # NOTE: Houdini automatically handles warning for unsaved changes
         #       with options "Save and Open", "Discard and Open" and "Cancel".
         hou.hipFile.load(file_path, ignore_load_warnings=True)
@@ -102,6 +107,8 @@ class HoudiniHost(FlowHost):
         Raises:
             ValueError
         """
+        import hou
+
         ext = fileext(file_path)
         if ext not in self.FILE_TYPES:
             raise ValueError(f'Invalid native file extension "{ext}" provided.')
@@ -154,6 +161,8 @@ class HoudiniHost(FlowHost):
         Returns:
             The index of the button selected by user.
         """
+        import hou
+
         if not hou.isUIAvailable():
             # Houdini is running without UI, return default behaviour
             return no_ui_option if no_ui_option is not None else default
@@ -195,6 +204,8 @@ class HoudiniHost(FlowHost):
             If user cancels or dialog couldn't be shown, list will be empty.
             If Houdini is running without a GUI, empty list is returned.
         """
+        import hou
+
         if not hou.isUIAvailable():
             # Houdini is running without UI
             return []
@@ -233,6 +244,8 @@ class HoudiniHost(FlowHost):
         Returns:
             True on success.
         """
+        import hou
+
         if hou.isUIAvailable():
             hou.ui.copyTextToClipboard(text)
             return True
@@ -273,6 +286,8 @@ class HoudiniHost(FlowHost):
         Raises:
             RuntimeError
         """
+        import hou
+
         node_handle = dep.node_handle
         node = hou.node(node_handle)
         if node is None:
@@ -323,6 +338,8 @@ class HoudiniHost(FlowHost):
             List of DependencyData objects containing all pertinent information
             related to a file dependency.
         """
+        import hou
+
         deps = []
 
         # NOTE: for now it is safe to treat houdini file references as flat list
@@ -366,6 +383,8 @@ class HoudiniHost(FlowHost):
 
     def _on_file_event(self, event_type=None):
         """Receive Houdini file events and redirect to registered callbacks."""
+        import hou
+
         if event_type == hou.hipFileEventType.AfterClear:
             self.context.clear_flow_context()
         elif event_type == hou.hipFileEventType.AfterLoad:
@@ -374,6 +393,7 @@ class HoudiniHost(FlowHost):
 
     def _export_alembic(self, file_path: str):
         """Export current scene to alembic file."""
+        import hou
 
         # Create an alembic ROP
         alembic_rop = hou.node("/out").createNode("alembic", "flow_alembic_export")

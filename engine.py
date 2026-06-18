@@ -401,7 +401,7 @@ Please report any issues to:
         # Instantiate FlowHost if current context is configured with Flow
         if self.context.flow_project_id:
             self.logger.info("Instantiating Flow host as HoudiniHost...")
-            host_mod = self.import_module("flowam.host")
+            host_mod = self.import_module("tk_houdini.flowam.host")
             self._flow_host = host_mod.HoudiniHost(self.context)
 
     def post_context_change(self, old_context, new_context):
