@@ -27,7 +27,7 @@ import hou
 
 
 class HoudiniHost(FlowHost):
-    """ "Houdini implementation of FlowHost interface.
+    """Houdini implementation of FlowHost interface.
     This is a collection of required capabilities to support Flow AM integration.
     """
 
