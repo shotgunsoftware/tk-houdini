@@ -31,7 +31,7 @@ class HoudiniHost(FlowHost):
     This is a collection of required capabilities to support Flow AM integration.
     """
 
-    logger = LogManager.get_logger("MayaHost")
+    logger = LogManager.get_logger("HoudiniHost")
 
     #: The schema name associated with Houdini workfiles
     WORKFILE_TYPE = "type.workfile.hou"
@@ -82,7 +82,7 @@ class HoudiniHost(FlowHost):
         """Open given file path in Houdini.
 
         Args:
-            file_path: Full path to Maya scene file to be opened.
+            file_path: Full path to Houdini scene file to be opened.
 
         Returns:
             True if file is opened, False on error or if operation is cancelled.
@@ -398,7 +398,9 @@ class HoudiniHost(FlowHost):
             alembic_rop.render()
         except Exception as exc:  # pylint: disable=broad-except
             raise RuntimeError("Alembic export failed.") from exc
-        self.logger.info("Alembic export complete!")
-
-        # Clean up node
-        alembic_rop.destroy()
+        else:
+            # Runs on success
+            self.logger.info("Alembic export complete!")
+        finally:
+            # Clean up node regardless of success/failure
+            alembic_rop.destroy()
