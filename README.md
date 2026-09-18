@@ -2,7 +2,7 @@
 
 ![Supported Houdini versions: 20.0 - 22.0](https://img.shields.io/badge/Houdini-20.0_--_21.0-blue?logo=houdini&logoColor=f5f5f5 "Supported Houdini versions")
 [![Supported VFX Platform: 2022 - 2025](https://img.shields.io/badge/VFX_Platform-2025_|_2024_|_2023_|_2022-blue)](http://www.vfxplatform.com/ "Supported VFX Platform")
-[![Supported Python versions: 3.9 - 3.11](https://img.shields.io/badge/Python-3.11_|_3.10_|_3.9-blue?logo=python&logoColor=f5f5f5)](https://www.python.org/ "Supported Python versions")
+[![Supported Python versions: 3.9 - 3.13](https://img.shields.io/badge/Python-3.13_|_3.11_|_3.10_|_3.9-blue?logo=python&logoColor=f5f5f5)](https://www.python.org/ "Supported Python versions")
 
 [![Build Status](https://dev.azure.com/shotgun-ecosystem/Toolkit/_apis/build/status/Engines/tk-houdini?branchName=master)](https://dev.azure.com/shotgun-ecosystem/Toolkit/_build/latest?definitionId=63&branchName=master)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
