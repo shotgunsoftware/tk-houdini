@@ -49,11 +49,11 @@ class HoudiniHost(FlowHost):
     # BASE CLASS INTERFACE
     # ------------------------------------------
 
-    def __init__(self, context):
+    def __init__(self):
 
         self.logger.info("Doing HoudiniHost initialization...")
 
-        super().__init__(context)
+        super().__init__()
 
         # Add callbacks for relevant Houdini events
         hou.hipFile.addEventCallback(self._on_file_event)
