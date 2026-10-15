@@ -376,12 +376,16 @@ Please report any issues to:
                     )
                     panels.create_panels(self._panels_file)
 
-            if self._houdini_version >= (21, 0, 479):
+            if self._houdini_version >= (21, 0, 478) and hasattr(
+                hou, "refreshStartupPathCacheDirectory"
+            ):
                 # Houdini 21.0+ introduced changes to how startup paths are cached, which can
                 # prevent custom menus (like the FPTR menu) from appearing unless the cache is
                 # refreshed. The call below ensures that Houdini recognizes and loads our custom
                 # menu definitions from the temporary directory, as documented in SideFx ticket
-                # 169562 (SG-40163).
+                # 169562 (SG-40163). refreshStartupPathCacheDirectory was introduced in Houdini
+                # 21.0.478, so it is unavailable on earlier 21.0 builds; the hasattr guard keeps
+                # those builds from raising AttributeError.
                 hou.refreshStartupPathCacheDirectory(xml_tmp_dir)
 
         # Typically we only call this method for engines which don't have a
