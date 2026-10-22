@@ -402,7 +402,7 @@ Please report any issues to:
         if hasattr(self.context, "flow_project_id") and self.context.flow_project_id:
             self.logger.info("Instantiating Flow host as HoudiniHost...")
             host_mod = self.import_module("flowam.host")
-            self._flow_host = host_mod.HoudiniHost(self.context)
+            self._flow_host = host_mod.HoudiniHost()
 
     def post_context_change(self, old_context, new_context):
         """
