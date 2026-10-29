@@ -86,6 +86,12 @@ class HoudiniEngine(sgtk.platform.Engine):
         # keep track of if a UI exists
         self._ui_enabled = hasattr(hou, "ui")
 
+        # Callbacks that delete the engine's Qt widgets when Houdini quits, see
+        # _add_quit_callback, and the app widgets shown in Houdini panels.
+        self._hip_file_event_callback = None
+        self._panel_widgets = []
+        self._quit_check_callback = None
+
         url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
 
         # Unable to use sgtk.platform.qt from here because it has not been
@@ -404,6 +410,9 @@ Please report any issues to:
             host_mod = self.import_module("flowam.host")
             self._flow_host = host_mod.HoudiniHost()
 
+        if self.has_ui:
+            self._add_quit_callback()
+
     def post_context_change(self, old_context, new_context):
         """
         Runs after a context change. Updates the menu and shelf to reflect
@@ -446,6 +455,8 @@ Please report any issues to:
         """
 
         self.logger.debug("%s: Destroying..." % self)
+
+        self._remove_quit_callbacks()
 
         if hasattr(self, "_shelf") and self._shelf:
             # there doesn't appear to be a way to programmatically add a shelf
@@ -629,6 +640,153 @@ Please report any issues to:
             self.logger.error("No callback found for id: %s" % cmd_id)
             return
         callback()
+
+    def _add_panel_widget(self, widget):
+        """
+        Keeps track of an app widget shown in a Houdini panel, so it can be
+        deleted when Houdini quits, see _destroy_panels.
+
+        :param widget: The app widget returned to Houdini by the panel.
+        """
+        from sgtk.platform.qt import shiboken
+
+        # Forget the widgets of panels that Houdini has already deleted.
+        self._panel_widgets = [
+            panel_widget
+            for panel_widget in self._panel_widgets
+            if shiboken.isValid(panel_widget)
+        ]
+        self._panel_widgets.append(widget)
+
+    def _add_quit_callback(self):
+        """
+        Registers a callback to delete the engine's Qt widgets when Houdini quits.
+
+        When it quits, Houdini calls deleteLater() on every top-level Qt widget
+        and deletes them all at once, in no particular order. This crashes
+        Houdini if a QCompleter popup, which is a top-level widget, is deleted
+        before the Toolkit widget that owns the QCompleter: the QCompleter then
+        deletes its popup a second time. Deleting the Toolkit widgets first,
+        while Houdini and the Qt event loop are still fully alive, avoids this.
+
+        BeforeQuit is triggered before the save-changes prompt, where the user
+        can still cancel. So when the scene has unsaved changes, the widgets are
+        only deleted once Houdini reports that it is shutting down, see
+        _on_hip_file_event.
+        """
+        before_quit = getattr(hou.hipFileEventType, "BeforeQuit", None)
+        if before_quit is None:
+            self.logger.debug(
+                "Houdini %s has no BeforeQuit event: Toolkit widgets will not be "
+                "deleted when Houdini quits." % self.version_str(self._houdini_version)
+            )
+            return
+
+        # Keep the bound method, so the same object is removed later.
+        self._hip_file_event_callback = self._on_hip_file_event
+        hou.hipFile.addEventCallback(self._hip_file_event_callback)
+
+    def _check_quit(self):
+        """
+        Deletes the engine's Qt widgets once Houdini is shutting down.
+
+        Runs on every event loop iteration after the user started to quit
+        Houdini, see _on_hip_file_event. If the user cancels at the save-changes
+        prompt, Houdini keeps running and this keeps waiting for the next quit.
+        """
+        if not hou.hipFile.isShuttingDown():
+            return
+
+        self.logger.debug("Houdini is shutting down.")
+        self._destroy_widgets_on_quit()
+
+    def _destroy_panels(self):
+        """
+        Closes the app widgets shown in Houdini panels and deletes their child
+        widgets.
+
+        Houdini keeps a pointer to the widget returned by a panel, and uses it
+        when it destroys the panel after the Qt widgets are deleted. So the
+        app widget itself is kept, and only its contents, such as search fields
+        with a QCompleter, are deleted. The Houdini panels are kept too, so
+        Houdini saves them in its desktop and shows them again at the next
+        launch.
+        """
+        from sgtk.platform.qt import shiboken
+
+        panel_widgets = self._panel_widgets
+        self._panel_widgets = []
+        for widget in panel_widgets:
+            if not shiboken.isValid(widget):
+                continue
+            self.logger.debug(
+                "Deleting the child widgets of panel widget %s." % type(widget).__name__
+            )
+            # Let the app shut down as when the user closes the panel.
+            widget.close()
+            for child in widget.children():
+                if child.isWidgetType() and shiboken.isValid(child):
+                    shiboken.delete(child)
+
+    def _destroy_widgets_on_quit(self):
+        """
+        Deletes the engine's Qt widgets when Houdini quits, see
+        _add_quit_callback.
+        """
+        self._remove_quit_callbacks()
+        self.logger.debug("Deleting Toolkit widgets before Houdini quits.")
+        # Exceptions must not escape a Houdini callback while Houdini quits.
+        try:
+            self._destroy_qt_dialogs()
+        except Exception:
+            self.logger.exception("Could not delete the dialogs on Houdini exit.")
+        try:
+            self._destroy_panels()
+        except Exception:
+            self.logger.exception("Could not delete the panels on Houdini exit.")
+
+    def _on_hip_file_event(self, event_type):
+        """
+        Starts to check whether Houdini is shutting down when the user quits.
+
+        :param event_type: The hou.hipFileEventType of the event.
+        """
+        if event_type != hou.hipFileEventType.BeforeQuit:
+            return
+        if not hou.hipFile.hasUnsavedChanges():
+            # There is no save-changes prompt, so the user cannot cancel, and
+            # Houdini shuts down without running its event loop again.
+            self.logger.debug("Houdini is quitting, with no unsaved changes.")
+            self._destroy_widgets_on_quit()
+            return
+        if self._quit_check_callback is not None:
+            # The user already tried to quit, then cancelled.
+            return
+        self.logger.debug(
+            "Houdini is quitting, with unsaved changes: waiting for the "
+            "save-changes prompt."
+        )
+        # Keep the bound method, so the same object is removed later.
+        self._quit_check_callback = self._check_quit
+        hou.ui.addEventLoopCallback(self._quit_check_callback)
+
+    def _remove_quit_callbacks(self):
+        """
+        Removes the callbacks registered by _add_quit_callback, if any.
+        """
+        if self._quit_check_callback is not None:
+            try:
+                hou.ui.removeEventLoopCallback(self._quit_check_callback)
+            except hou.OperationFailed:
+                pass
+            self._quit_check_callback = None
+
+        if self._hip_file_event_callback is not None:
+            try:
+                hou.hipFile.removeEventCallback(self._hip_file_event_callback)
+            except hou.OperationFailed:
+                pass
+            self._hip_file_event_callback = None
 
     def _safe_path_join(self, *args):
         """
