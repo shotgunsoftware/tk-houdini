@@ -12,6 +12,7 @@
 A Houdini engine for Tank.
 """
 
+import atexit
 import os
 import re
 import ctypes
@@ -86,11 +87,8 @@ class HoudiniEngine(sgtk.platform.Engine):
         # keep track of if a UI exists
         self._ui_enabled = hasattr(hou, "ui")
 
-        # Callbacks that delete the engine's Qt widgets when Houdini quits, see
-        # _add_quit_callback, and the app widgets shown in Houdini panels.
-        self._hip_file_event_callback = None
+        # The app widgets shown in Houdini panels, deleted when Houdini quits.
         self._panel_widgets = []
-        self._quit_check_callback = None
 
         url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
 
@@ -456,10 +454,10 @@ Please report any issues to:
 
         self.logger.debug("%s: Destroying..." % self)
 
-        # The quit callbacks are kept: the engine's panels and dialogs can stay
+        # The quit callback is kept: the engine's panels and dialogs can stay
         # open after it is destroyed, for example when a file outside of any
         # Toolkit project is opened, and must still be deleted when Houdini
-        # quits. They are removed when they run, see _destroy_widgets_on_quit.
+        # quits.
 
         if hasattr(self, "_shelf") and self._shelf:
             # there doesn't appear to be a way to programmatically add a shelf
@@ -669,39 +667,15 @@ Please report any issues to:
         and deletes them all at once, in no particular order. This crashes
         Houdini if a QCompleter popup, which is a top-level widget, is deleted
         before the Toolkit widget that owns the QCompleter: the QCompleter then
-        deletes its popup a second time. Deleting the Toolkit widgets first,
-        while Houdini and the Qt event loop are still fully alive, avoids this.
+        deletes its popup a second time. Deleting the Toolkit widgets first
+        avoids this.
 
-        BeforeQuit is triggered before the save-changes prompt, where the user
-        can still cancel. So when the scene has unsaved changes, the widgets are
-        only deleted once Houdini reports that it is shutting down, see
-        _on_hip_file_event.
+        Python's atexit callbacks run on every quit, after the save-changes
+        prompt, and before Houdini deletes the top-level Qt widgets, unlike the
+        BeforeQuit hip file event, which is triggered before the prompt, and not
+        at all by hou.exit(suppress_save_prompt=True).
         """
-        before_quit = getattr(hou.hipFileEventType, "BeforeQuit", None)
-        if before_quit is None:
-            self.logger.debug(
-                "Houdini %s has no BeforeQuit event: Toolkit widgets will not be "
-                "deleted when Houdini quits." % self.version_str(self._houdini_version)
-            )
-            return
-
-        # Keep the bound method, so the same object is removed later.
-        self._hip_file_event_callback = self._on_hip_file_event
-        hou.hipFile.addEventCallback(self._hip_file_event_callback)
-
-    def _check_quit(self):
-        """
-        Deletes the engine's Qt widgets once Houdini is shutting down.
-
-        Runs on every event loop iteration after the user started to quit
-        Houdini, see _on_hip_file_event. If the user cancels at the save-changes
-        prompt, Houdini keeps running and this keeps waiting for the next quit.
-        """
-        if not hou.hipFile.isShuttingDown():
-            return
-
-        self.logger.debug("Houdini is shutting down.")
-        self._destroy_widgets_on_quit()
+        atexit.register(self._destroy_widgets_on_quit)
 
     def _destroy_panels(self):
         """
@@ -743,9 +717,8 @@ Please report any issues to:
         Deletes the engine's Qt widgets when Houdini quits, see
         _add_quit_callback.
         """
-        self._remove_quit_callbacks()
         self.logger.debug("Deleting Toolkit widgets before Houdini quits.")
-        # Exceptions must not escape a Houdini callback while Houdini quits.
+        # Exceptions must not escape a callback while Houdini quits.
         try:
             self._destroy_qt_dialogs()
         except Exception:
@@ -754,55 +727,6 @@ Please report any issues to:
             self._destroy_panels()
         except Exception:
             self.logger.exception("Could not delete the panels on Houdini exit.")
-
-    def _on_hip_file_event(self, event_type):
-        """
-        Starts to check whether Houdini is shutting down when the user quits.
-
-        :param event_type: The hou.hipFileEventType of the event.
-        """
-        if event_type != hou.hipFileEventType.BeforeQuit:
-            return
-        if hou.hipFile.isShuttingDown():
-            # The save-changes prompt was suppressed, for example with
-            # hou.exit(suppress_save_prompt=True), so the user cannot cancel.
-            self.logger.debug("Houdini is quitting, with no save-changes prompt.")
-            self._destroy_widgets_on_quit()
-            return
-        if not hou.hipFile.hasUnsavedChanges():
-            # There is no save-changes prompt, so the user cannot cancel, and
-            # Houdini shuts down without running its event loop again.
-            self.logger.debug("Houdini is quitting, with no unsaved changes.")
-            self._destroy_widgets_on_quit()
-            return
-        if self._quit_check_callback is not None:
-            # The user already tried to quit, then cancelled.
-            return
-        self.logger.debug(
-            "Houdini is quitting, with unsaved changes: waiting for the "
-            "save-changes prompt."
-        )
-        # Keep the bound method, so the same object is removed later.
-        self._quit_check_callback = self._check_quit
-        hou.ui.addEventLoopCallback(self._quit_check_callback)
-
-    def _remove_quit_callbacks(self):
-        """
-        Removes the callbacks registered by _add_quit_callback, if any.
-        """
-        if self._quit_check_callback is not None:
-            try:
-                hou.ui.removeEventLoopCallback(self._quit_check_callback)
-            except hou.OperationFailed:
-                pass
-            self._quit_check_callback = None
-
-        if self._hip_file_event_callback is not None:
-            try:
-                hou.hipFile.removeEventCallback(self._hip_file_event_callback)
-            except hou.OperationFailed:
-                pass
-            self._hip_file_event_callback = None
 
     def _safe_path_join(self, *args):
         """
