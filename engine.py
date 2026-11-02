@@ -456,7 +456,10 @@ Please report any issues to:
 
         self.logger.debug("%s: Destroying..." % self)
 
-        self._remove_quit_callbacks()
+        # The quit callbacks are kept: the engine's panels and dialogs can stay
+        # open after it is destroyed, for example when a file outside of any
+        # Toolkit project is opened, and must still be deleted when Houdini
+        # quits. They are removed when they run, see _destroy_widgets_on_quit.
 
         if hasattr(self, "_shelf") and self._shelf:
             # there doesn't appear to be a way to programmatically add a shelf
@@ -712,7 +715,7 @@ Please report any issues to:
         Houdini saves them in its desktop and shows them again at the next
         launch.
         """
-        from sgtk.platform.qt import shiboken
+        from sgtk.platform.qt import QtCore, QtGui, shiboken
 
         panel_widgets = self._panel_widgets
         self._panel_widgets = []
@@ -722,11 +725,18 @@ Please report any issues to:
             self.logger.debug(
                 "Deleting the child widgets of panel widget %s." % type(widget).__name__
             )
-            # Let the app shut down as when the user closes the panel.
+            # Let the app shut down as when the user closes the panel, without
+            # deleting the app widget, which Houdini deletes itself.
+            widget.setAttribute(QtCore.Qt.WA_DeleteOnClose, False)
             widget.close()
             for child in widget.children():
                 if child.isWidgetType() and shiboken.isValid(child):
                     shiboken.delete(child)
+            # Delete the remaining QCompleters, owned by the app widget itself
+            # or by a child that is not a widget, which delete their popup.
+            for completer in widget.findChildren(QtGui.QCompleter):
+                if shiboken.isValid(completer):
+                    shiboken.delete(completer)
 
     def _destroy_widgets_on_quit(self):
         """
@@ -752,6 +762,12 @@ Please report any issues to:
         :param event_type: The hou.hipFileEventType of the event.
         """
         if event_type != hou.hipFileEventType.BeforeQuit:
+            return
+        if hou.hipFile.isShuttingDown():
+            # The save-changes prompt was suppressed, for example with
+            # hou.exit(suppress_save_prompt=True), so the user cannot cancel.
+            self.logger.debug("Houdini is quitting, with no save-changes prompt.")
+            self._destroy_widgets_on_quit()
             return
         if not hou.hipFile.hasUnsavedChanges():
             # There is no save-changes prompt, so the user cannot cancel, and
