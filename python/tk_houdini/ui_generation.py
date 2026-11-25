@@ -826,7 +826,10 @@ def get_wrapped_panel_widget(engine, widget_class, bundle, title):
                 self._changing_stylesheet = False
             self._stylesheet_applied = True
 
-    return PanelWrapper()
+    panel_widget = PanelWrapper()
+    # Deleted by the engine when Houdini quits.
+    engine._add_panel_widget(panel_widget)
+    return panel_widget
 
 
 # -----------------------------------------------------------------------------

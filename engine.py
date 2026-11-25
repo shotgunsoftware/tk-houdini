@@ -12,6 +12,7 @@
 A Houdini engine for Tank.
 """
 
+import atexit
 import os
 import re
 import ctypes
@@ -85,6 +86,9 @@ class HoudiniEngine(sgtk.platform.Engine):
 
         # keep track of if a UI exists
         self._ui_enabled = hasattr(hou, "ui")
+
+        # The app widgets shown in Houdini panels, deleted when Houdini quits.
+        self._panel_widgets = []
 
         url_doc_supported_versions = "https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_si_integrations_engine_supported_versions_html"
 
@@ -404,6 +408,9 @@ Please report any issues to:
             host_mod = self.import_module("flowam.host")
             self._flow_host = host_mod.HoudiniHost()
 
+        if self.has_ui:
+            self._add_quit_callback()
+
     def post_context_change(self, old_context, new_context):
         """
         Runs after a context change. Updates the menu and shelf to reflect
@@ -446,6 +453,11 @@ Please report any issues to:
         """
 
         self.logger.debug("%s: Destroying..." % self)
+
+        # The quit callback is kept: the engine's panels and dialogs can stay
+        # open after it is destroyed, for example when a file outside of any
+        # Toolkit project is opened, and must still be deleted when Houdini
+        # quits.
 
         if hasattr(self, "_shelf") and self._shelf:
             # there doesn't appear to be a way to programmatically add a shelf
@@ -629,6 +641,92 @@ Please report any issues to:
             self.logger.error("No callback found for id: %s" % cmd_id)
             return
         callback()
+
+    def _add_panel_widget(self, widget):
+        """
+        Keeps track of an app widget shown in a Houdini panel, so it can be
+        deleted when Houdini quits, see _destroy_panels.
+
+        :param widget: The app widget returned to Houdini by the panel.
+        """
+        from sgtk.platform.qt import shiboken
+
+        # Forget the widgets of panels that Houdini has already deleted.
+        self._panel_widgets = [
+            panel_widget
+            for panel_widget in self._panel_widgets
+            if shiboken.isValid(panel_widget)
+        ]
+        self._panel_widgets.append(widget)
+
+    def _add_quit_callback(self):
+        """
+        Registers a callback to delete the engine's Qt widgets when Houdini quits.
+
+        When it quits, Houdini calls deleteLater() on every top-level Qt widget
+        and deletes them all at once, in no particular order. This crashes
+        Houdini if a QCompleter popup, which is a top-level widget, is deleted
+        before the Toolkit widget that owns the QCompleter: the QCompleter then
+        deletes its popup a second time. Deleting the Toolkit widgets first
+        avoids this.
+
+        Python's atexit callbacks run on every quit, after the save-changes
+        prompt, and before Houdini deletes the top-level Qt widgets, unlike the
+        BeforeQuit hip file event, which is triggered before the prompt, and not
+        at all by hou.exit(suppress_save_prompt=True).
+        """
+        atexit.register(self._destroy_widgets_on_quit)
+
+    def _destroy_panels(self):
+        """
+        Closes the app widgets shown in Houdini panels and deletes their child
+        widgets.
+
+        Houdini keeps a pointer to the widget returned by a panel, and uses it
+        when it destroys the panel after the Qt widgets are deleted. So the
+        app widget itself is kept, and only its contents, such as search fields
+        with a QCompleter, are deleted. The Houdini panels are kept too, so
+        Houdini saves them in its desktop and shows them again at the next
+        launch.
+        """
+        from sgtk.platform.qt import QtCore, QtGui, shiboken
+
+        panel_widgets = self._panel_widgets
+        self._panel_widgets = []
+        for widget in panel_widgets:
+            if not shiboken.isValid(widget):
+                continue
+            self.logger.debug(
+                "Deleting the child widgets of panel widget %s." % type(widget).__name__
+            )
+            # Let the app shut down as when the user closes the panel, without
+            # deleting the app widget, which Houdini deletes itself.
+            widget.setAttribute(QtCore.Qt.WA_DeleteOnClose, False)
+            widget.close()
+            for child in widget.children():
+                if child.isWidgetType() and shiboken.isValid(child):
+                    shiboken.delete(child)
+            # Delete the remaining QCompleters, owned by the app widget itself
+            # or by a child that is not a widget, which delete their popup.
+            for completer in widget.findChildren(QtGui.QCompleter):
+                if shiboken.isValid(completer):
+                    shiboken.delete(completer)
+
+    def _destroy_widgets_on_quit(self):
+        """
+        Deletes the engine's Qt widgets when Houdini quits, see
+        _add_quit_callback.
+        """
+        self.logger.debug("Deleting Toolkit widgets before Houdini quits.")
+        # Exceptions must not escape a callback while Houdini quits.
+        try:
+            self._destroy_qt_dialogs()
+        except Exception:
+            self.logger.exception("Could not delete the dialogs on Houdini exit.")
+        try:
+            self._destroy_panels()
+        except Exception:
+            self.logger.exception("Could not delete the panels on Houdini exit.")
 
     def _safe_path_join(self, *args):
         """
